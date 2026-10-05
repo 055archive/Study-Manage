@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StudyManage - Portal Tugas & Materi Kuliah</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Feather Icons -->
+  <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body data-theme="light">
+  <!-- ========================================================
+       SCREEN 0: LOGIN & PORTAL LOCK OVERLAY
+       ======================================================== -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="login-icon-badge">
+          <i data-feather="lock"></i>
+        </div>
+        <h2 class="login-title">Study<span class="gradient-text">Sync</span></h2>
+        <p class="login-subtitle">Portal Tugas & Materi Kuliah</p>
+      </div>
+
+      <form id="loginForm" class="login-form" autocomplete="off">
+        <div class="form-group">
+          <label for="loginPasswordInput">Kata Sandi Akses</label>
+          <div class="password-input-wrapper">
+            <input 
+              type="password" 
+              id="loginPasswordInput" 
+              class="custom-input password-field" 
+              placeholder="Masukin pw dulu y..." 
+              required
+              autofocus
+            >
+            <button type="button" class="btn-toggle-pwd" id="btnToggleLoginPwd" title="Lihat Sandi">
+              <i data-feather="eye" id="loginEyeIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="login-options-row">
+          <label class="remember-checkbox-label">
+            <input type="checkbox" id="rememberMeCheckbox" checked>
+            <span>Inget gue</span>
+          </label>
+          <button type="button" class="btn-link-pwd" id="btnOpenChangePasswordFromLogin">
+            Ganti Sandi?
+          </button>
+        </div>
+
+        <div class="login-error-msg" id="loginErrorMsg" style="display: none;">
+          <i data-feather="alert-circle"></i>
+          <span id="loginErrorText">HAHAHAHAHAH SALAH YA PW NYA</span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-login-submit" id="btnSubmitLogin">
+          <i data-feather="key"></i>
+          <span>Buka Portal Kuliah</span>
+        </button>
+      </form>
+
+      <div class="login-footer">
+        <p>🔒 Hanya pemilik yang dapat mengakses data portal ini.</p>
+        <button type="button" class="btn-link-pwd-footer" id="btnOpenChangePasswordFromLoginFooter">
+          <i data-feather="shield"></i>
+          <span>Mau ganti pw? Klik di sini</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-layout" id="appLayout">
+    <!-- Sidebar Navigasi -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">
+            <i data-feather="book-open"></i>
+          </div>
+          <div class="logo-text-group">
+            <span class="logo-title">Study<strong>Manage</strong></span>
+            <span class="logo-sub">Azkiya Airell Syadika</span>
+          </div>
+        </div>
+        <button class="icon-btn btn-close-sidebar" id="closeSidebarBtn" aria-label="Tutup Menu">
+          <i data-feather="x"></i>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-label">NAVIGASI UTAMA</div>
+        <button class="nav-tab-btn active" data-tab="tab-overview">
+          <i data-feather="home"></i>
+          <span>Ringkasan</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="tab-tugas">
+          <i data-feather="check-square"></i>
+          <span>Tugas Kuliah</span>
+          <span class="nav-badge" id="badgePendingTugas">0</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="tab-materi">
+          <i data-feather="file-text"></i>
+          <span>Materi Kuliah</span>
+          <span class="nav-badge materi-badge" id="badgeTotalMateri">0</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="tab-matkul">
+          <i data-feather="layers"></i>
+          <span>Mata Kuliah</span>
+          <span class="nav-badge matkul-badge" id="badgeTotalMatkul">0</span>
+        </button>
+
+        <div class="nav-label">FILTER MATA KULIAH</div>
+        <div class="course-list-filter" id="sidebarCourseFilters">
+          <!-- Diisi otomatis oleh JavaScript -->
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="academic-badge">
+          <i data-feather="award"></i>
+          <div>
+            <div class="academic-title">Semester 3</div>
+            <div class="academic-sub">Tahun Akademik 2026/2027</div>
+          </div>
+        </div>
+        <div class="backup-actions">
+          <button class="backup-btn" id="btnExportBackup" title="Simpan file cadangan semua tugas & materi">
+            <i data-feather="download"></i>
+            <span>Cadangkan (Backup)</span>
+          </button>
+          <label class="backup-btn" title="Pulihkan data dari file cadangan JSON">
+            <i data-feather="upload"></i>
+            <span>Pulihkan (Restore)</span>
+            <input type="file" id="importBackupInput" accept=".json" style="display: none;">
+          </label>
+        </div>
+        <div style="margin-top: 8px;">
+          <button class="backup-btn cloud-sidebar-btn" id="btnOpenCloudModalSidebar" title="Pengaturan Cloud Sync Firebase">
+            <i data-feather="cloud-lightning"></i>
+            <span>Cloud Sync (Firebase)</span>
+          </button>
+        </div>
+        <div class="security-actions-group" style="margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <button class="backup-btn" id="btnOpenChangePassword" title="Ubah kata sandi portal kuliah">
+            <i data-feather="shield"></i>
+            <span>Ganti Sandi</span>
+          </button>
+          <button class="backup-btn btn-logout-action" id="btnLogout" title="Kunci portal kuliah">
+            <i data-feather="log-out"></i>
+            <span>Kunci</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Overlay sidebar mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Konten Utama -->
+    <div class="main-wrapper">
+      <!-- Header Topbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn menu-toggle" id="openSidebarBtn" aria-label="Buka Menu">
+            <i data-feather="menu"></i>
+          </button>
+          <div class="search-box">
+            <i data-feather="search"></i>
+            <input type="text" id="globalSearchInput" placeholder="Cari tugas, materi, atau mata kuliah...">
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Tombol Status Cloud Sync -->
+          <button class="cloud-sync-btn" id="btnOpenCloudModal" title="Pengaturan & Status Cloud Sync Firebase">
+            <span class="cloud-status-dot offline" id="cloudStatusDot"></span>
+            <i data-feather="cloud" id="cloudIcon"></i>
+            <span class="cloud-status-text" id="cloudStatusText">Lokal</span>
+          </button>
+
+          <!-- Toggle Dark / Light Theme -->
+          <button class="icon-btn theme-btn" id="themeToggleBtn" aria-label="Ganti Tema" title="Ganti Mode Gelap / Terang">
+            <i data-feather="moon" id="themeIcon"></i>
+          </button>
+
+          <!-- Tombol Kunci Cepat -->
+          <button class="icon-btn lock-btn" id="btnQuickLock" aria-label="Kunci Portal" title="Kunci Portal Kuliah">
+            <i data-feather="lock"></i>
+          </button>
+
+          <!-- Tombol Aksi Cepat -->
+          <div class="quick-add-group">
+            <button class="btn btn-secondary" id="btnOpenModalMatkul" title="Tambah Mata Kuliah Baru">
+              <i data-feather="book-open"></i>
+              <span>Matkul</span>
+            </button>
+            <button class="btn btn-secondary" id="btnOpenModalMateri" title="Tambah Materi Baru">
+              <i data-feather="file-plus"></i>
+              <span>Materi</span>
+            </button>
+            <button class="btn btn-primary" id="btnOpenModalTugas" title="Tambah Tugas Baru">
+              <i data-feather="plus-circle"></i>
+              <span>Tugas</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Body Container -->
+      <main class="content-container">
+
+        <!-- ========================================================
+             TAB 1: RINGKASAN & OVERVIEW
+             ======================================================== -->
+        <section class="tab-pane active" id="tab-overview">
+          <div class="page-title-banner">
+            <div>
+              <h1 class="welcome-heading">Selamat Belajar! 🎓</h1>
+              <p class="welcome-sub">Kelola seluruh tenggat tugas dan arsip materi kuliahmu secara terpusat.</p>
+            </div>
+            <div class="semester-info-pill">
+              <i data-feather="calendar"></i>
+              <span id="currentDateDisplay">Memuat tanggal...</span>
+            </div>
+          </div>
+
+          <!-- Kartu Ringkasan (KPI) -->
+          <div class="stats-overview-grid">
+            <div class="stat-card">
+              <div class="stat-icon tugas-pending-icon">
+                <i data-feather="clock"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Tugas Belum Selesai</span>
+                <h3 class="stat-number" id="overviewPendingTugas">0</h3>
+                <span class="stat-note" id="urgentTugasCount">0 tugas mendesak</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon tugas-done-icon">
+                <i data-feather="check-circle"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Tugas Selesai</span>
+                <h3 class="stat-number" id="overviewDoneTugas">0</h3>
+                <span class="stat-note positive">Terus pertahankan!</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon materi-total-icon">
+                <i data-feather="layers"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Total Catatan Materi</span>
+                <h3 class="stat-number" id="overviewTotalMateri">0</h3>
+                <span class="stat-note" id="overviewCoursesCount">dari 0 mata kuliah</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Deadline Terdekat -->
+          <div class="section-card">
+            <div class="section-header">
+              <div class="header-left">
+                <i data-feather="alert-triangle" class="warning-icon"></i>
+                <div>
+                  <h2 class="section-title">Prioritas & Deadline Terdekat</h2>
+                  <p class="section-sub">Tugas yang harus segera kamu kerjakan.</p>
+                </div>
+              </div>
+              <button class="link-btn" onclick="switchTab('tab-tugas')">Lihat Semua Tugas &rarr;</button>
+            </div>
+            <div class="urgent-task-list" id="urgentTasksContainer">
+              <!-- Diisi otomatis oleh JS -->
+            </div>
+          </div>
+
+          <!-- Section: Materi Terbaru Ditambahkan -->
+          <div class="section-card">
+            <div class="section-header">
+              <div class="header-left">
+                <i data-feather="bookmark" class="info-icon"></i>
+                <div>
+                  <h2 class="section-title">Materi Pembelajaran Terakhir</h2>
+                  <p class="section-sub">Akses cepat catatan kuliah pertemuan terakhir.</p>
+                </div>
+              </div>
+              <button class="link-btn" onclick="switchTab('tab-materi')">Lihat Semua Materi &rarr;</button>
+            </div>
+            <div class="recent-materials-grid" id="recentMaterialsContainer">
+              <!-- Diisi otomatis oleh JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================================
+             TAB 2: DAFTAR TUGAS KULIAH
+             ======================================================== -->
+        <section class="tab-pane" id="tab-tugas">
+          <div class="pane-header">
+            <div>
+              <h1 class="pane-title">Daftar Tugas Kuliah</h1>
+              <p class="pane-sub">Lacak tugas, mata kuliah, deadline, dan status penyelesaian tugasmu.</p>
+            </div>
+            <button class="btn btn-primary" onclick="openAddTugasModal()">
+              <i data-feather="plus"></i>
+              <span>Tambah Tugas</span>
+            </button>
+          </div>
+
+          <!-- Filter & Search Toolbar -->
+          <div class="toolbar-card">
+            <div class="toolbar-filters">
+              <div class="filter-item">
+                <label for="filterTugasMatkul">Mata Kuliah:</label>
+                <select id="filterTugasMatkul" class="custom-select">
+                  <option value="ALL">Semua Mata Kuliah</option>
+                </select>
+              </div>
+
+              <div class="filter-item">
+                <label for="filterTugasStatus">Status:</label>
+                <select id="filterTugasStatus" class="custom-select">
+                  <option value="ALL">Semua Status</option>
+                  <option value="PENDING">Belum Selesai</option>
+                  <option value="COMPLETED">Sudah Selesai</option>
+                </select>
+              </div>
+
+              <div class="filter-item search-filter-item">
+                <label for="searchTugasInput">Cari Tugas:</label>
+                <input type="text" id="searchTugasInput" class="custom-input" placeholder="Ketik judul tugas...">
+              </div>
+            </div>
+          </div>
+
+          <!-- Banner Indikator Filter Aktif -->
+          <div class="active-filter-indicator" id="tugasFilterBanner" style="display: none;">
+            <div class="filter-indicator-text">
+              <i data-feather="filter"></i>
+              <span>Menampilkan tugas untuk: <strong id="tugasFilterName">Semua</strong></span>
+            </div>
+            <button class="btn-clear-filter" onclick="setMatkulFilter('ALL')" title="Hapus filter">
+              <i data-feather="x"></i>
+              <span>Tampilkan Semua</span>
+            </button>
+          </div>
+
+          <!-- Grid Daftar Kartu Tugas -->
+          <div class="tasks-grid" id="tugasGridContainer">
+            <!-- Diisi otomatis oleh JS -->
+          </div>
+
+          <!-- State Kosong jika tidak ada tugas -->
+          <div class="empty-state-card" id="emptyTugasState" style="display: none;">
+            <i data-feather="check-circle" class="empty-icon-lg"></i>
+            <h3>Tidak Ada Tugas</h3>
+            <p>Tidak ada tugas yang cocok dengan filter atau semua tugas sudah kamu selesaikan!</p>
+            <button class="btn btn-secondary mt-3" onclick="openAddTugasModal()">+ Tambah Tugas Baru</button>
+          </div>
+        </section>
+
+        <!-- ========================================================
+             TAB 3: ARSIP MATERI KULIAH
+             ======================================================== -->
+        <section class="tab-pane" id="tab-materi">
+          <div class="pane-header">
+            <div>
+              <h1 class="pane-title">Arsip Materi & Catatan Kuliah</h1>
+              <p class="pane-sub">Koleksi materi kuliah lengkap dengan mata kuliah, pertemuan ke, dan tanggal.</p>
+            </div>
+            <button class="btn btn-primary" onclick="openAddMateriModal()">
+              <i data-feather="plus"></i>
+              <span>Tambah Materi</span>
+            </button>
+          </div>
+
+          <!-- Filter & Search Toolbar -->
+          <div class="toolbar-card">
+            <div class="toolbar-filters">
+              <div class="filter-item">
+                <label for="filterMateriMatkul">Mata Kuliah:</label>
+                <select id="filterMateriMatkul" class="custom-select">
+                  <option value="ALL">Semua Mata Kuliah</option>
+                </select>
+              </div>
+
+              <div class="filter-item search-filter-item">
+                <label for="searchMateriInput">Cari Materi / Topik:</label>
+                <input type="text" id="searchMateriInput" class="custom-input" placeholder="Ketik topik materi atau pertemuan...">
+              </div>
+            </div>
+          </div>
+
+          <!-- Banner Indikator Filter Aktif -->
+          <div class="active-filter-indicator" id="materiFilterBanner" style="display: none;">
+            <div class="filter-indicator-text">
+              <i data-feather="filter"></i>
+              <span>Menampilkan materi untuk: <strong id="materiFilterName">Semua</strong></span>
+            </div>
+            <button class="btn-clear-filter" onclick="setMatkulFilter('ALL')" title="Hapus filter">
+              <i data-feather="x"></i>
+              <span>Tampilkan Semua</span>
+            </button>
+          </div>
+
+          <!-- Grid Daftar Kartu Materi -->
+          <div class="materials-grid" id="materiGridContainer">
+            <!-- Diisi otomatis oleh JS -->
+          </div>
+
+          <!-- State Kosong jika tidak ada materi -->
+          <div class="empty-state-card" id="emptyMateriState" style="display: none;">
+            <i data-feather="folder" class="empty-icon-lg"></i>
+            <h3>Belum Ada Materi Tersimpan</h3>
+            <p>Simpan rangkuman perkuliahan, slide, atau link Google Drive materi di sini.</p>
+            <button class="btn btn-secondary mt-3" onclick="openAddMateriModal()">+ Tambah Materi Baru</button>
+          </div>
+        </section>
+
+        <!-- ========================================================
+             TAB 4: KELOLA MATA KULIAH
+             ======================================================== -->
+        <section class="tab-pane" id="tab-matkul">
+          <div class="pane-header">
+            <div>
+              <h1 class="pane-title">Kelola Mata Kuliah</h1>
+              <p class="pane-sub">Daftarkan seluruh mata kuliah semester ini, dosen pengampu, SKS, jadwal kelas, dan ruang belajar.</p>
+            </div>
+            <button class="btn btn-primary" onclick="openAddMatkulModal()">
+              <i data-feather="plus"></i>
+              <span>Tambah Mata Kuliah</span>
+            </button>
+          </div>
+
+          <!-- Grid Kartu Mata Kuliah -->
+          <div class="courses-grid" id="matkulGridContainer">
+            <!-- Diisi otomatis oleh JS -->
+          </div>
+
+          <!-- State Kosong jika belum ada mata kuliah -->
+          <div class="empty-state-card" id="emptyMatkulState" style="display: none;">
+            <i data-feather="book-open" class="empty-icon-lg"></i>
+            <h3>Belum Ada Mata Kuliah Terdaftar</h3>
+            <p>Daftarkan mata kuliah yang Anda ambil semester ini untuk mengelompokkan tugas dan materi secara rapi.</p>
+            <button class="btn btn-secondary mt-3" onclick="openAddMatkulModal()">+ Tambah Mata Kuliah Pertama</button>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL 1: TAMBAH / EDIT TUGAS
+       ======================================================== -->
+  <dialog class="app-dialog" id="tugasModal">
+    <div class="dialog-box">
+      <div class="dialog-header">
+        <h3 class="dialog-title" id="tugasModalTitle">Tambah Tugas Kuliah</h3>
+        <button class="icon-btn btn-close-dialog" onclick="closeTugasModal()">
+          <i data-feather="x"></i>
+        </button>
+      </div>
+
+      <form id="tugasForm" class="dialog-form">
+        <input type="hidden" id="editTugasId" value="">
+
+        <div class="form-group">
+          <label for="tugasJudul">Nama / Judul Tugas *</label>
+          <input type="text" id="tugasJudul" class="custom-input" placeholder="Contoh: Makalah Sistem Terdistribusi" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="tugasMatkul">Mata Kuliah *</label>
+            <input type="text" id="tugasMatkul" list="mataKuliahSuggestions" class="custom-input" placeholder="Contoh: Pemrograman Web" required>
+            <datalist id="mataKuliahSuggestions">
+              <!-- Diisi otomatis oleh JS -->
+            </datalist>
+          </div>
+
+          <div class="form-group">
+            <label for="tugasPrioritas">Prioritas</label>
+            <select id="tugasPrioritas" class="custom-select">
+              <option value="Tinggi">Tinggi (Penting & Cepat)</option>
+              <option value="Sedang" selected>Sedang (Biasa)</option>
+              <option value="Rendah">Rendah (Santai)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="tugasDeadlineDate">Tanggal Deadline *</label>
+            <input type="date" id="tugasDeadlineDate" class="custom-input" required>
+          </div>
+
+          <div class="form-group">
+            <label for="tugasDeadlineTime">Waktu / Jam Deadline *</label>
+            <input type="time" id="tugasDeadlineTime" class="custom-input" value="23:59" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="tugasDeskripsi">Deskripsi / Catatan Tugas (Opsional)</label>
+          <textarea id="tugasDeskripsi" class="custom-textarea" rows="3" placeholder="Instruksi pengerjaan, format berkas, atau link pengumpulan..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Unggah Berkas Tugas / Lembar Soal (Opsional)</label>
+          <div class="file-upload-container" id="tugasUploadContainer">
+            <input type="file" id="tugasFileInput" class="file-input-hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.png,.jpg,.jpeg,.txt">
+            
+            <div class="file-dropzone" id="tugasDropzone" role="button" tabindex="0">
+              <div class="dropzone-icon">
+                <i data-feather="upload-cloud"></i>
+              </div>
+              <div class="dropzone-text">
+                <p class="dropzone-main"><strong>Klik untuk pilih berkas tugas</strong> atau seret ke sini</p>
+                <p class="dropzone-sub">PDF soal, Word, spreadsheet, ZIP, atau foto tugas (Maks. 25MB)</p>
+              </div>
+            </div>
+
+            <div class="file-preview-card" id="tugasFilePreview" style="display: none;">
+              <div class="file-preview-left">
+                <div class="file-type-icon">
+                  <i data-feather="file-text" id="tugasPreviewIcon"></i>
+                </div>
+                <div class="file-preview-meta">
+                  <span class="file-preview-name" id="tugasPreviewName">soal_tugas.pdf</span>
+                  <span class="file-preview-size" id="tugasPreviewSize">1.2 MB</span>
+                </div>
+              </div>
+              <div class="file-preview-actions">
+                <button type="button" class="btn-file-action view" id="btnViewTugasFile" title="Lihat Berkas">
+                  <i data-feather="eye"></i>
+                </button>
+                <button type="button" class="btn-file-action delete" id="btnRemoveTugasFile" title="Hapus Berkas">
+                  <i data-feather="trash-2"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dialog-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeTugasModal()">Batal</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitTugas">Simpan Tugas</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- ========================================================
+       MODAL 2: TAMBAH / EDIT MATERI
+       ======================================================== -->
+  <dialog class="app-dialog" id="materiModal">
+    <div class="dialog-box">
+      <div class="dialog-header">
+        <h3 class="dialog-title" id="materiModalTitle">Tambah Materi Kuliah</h3>
+        <button class="icon-btn btn-close-dialog" onclick="closeMateriModal()">
+          <i data-feather="x"></i>
+        </button>
+      </div>
+
+      <form id="materiForm" class="dialog-form">
+        <input type="hidden" id="editMateriId" value="">
+
+        <div class="form-group">
+          <label for="materiJudul">Judul / Topik Bahasan *</label>
+          <input type="text" id="materiJudul" class="custom-input" placeholder="Contoh: Normalisasi Basis Data 1NF sampai 3NF" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="materiMatkul">Mata Kuliah *</label>
+            <input type="text" id="materiMatkul" list="mataKuliahSuggestions" class="custom-input" placeholder="Contoh: Basis Data Lanjut" required>
+          </div>
+
+          <div class="form-group">
+            <label for="materiPertemuan">Pertemuan Ke- *</label>
+            <input type="number" id="materiPertemuan" class="custom-input" placeholder="Contoh: 3" min="1" max="32" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="materiTanggal">Tanggal Perkuliahan *</label>
+          <input type="date" id="materiTanggal" class="custom-input" required>
+        </div>
+
+        <div class="form-group">
+          <label>Unggah Berkas / Slide Materi (Langsung dari HP / Laptop)</label>
+          <div class="file-upload-container" id="materiUploadContainer">
+            <input type="file" id="materiFileInput" class="file-input-hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.png,.jpg,.jpeg,.txt">
+            
+            <div class="file-dropzone" id="materiDropzone" role="button" tabindex="0">
+              <div class="dropzone-icon">
+                <i data-feather="upload-cloud"></i>
+              </div>
+              <div class="dropzone-text">
+                <p class="dropzone-main"><strong>Klik untuk pilih berkas materi</strong> atau seret ke sini</p>
+                <p class="dropzone-sub">PDF, PowerPoint (PPTX), Word (DOCX), Excel, ZIP, atau Gambar (Maks. 25MB)</p>
+              </div>
+            </div>
+
+            <div class="file-preview-card" id="materiFilePreview" style="display: none;">
+              <div class="file-preview-left">
+                <div class="file-type-icon">
+                  <i data-feather="file-text" id="materiPreviewIcon"></i>
+                </div>
+                <div class="file-preview-meta">
+                  <span class="file-preview-name" id="materiPreviewName">slide_kuliah.pdf</span>
+                  <span class="file-preview-size" id="materiPreviewSize">2.4 MB</span>
+                </div>
+              </div>
+              <div class="file-preview-actions">
+                <button type="button" class="btn-file-action view" id="btnViewMateriFile" title="Lihat Berkas">
+                  <i data-feather="eye"></i>
+                </button>
+                <button type="button" class="btn-file-action delete" id="btnRemoveMateriFile" title="Hapus Berkas">
+                  <i data-feather="trash-2"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="alt-link-section">
+            <details class="alt-link-toggle" id="materiLinkToggle">
+              <summary>
+                <i data-feather="link"></i>
+                <span>Atau masukkan tautan Google Drive / Web eksternal (opsional)</span>
+              </summary>
+              <div class="alt-link-input-box">
+                <input type="url" id="materiLink" class="custom-input" placeholder="https://drive.google.com/... atau URL dokumen web">
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="materiCatatan">Rangkuman / Catatan Penting Materi</label>
+          <textarea id="materiCatatan" class="custom-textarea" rows="4" placeholder="Tuliskan poin-poin penting materi, rumus, instruksi dosen, atau referensi buku..."></textarea>
+        </div>
+
+        <div class="dialog-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeMateriModal()">Batal</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitMateri">Simpan Materi</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- ========================================================
+       MODAL 3: TAMBAH / EDIT MATA KULIAH
+       ======================================================== -->
+  <dialog class="app-dialog" id="matkulModal">
+    <div class="dialog-box">
+      <div class="dialog-header">
+        <h3 class="dialog-title" id="matkulModalTitle">Tambah Mata Kuliah Baru</h3>
+        <button class="icon-btn btn-close-dialog" onclick="closeMatkulModal()">
+          <i data-feather="x"></i>
+        </button>
+      </div>
+
+      <form id="matkulForm" class="dialog-form">
+        <input type="hidden" id="editMatkulId" value="">
+
+        <div class="form-group">
+          <label for="matkulNama">Nama Mata Kuliah *</label>
+          <input type="text" id="matkulNama" class="custom-input" placeholder="Contoh: Pemrograman Web, Kalkulus II" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="matkulKode">Kode MK (Opsional)</label>
+            <input type="text" id="matkulKode" class="custom-input" placeholder="Contoh: IF2101">
+          </div>
+
+          <div class="form-group">
+            <label for="matkulSks">Bobot SKS (Opsional)</label>
+            <input type="number" id="matkulSks" class="custom-input" placeholder="3" min="1" max="10" value="3">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="matkulDosen">Dosen Pengampu (Opsional)</label>
+          <input type="text" id="matkulDosen" class="custom-input" placeholder="Contoh: Dr. Budi Santoso, M.Kom.">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="matkulJadwal">Jadwal / Hari & Jam (Opsional)</label>
+            <input type="text" id="matkulJadwal" class="custom-input" placeholder="Contoh: Senin, 08:00 - 10:30">
+          </div>
+
+          <div class="form-group">
+            <label for="matkulRuangan">Ruangan / Tautan Kelas (Opsional)</label>
+            <input type="text" id="matkulRuangan" class="custom-input" placeholder="Contoh: Lab Komputer 3 / Zoom">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Pilih Warna Aksen</label>
+          <div class="color-picker-row">
+            <label class="color-radio">
+              <input type="radio" name="matkulWarna" value="#4f46e5" checked>
+              <span class="color-circle" style="background-color: #4f46e5;" title="Indigo"></span>
+            </label>
+            <label class="color-radio">
+              <input type="radio" name="matkulWarna" value="#06b6d4">
+              <span class="color-circle" style="background-color: #06b6d4;" title="Cyan"></span>
+            </label>
+            <label class="color-radio">
+              <input type="radio" name="matkulWarna" value="#10b981">
+              <span class="color-circle" style="background-color: #10b981;" title="Emerald"></span>
+            </label>
+            <label class="color-radio">
+              <input type="radio" name="matkulWarna" value="#f59e0b">
+              <span class="color-circle" style="background-color: #f59e0b;" title="Amber"></span>
+            </label>
+            <label class="color-radio">
+              <input type="radio" name="matkulWarna" value="#ec4899">
+              <span class="color-circle" style="background-color: #ec4899;" title="Pink"></span>
+            </label>
+            <label class="color-radio">
+              <input type="radio" name="matkulWarna" value="#8b5cf6">
+              <span class="color-circle" style="background-color: #8b5cf6;" title="Purple"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="dialog-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeMatkulModal()">Batal</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitMatkul">Simpan Mata Kuliah</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- ========================================================
+       MODAL 4: PENGATURAN CLOUD SYNC (FIREBASE)
+       ======================================================== -->
+  <dialog class="app-dialog" id="cloudModal">
+    <div class="dialog-box">
+      <div class="dialog-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <h3 class="dialog-title">Sinkronisasi Cloud (Firebase)</h3>
+          <span class="status-pill warning" id="cloudModalStatusBadge">🟡 Mode Lokal</span>
+        </div>
+        <button class="icon-btn btn-close-dialog" onclick="closeCloudModal()">
+          <i data-feather="x"></i>
+        </button>
+      </div>
+
+      <div class="dialog-form" style="gap: 16px;">
+        <div class="cloud-info-card">
+          <div class="cloud-info-icon">
+            <i data-feather="smartphone"></i>
+            <i data-feather="refresh-cw"></i>
+            <i data-feather="monitor"></i>
+          </div>
+          <div class="cloud-info-text">
+            <h4>Sinkronisasi Otomatis Antar Perangkat</h4>
+            <p>
+              Dengan menghubungkan Firebase, semua tugas, materi, dan berkas yang Anda catat di Laptop akan <strong>otomatis tersimpan di Cloud dan muncul di HP Anda</strong> secara real-time!
+            </p>
+          </div>
+        </div>
+
+        <div class="cloud-status-detail-box">
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Status Koneksi:</span>
+          <span id="cloudModalStatusText" style="font-weight: 600; font-size: 0.86rem;">Mode Lokal (Belum Terhubung)</span>
+        </div>
+
+        <div class="cloud-config-form">
+          <label style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px;">
+            Tempelkan (Paste) Firebase Config JSON Anda:
+          </label>
+          <textarea id="firebaseConfigInput" class="custom-textarea" rows="6" placeholder='Contoh:
+{
+  "apiKey": "AIzaSy...",
+  "authDomain": "projek-kuliah.firebaseapp.com",
+  "projectId": "projek-kuliah",
+  "storageBucket": "projek-kuliah.appspot.com",
+  "messagingSenderId": "...",
+  "appId": "..."
+}'></textarea>
+          <span style="font-size: 0.74rem; color: var(--text-subtle); margin-top: 4px; display: block;">
+            💡 Kode ini didapat gratis dari <strong>Firebase Console</strong> > Project Overview > Web App (<code>&lt;/&gt;</code>).
+          </span>
+        </div>
+
+        <div class="cloud-modal-actions">
+          <button type="button" class="btn btn-primary" id="btnSaveFirebaseConfig" style="flex: 1;">
+            <i data-feather="check-circle"></i>
+            <span>Simpan & Hubungkan</span>
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnSyncAllToCloud" title="Unggah data tugas/materi yang ada di browser ini ke Cloud">
+            <i data-feather="upload-cloud"></i>
+            <span>Sinkron Data Lokal</span>
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnDisconnectFirebase" style="color: var(--rose);" title="Putuskan koneksi cloud dan kembali ke mode lokal">
+            <i data-feather="power"></i>
+            <span>Putuskan</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ========================================================
+       MODAL 5: GANTI KATA SANDI (CHANGE PASSWORD)
+       ======================================================== -->
+  <dialog class="app-dialog" id="changePasswordModal">
+    <div class="dialog-box">
+      <div class="dialog-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i data-feather="shield" style="color: var(--primary);"></i>
+          <h3 class="dialog-title">Ganti Kata Sandi Portal</h3>
+        </div>
+        <button class="icon-btn btn-close-dialog" onclick="closeChangePasswordModal()">
+          <i data-feather="x"></i>
+        </button>
+      </div>
+
+      <form id="changePasswordForm" class="dialog-form">
+        <div class="form-group">
+          <label for="oldPasswordInput">Kata Sandi Saat Ini *</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="oldPasswordInput" class="custom-input password-field" placeholder="Masukkan sandi saat ini..." required>
+            <button type="button" class="btn-toggle-pwd" onclick="togglePasswordInput('oldPasswordInput', this)" title="Lihat Sandi">
+              <i data-feather="eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="newPasswordInput">Kata Sandi Baru *</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="newPasswordInput" class="custom-input password-field" placeholder="Minimal 6 karakter..." required minlength="6">
+            <button type="button" class="btn-toggle-pwd" onclick="togglePasswordInput('newPasswordInput', this)" title="Lihat Sandi">
+              <i data-feather="eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmNewPasswordInput">Konfirmasi Kata Sandi Baru *</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="confirmNewPasswordInput" class="custom-input password-field" placeholder="Ketik ulang sandi baru..." required minlength="6">
+            <button type="button" class="btn-toggle-pwd" onclick="togglePasswordInput('confirmNewPasswordInput', this)" title="Lihat Sandi">
+              <i data-feather="eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="dialog-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeChangePasswordModal()">Batal</button>
+          <button type="submit" class="btn btn-primary" id="btnSaveNewPassword">Simpan Sandi Baru</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Container Notifikasi Toast -->
+  <div class="toast-wrapper" id="toastWrapper"></div>
+
+  <!-- Firebase SDKs (Compat version - tanpa npm/bundler, langsung aktif) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+  <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
+  <script src="firebase-config.js"></script>
+
+  <!-- JavaScript Logika Aplikasi -->
+  <script src="app.js"></script>
+</body>
+</html>
