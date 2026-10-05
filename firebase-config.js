@@ -150,13 +150,21 @@ function setupRealtimeListeners() {
 
     const cloudData = [];
     snapshot.forEach(doc => {
-      cloudData.push({ id: doc.id, ...doc.data() });
+      const data = doc.data();
+      if (data && (data.nama || data.kode)) {
+        cloudData.push({ id: doc.id, ...data });
+      }
     });
 
     matkulList = cloudData;
     saveStorage();
-    renderMatkul();
-    renderCourseFilters();
+    try {
+      renderMatkul();
+      renderCourseFilters();
+      if (window.feather) feather.replace();
+    } catch (e) {
+      console.warn('Gagal merender matkul dari cloud:', e);
+    }
   }, (err) => console.error('Error listener matkul:', err));
 
   // 2. Listener Tugas Kuliah
@@ -170,14 +178,22 @@ function setupRealtimeListeners() {
 
     const cloudData = [];
     snapshot.forEach(doc => {
-      cloudData.push({ id: doc.id, ...doc.data() });
+      const data = doc.data();
+      if (data && (data.judul || data.matkul)) {
+        cloudData.push({ id: doc.id, ...data });
+      }
     });
 
     tugasList = cloudData;
     saveStorage();
-    renderCourseFilters();
-    renderTugas();
-    renderOverviewUrgent();
+    try {
+      renderCourseFilters();
+      renderTugas();
+      renderOverviewUrgent();
+      if (window.feather) feather.replace();
+    } catch (e) {
+      console.warn('Gagal merender tugas dari cloud:', e);
+    }
   }, (err) => console.error('Error listener tugas:', err));
 
   // 3. Listener Materi Kuliah
@@ -191,13 +207,21 @@ function setupRealtimeListeners() {
 
     const cloudData = [];
     snapshot.forEach(doc => {
-      cloudData.push({ id: doc.id, ...doc.data() });
+      const data = doc.data();
+      if (data && (data.judul || data.matkul)) {
+        cloudData.push({ id: doc.id, ...data });
+      }
     });
 
     materiList = cloudData;
     saveStorage();
-    renderMateri();
-    renderOverviewRecentMaterials();
+    try {
+      renderMateri();
+      renderOverviewRecentMaterials();
+      if (window.feather) feather.replace();
+    } catch (e) {
+      console.warn('Gagal merender materi dari cloud:', e);
+    }
   }, (err) => console.error('Error listener materi:', err));
 }
 

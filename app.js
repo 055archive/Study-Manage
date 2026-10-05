@@ -118,7 +118,17 @@ function loadFromStorage(key, defaultData) {
   const saved = localStorage.getItem(key);
   if (saved) {
     try {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        const cleaned = parsed.filter(item => {
+          if (!item || typeof item !== 'object') return false;
+          if (key === MATKUL_STORAGE_KEY) return !!item.nama;
+          if (key === TUGAS_STORAGE_KEY) return !!item.judul && !!item.matkul;
+          if (key === MATERI_STORAGE_KEY) return !!item.judul && !!item.matkul;
+          return true;
+        });
+        return cleaned;
+      }
     } catch (e) {
       console.error(`Gagal mengurai ${key}:`, e);
     }
@@ -672,16 +682,18 @@ navTabButtons.forEach(btn => {
 
 function getAllMataKuliahList() {
   const set = new Set();
-  matkulList.forEach(m => m.nama && set.add(m.nama.trim()));
-  tugasList.forEach(t => t.matkul && set.add(t.matkul.trim()));
-  materiList.forEach(m => m.matkul && set.add(m.matkul.trim()));
+  matkulList.forEach(m => m && m.nama && set.add(m.nama.trim()));
+  tugasList.forEach(t => t && t.matkul && set.add(t.matkul.trim()));
+  materiList.forEach(m => m && m.matkul && set.add(m.matkul.trim()));
   return Array.from(set).sort();
 }
 
 const COURSE_COLORS = ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
 
 function getCourseColor(courseName) {
-  const found = matkulList.find(m => m.nama.toLowerCase() === courseName.toLowerCase());
+  if (!courseName) return '#4f46e5';
+  const target = courseName.toLowerCase().trim();
+  const found = matkulList.find(m => m && m.nama && m.nama.toLowerCase().trim() === target);
   if (found && found.warna) return found.warna;
   let hash = 0;
   for (let i = 0; i < courseName.length; i++) hash = courseName.charCodeAt(i) + ((hash << 5) - hash);
@@ -775,18 +787,23 @@ function renderTugas() {
   const query = (searchTugasInput.value || globalSearchInput.value).toLowerCase().trim();
 
   const filtered = tugasList.filter(item => {
+    if (!item) return false;
+    const itemMatkul = (item.matkul || '').toLowerCase().trim();
+    const itemJudul = (item.judul || '').toLowerCase();
+    const itemDeskripsi = (item.deskripsi || '').toLowerCase();
+
     // Pencocokan kebal huruf besar/kecil (case-insensitive) & spasi
     const matchMatkul = matkul === 'ALL' ||
-      item.matkul.toLowerCase().trim() === matkul.toLowerCase().trim();
+      itemMatkul === matkul.toLowerCase().trim();
 
     const matchStatus = status === 'ALL' ||
       (status === 'COMPLETED' && item.completed) ||
       (status === 'PENDING' && !item.completed);
 
     const matchQuery =
-      item.judul.toLowerCase().includes(query) ||
-      item.matkul.toLowerCase().includes(query) ||
-      (item.deskripsi && item.deskripsi.toLowerCase().includes(query));
+      itemJudul.includes(query) ||
+      itemMatkul.includes(query) ||
+      itemDeskripsi.includes(query);
 
     return matchMatkul && matchStatus && matchQuery;
   });
@@ -811,16 +828,16 @@ function renderTugas() {
 
       card.innerHTML = `
         <div class="task-card-top">
-          <span class="matkul-pill" style="border-left: 3px solid ${getCourseColor(task.matkul)};">
+          <span class="matkul-pill" style="border-left: 3px solid ${getCourseColor(task.matkul || '')};">
             <i data-feather="book"></i>
-            ${escapeHtml(task.matkul)}
+            ${escapeHtml(task.matkul || '-')}
           </span>
-          <span class="task-priority-badge ${task.prioritas.toLowerCase()}">
-            ${task.prioritas}
+          <span class="task-priority-badge ${(task.prioritas || 'Sedang').toLowerCase()}">
+            ${task.prioritas || 'Sedang'}
           </span>
         </div>
 
-        <h3 class="task-title">${escapeHtml(task.judul)}</h3>
+        <h3 class="task-title">${escapeHtml(task.judul || 'Tanpa Judul')}</h3>
         <p class="task-desc">${escapeHtml(task.deskripsi || 'Tidak ada catatan tambahan.')}</p>
 
         <div class="task-deadline-badge ${deadlineInfo.type}">
@@ -904,14 +921,19 @@ function renderMateri() {
   const query = (searchMateriInput.value || globalSearchInput.value).toLowerCase().trim();
 
   const filtered = materiList.filter(item => {
+    if (!item) return false;
+    const itemMatkul = (item.matkul || '').toLowerCase().trim();
+    const itemJudul = (item.judul || '').toLowerCase();
+    const itemCatatan = (item.catatan || '').toLowerCase();
+
     const matchMatkul = matkul === 'ALL' ||
-      item.matkul.toLowerCase().trim() === matkul.toLowerCase().trim();
+      itemMatkul === matkul.toLowerCase().trim();
 
     const matchQuery =
-      item.judul.toLowerCase().includes(query) ||
-      item.matkul.toLowerCase().includes(query) ||
-      `pertemuan ${item.pertemuan}`.includes(query) ||
-      (item.catatan && item.catatan.toLowerCase().includes(query));
+      itemJudul.includes(query) ||
+      itemMatkul.includes(query) ||
+      `pertemuan ${item.pertemuan || ''}`.includes(query) ||
+      itemCatatan.includes(query);
 
     return matchMatkul && matchQuery;
   });
@@ -942,8 +964,8 @@ function renderMateri() {
           </span>
         </div>
 
-        <h3 class="materi-title">${escapeHtml(m.judul)}</h3>
-        <span class="materi-matkul-tag" style="color: ${getCourseColor(m.matkul)};">📚 ${escapeHtml(m.matkul)}</span>
+        <h3 class="materi-title">${escapeHtml(m.judul || 'Tanpa Judul')}</h3>
+        <span class="materi-matkul-tag" style="color: ${getCourseColor(m.matkul || '')};">📚 ${escapeHtml(m.matkul || '-')}</span>
 
         <div class="materi-summary-box">
           ${escapeHtml(m.catatan || 'Belum ada catatan materi.')}
@@ -1051,7 +1073,9 @@ function renderOverviewUrgent() {
   }
 
   topUrgent.forEach(task => {
+    if (!task) return;
     const deadlineInfo = calculateDeadlineInfo(task.deadline);
+    const prioritas = task.prioritas || 'Sedang';
     const card = document.createElement('div');
     card.className = 'task-card';
 
@@ -1059,12 +1083,12 @@ function renderOverviewUrgent() {
       <div class="task-card-top">
         <span class="matkul-pill">
           <i data-feather="book"></i>
-          ${escapeHtml(task.matkul)}
+          ${escapeHtml(task.matkul || '-')}
         </span>
-        <span class="task-priority-badge ${task.prioritas.toLowerCase()}">${task.prioritas}</span>
+        <span class="task-priority-badge ${prioritas.toLowerCase()}">${prioritas}</span>
       </div>
 
-      <h3 class="task-title">${escapeHtml(task.judul)}</h3>
+      <h3 class="task-title">${escapeHtml(task.judul || 'Tanpa Judul')}</h3>
 
       <div class="task-deadline-badge ${deadlineInfo.type}">
         <i data-feather="clock"></i>
@@ -1096,7 +1120,7 @@ function renderOverviewUrgent() {
 }
 
 function renderOverviewRecentMaterials() {
-  const sorted = [...materiList].sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+  const sorted = [...materiList].sort((a, b) => new Date(b.tanggal || 0) - new Date(a.tanggal || 0));
   const recent = sorted.slice(0, 3);
   recentMaterialsContainer.innerHTML = '';
 
@@ -1110,16 +1134,17 @@ function renderOverviewRecentMaterials() {
   }
 
   recent.forEach(m => {
+    if (!m) return;
     const card = document.createElement('div');
     card.className = 'materi-card';
 
     card.innerHTML = `
       <div class="materi-card-header">
-        <span class="pertemuan-pill">Pertemuan ${m.pertemuan}</span>
+        <span class="pertemuan-pill">Pertemuan ${m.pertemuan || 1}</span>
         <span class="materi-date">${formatIndoDate(m.tanggal)}</span>
       </div>
-      <h3 class="materi-title">${escapeHtml(m.judul)}</h3>
-      <span class="materi-matkul-tag">📚 ${escapeHtml(m.matkul)}</span>
+      <h3 class="materi-title">${escapeHtml(m.judul || 'Tanpa Judul')}</h3>
+      <span class="materi-matkul-tag">📚 ${escapeHtml(m.matkul || '-')}</span>
 
       <div class="card-attachment-area">
         ${m.file ? `
@@ -1658,9 +1683,11 @@ function renderMatkul() {
     matkulGridContainer.innerHTML = '';
 
     matkulList.forEach(course => {
-      // Hitung tugas & materi untuk mata kuliah ini (case-insensitive)
-      const activeTasks = tugasList.filter(t => t.matkul.toLowerCase().trim() === course.nama.toLowerCase().trim() && !t.completed).length;
-      const totalMaterials = materiList.filter(m => m.matkul.toLowerCase().trim() === course.nama.toLowerCase().trim()).length;
+      if (!course || !course.nama) return;
+      const courseName = (course.nama || '').toLowerCase().trim();
+      // Hitung tugas & materi untuk mata kuliah ini (case-insensitive & null-safe)
+      const activeTasks = tugasList.filter(t => t && t.matkul && t.matkul.toLowerCase().trim() === courseName && !t.completed).length;
+      const totalMaterials = materiList.filter(m => m && m.matkul && m.matkul.toLowerCase().trim() === courseName).length;
 
       const card = document.createElement('div');
       card.className = 'course-card-full';
@@ -2255,18 +2282,22 @@ document.addEventListener('DOMContentLoaded', () => {
     year: 'numeric'
   });
 
-  renderMatkul();
-  renderCourseFilters();
-  renderTugas();
-  renderMateri();
+  try { renderMatkul(); } catch (e) { console.warn('Init renderMatkul error:', e); }
+  try { renderCourseFilters(); } catch (e) { console.warn('Init renderCourseFilters error:', e); }
+  try { renderTugas(); } catch (e) { console.warn('Init renderTugas error:', e); }
+  try { renderMateri(); } catch (e) { console.warn('Init renderMateri error:', e); }
 
   // Coba hubungkan ke Firebase jika config sudah ada
   if (typeof initFirebase === 'function') {
-    initFirebase();
+    try {
+      initFirebase();
+    } catch (e) {
+      console.warn('initFirebase invocation error:', e);
+    }
   }
 
   // Periksa autentikasi (Layar Kunci Sandi)
-  checkAuthStatus();
+  try { checkAuthStatus(); } catch (e) { console.warn('checkAuthStatus error:', e); }
 
-  feather.replace();
+  try { feather.replace(); } catch (e) { console.warn('feather.replace error:', e); }
 });
