@@ -7,12 +7,13 @@
 // Anda bisa menempelkan (paste) config dari Firebase Console di sini,
 // atau mengisinya lewat tombol "Cloud Sync" di halaman web.
 const DEFAULT_FIREBASE_CONFIG = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
+  apiKey: "AIzaSyAMAn6gIvFDRH-pZpAfGnB09fw6LGazxTc",
+  authDomain: "study-manage-56252.firebaseapp.com",
+  projectId: "study-manage-56252",
+  storageBucket: "study-manage-56252.firebasestorage.app",
+  messagingSenderId: "563456500355",
+  appId: "1:563456500355:web:90b7c0205a8a21a7d7b1b6",
+  measurementId: "G-MMZM4JRVSJ"
 };
 
 // Key storage untuk menyimpan config yang diinput lewat browser
@@ -80,7 +81,12 @@ function initFirebase() {
     });
 
     if (config.storageBucket && firebase.storage) {
-      firebaseStorage = firebase.storage();
+      try {
+        firebaseStorage = firebase.storage();
+      } catch (stErr) {
+        console.warn('Firebase Storage belum aktif (menggunakan Firestore & IndexedDB):', stErr);
+        firebaseStorage = null;
+      }
     }
 
     isFirebaseConnected = true;
@@ -136,7 +142,6 @@ function setupRealtimeListeners() {
   // 1. Listener Mata Kuliah
   firestoreDb.collection('matkul').onSnapshot((snapshot) => {
     if (snapshot.empty && isInitialSyncMatkul) {
-      // Jika di cloud masih kosong, unggah data lokal pertama kali
       uploadInitialCollection('matkul', matkulList);
       isInitialSyncMatkul = false;
       return;
@@ -148,12 +153,10 @@ function setupRealtimeListeners() {
       cloudData.push({ id: doc.id, ...doc.data() });
     });
 
-    if (cloudData.length > 0) {
-      matkulList = cloudData;
-      saveStorage();
-      renderMatkul();
-      renderCourseFilters();
-    }
+    matkulList = cloudData;
+    saveStorage();
+    renderMatkul();
+    renderCourseFilters();
   }, (err) => console.error('Error listener matkul:', err));
 
   // 2. Listener Tugas Kuliah
@@ -170,12 +173,11 @@ function setupRealtimeListeners() {
       cloudData.push({ id: doc.id, ...doc.data() });
     });
 
-    if (cloudData.length > 0) {
-      tugasList = cloudData;
-      saveStorage();
-      renderTugas();
-      renderOverviewUrgent();
-    }
+    tugasList = cloudData;
+    saveStorage();
+    renderCourseFilters();
+    renderTugas();
+    renderOverviewUrgent();
   }, (err) => console.error('Error listener tugas:', err));
 
   // 3. Listener Materi Kuliah
@@ -192,12 +194,10 @@ function setupRealtimeListeners() {
       cloudData.push({ id: doc.id, ...doc.data() });
     });
 
-    if (cloudData.length > 0) {
-      materiList = cloudData;
-      saveStorage();
-      renderMateri();
-      renderOverviewRecentMaterials();
-    }
+    materiList = cloudData;
+    saveStorage();
+    renderMateri();
+    renderOverviewRecentMaterials();
   }, (err) => console.error('Error listener materi:', err));
 }
 

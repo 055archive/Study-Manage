@@ -872,6 +872,9 @@ window.toggleTugasComplete = function(id) {
     renderTugas();
     renderOverviewUrgent();
     showToast(task.completed ? 'Tugas ditandai selesai! 🎉' : 'Tugas dikembalikan ke belum selesai', 'success');
+    if (typeof syncTugasToCloud === 'function') {
+      syncTugasToCloud(task);
+    }
   }
 };
 
@@ -883,6 +886,9 @@ window.deleteTugas = async function(id) {
     }
     tugasList = tugasList.filter(t => t.id !== id);
     saveStorage();
+    if (typeof deleteTugasFromCloud === 'function') {
+      deleteTugasFromCloud(id);
+    }
     renderCourseFilters();
     renderTugas();
     renderOverviewUrgent();
@@ -989,6 +995,9 @@ window.deleteMateri = async function(id) {
     }
     materiList = materiList.filter(m => m.id !== id);
     saveStorage();
+    if (typeof deleteMateriFromCloud === 'function') {
+      deleteMateriFromCloud(id);
+    }
     renderCourseFilters();
     renderMateri();
     renderOverviewRecentMaterials();
