@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyManage - Portal Tugas & Materi Kuliah</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2.2">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -475,8 +475,8 @@
         <input type="hidden" id="editTugasId" value="">
 
         <div class="form-group">
-          <label for="tugasJudul">Nama / Judul Tugas *</label>
-          <input type="text" id="tugasJudul" class="custom-input" placeholder="Contoh: Makalah Sistem Terdistribusi" required>
+          <label for="tugasJudul">Nama / Judul Tugas (Opsional - otomatis dari berkas/matkul)</label>
+          <input type="text" id="tugasJudul" class="custom-input" placeholder="Contoh: Makalah Sistem Terdistribusi (atau biarkan kosong jika ada berkas)">
         </div>
 
         <div class="form-row">
@@ -520,7 +520,7 @@
           <div class="file-upload-container" id="tugasUploadContainer">
             <input type="file" id="tugasFileInput" class="file-input-hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.png,.jpg,.jpeg,.txt">
             
-            <div class="file-dropzone" id="tugasDropzone" role="button" tabindex="0">
+            <label class="file-dropzone" for="tugasFileInput" id="tugasDropzone" role="button" tabindex="0">
               <div class="dropzone-icon">
                 <i data-feather="upload-cloud"></i>
               </div>
@@ -528,7 +528,7 @@
                 <p class="dropzone-main"><strong>Klik untuk pilih berkas tugas</strong> atau seret ke sini</p>
                 <p class="dropzone-sub">PDF soal, Word, spreadsheet, ZIP, atau foto tugas (Maks. 25MB)</p>
               </div>
-            </div>
+            </label>
 
             <div class="file-preview-card" id="tugasFilePreview" style="display: none;">
               <div class="file-preview-left">
@@ -576,8 +576,8 @@
         <input type="hidden" id="editMateriId" value="">
 
         <div class="form-group">
-          <label for="materiJudul">Judul / Topik Bahasan *</label>
-          <input type="text" id="materiJudul" class="custom-input" placeholder="Contoh: Normalisasi Basis Data 1NF sampai 3NF" required>
+          <label for="materiJudul">Judul / Topik Bahasan (Opsional - otomatis terisi dari nama berkas/pertemuan)</label>
+          <input type="text" id="materiJudul" class="custom-input" placeholder="Contoh: Normalisasi Basis Data (atau biarkan kosong jika ada berkas)">
         </div>
 
         <div class="form-row">
@@ -587,14 +587,14 @@
           </div>
 
           <div class="form-group">
-            <label for="materiPertemuan">Pertemuan Ke- *</label>
-            <input type="number" id="materiPertemuan" class="custom-input" placeholder="Contoh: 3" min="1" max="32" required>
+            <label for="materiPertemuan">Pertemuan Ke-</label>
+            <input type="number" id="materiPertemuan" class="custom-input" placeholder="Contoh: 3" min="1" max="32" value="1">
           </div>
         </div>
 
         <div class="form-group">
-          <label for="materiTanggal">Tanggal Perkuliahan *</label>
-          <input type="date" id="materiTanggal" class="custom-input" required>
+          <label for="materiTanggal">Tanggal Perkuliahan</label>
+          <input type="date" id="materiTanggal" class="custom-input">
         </div>
 
         <div class="form-group">
@@ -602,7 +602,7 @@
           <div class="file-upload-container" id="materiUploadContainer">
             <input type="file" id="materiFileInput" class="file-input-hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.png,.jpg,.jpeg,.txt">
             
-            <div class="file-dropzone" id="materiDropzone" role="button" tabindex="0">
+            <label class="file-dropzone" for="materiFileInput" id="materiDropzone" role="button" tabindex="0">
               <div class="dropzone-icon">
                 <i data-feather="upload-cloud"></i>
               </div>
@@ -610,7 +610,7 @@
                 <p class="dropzone-main"><strong>Klik untuk pilih berkas materi</strong> atau seret ke sini</p>
                 <p class="dropzone-sub">PDF, PowerPoint (PPTX), Word (DOCX), Excel, ZIP, atau Gambar (Maks. 25MB)</p>
               </div>
-            </div>
+            </label>
 
             <div class="file-preview-card" id="materiFilePreview" style="display: none;">
               <div class="file-preview-left">
@@ -881,9 +881,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js"></script>
+  <script src="firebase-config.js?v=2.2"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js"></script>
+  <script src="app.js?v=2.2"></script>
 </body>
 </html>

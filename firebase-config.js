@@ -330,8 +330,12 @@ async function uploadFileToFirebaseStorage(fileBlobOrDataUrl, fileName, fileId) 
     const storagePath = `portal-kuliah/${fileId}_${fileName}`;
     const storageRef = firebaseStorage.ref().child(storagePath);
     
-    // Unggah blob
-    const snapshot = await storageRef.put(blob);
+    // Unggah blob dengan batas waktu 4 detik agar tidak menggantung UI jika Storage belum aktif di Firebase Console
+    const uploadPromise = storageRef.put(blob);
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Firebase Storage timeout (menggunakan penyimpanan lokal)')), 4000)
+    );
+    const snapshot = await Promise.race([uploadPromise, timeoutPromise]);
     const downloadUrl = await snapshot.ref.getDownloadURL();
 
     console.log('✅ File berhasil diunggah ke Firebase Storage:', downloadUrl);
@@ -341,7 +345,7 @@ async function uploadFileToFirebaseStorage(fileBlobOrDataUrl, fileName, fileId) 
       path: storagePath
     };
   } catch (err) {
-    console.warn('Gagal unggah ke Firebase Storage, tetap simpan lokal:', err);
+    console.warn('Firebase Storage dilewati (file disimpan di IndexedDB lokal browser):', err.message);
     return null;
   }
 }

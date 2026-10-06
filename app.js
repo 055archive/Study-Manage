@@ -416,9 +416,11 @@ function setupFileUploader({
 }) {
   if (!dropzone || !fileInput) return { renderPreviewUI: () => {} };
 
-  dropzone.addEventListener('click', () => {
-    fileInput.value = '';
-    fileInput.click();
+  // Pastikan klik pada dropzone selalu membuka file chooser di semua tipe elemen & browser
+  dropzone.addEventListener('click', (e) => {
+    if (dropzone.tagName.toLowerCase() !== 'label') {
+      fileInput.click();
+    }
   });
 
   dropzone.addEventListener('keydown', (e) => {
@@ -455,6 +457,8 @@ function setupFileUploader({
     if (e.target.files && e.target.files.length > 0) {
       processSelectedFile(e.target.files[0]);
     }
+    // Reset file input agar memilih berkas yang sama berturut-turut tetap memicu event change
+    fileInput.value = '';
   });
 
   function processSelectedFile(file) {
@@ -462,6 +466,19 @@ function setupFileUploader({
     if (file.size > maxBytes) {
       showToast('Ukuran berkas melebihi batas maksimal 25MB!', 'danger');
       return;
+    }
+
+    const cleanName = file.name.replace(/\.[^/.]+$/, "");
+    if (fileInput.id === 'materiFileInput') {
+      const judulInp = document.getElementById('materiJudul');
+      if (judulInp && !judulInp.value.trim()) {
+        judulInp.value = cleanName;
+      }
+    } else if (fileInput.id === 'tugasFileInput') {
+      const tugasJudulInp = document.getElementById('tugasJudul');
+      if (tugasJudulInp && !tugasJudulInp.value.trim()) {
+        tugasJudulInp.value = cleanName;
+      }
     }
 
     const reader = new FileReader();
@@ -1260,6 +1277,7 @@ function openAddMateriModal() {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('materiTanggal').value = today;
   materiModal.showModal();
+  materiForm.scrollTop = 0;
 }
 
 function openEditMateriModal(id) {
@@ -1367,30 +1385,53 @@ if (btnOpenModalMatkul) {
 tugasForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const judul = document.getElementById('tugasJudul').value.trim();
+  let judul = document.getElementById('tugasJudul').value.trim();
   const matkul = document.getElementById('tugasMatkul').value.trim();
-  const prioritas = document.getElementById('tugasPrioritas').value;
+  const prioritas = document.getElementById('tugasPrioritas').value || 'Sedang';
   const date = document.getElementById('tugasDeadlineDate').value;
   const time = document.getElementById('tugasDeadlineTime').value || '23:59';
   const deskripsi = document.getElementById('tugasDeskripsi').value.trim();
   const editId = editTugasId ? editTugasId.value : '';
 
-  if (!judul || !matkul || !date) {
-    showToast('Mohon lengkapi judul, mata kuliah, dan deadline', 'danger');
+  if (!matkul) {
+    showToast('Mohon pilih atau isi nama Mata Kuliah!', 'danger');
+    document.getElementById('tugasMatkul').focus();
     return;
   }
 
-  // Simpan berkas lampiran jika ada
-  let fileMeta = null;
-  if (stagedTugasFile) {
-    if (stagedTugasFile.isNew) {
-      await saveUploadedFile(stagedTugasFile);
+  if (!judul) {
+    if (stagedTugasFile && stagedTugasFile.name) {
+      judul = stagedTugasFile.name.replace(/\.[^/.]+$/, "");
+    } else {
+      judul = `Tugas - ${matkul}`;
+    }
+  }
 
-      // Jika Firebase aktif, unggah juga ke Firebase Cloud Storage
-      let cloudFile = null;
-      if (typeof uploadFileToFirebaseStorage === 'function') {
-        cloudFile = await uploadFileToFirebaseStorage(stagedTugasFile.data, stagedTugasFile.name, stagedTugasFile.id);
-      }
+  if (!date) {
+    showToast('Mohon tentukan tanggal deadline!', 'danger');
+    document.getElementById('tugasDeadlineDate').focus();
+    return;
+  }
+
+  const submitBtn = btnSubmitTugas || tugasForm.querySelector('button[type="submit"]');
+  const originalBtnText = submitBtn ? submitBtn.textContent : 'Simpan Tugas';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Menyimpan... ⏳';
+  }
+
+  try {
+    // Simpan berkas lampiran jika ada
+    let fileMeta = null;
+    if (stagedTugasFile) {
+      if (stagedTugasFile.isNew) {
+        await saveUploadedFile(stagedTugasFile);
+
+        // Jika Firebase aktif, unggah juga ke Firebase Cloud Storage
+        let cloudFile = null;
+        if (typeof uploadFileToFirebaseStorage === 'function') {
+          cloudFile = await uploadFileToFirebaseStorage(stagedTugasFile.data, stagedTugasFile.name, stagedTugasFile.id);
+        }
 
       fileMeta = {
         id: stagedTugasFile.id,
@@ -1454,78 +1495,121 @@ tugasForm.addEventListener('submit', async (e) => {
     showToast('Tugas baru berhasil disimpan! 📋', 'success');
   }
 
-  saveStorage();
-  if (savedTask && typeof syncTugasToCloud === 'function') {
-    syncTugasToCloud(savedTask);
+    saveStorage();
+    if (savedTask && typeof syncTugasToCloud === 'function') {
+      syncTugasToCloud(savedTask);
+    }
+    renderCourseFilters();
+    renderTugas();
+    renderOverviewUrgent();
+    tugasModal.close();
+  } catch (err) {
+    console.error('Gagal menyimpan tugas:', err);
+    showToast('Terjadi kesalahan: ' + err.message, 'danger');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalBtnText;
+    }
   }
-  renderCourseFilters();
-  renderTugas();
-  tugasModal.close();
 });
 
 // SUBMIT MATERI (ADD & EDIT)
 materiForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const judul = document.getElementById('materiJudul').value.trim();
+  let judul = document.getElementById('materiJudul').value.trim();
   const matkul = document.getElementById('materiMatkul').value.trim();
-  const pertemuan = Number(document.getElementById('materiPertemuan').value);
-  const tanggal = document.getElementById('materiTanggal').value;
+  const pertemuan = Number(document.getElementById('materiPertemuan').value) || 1;
+  const tanggal = document.getElementById('materiTanggal').value || new Date().toISOString().split('T')[0];
   const link = document.getElementById('materiLink').value.trim();
   const catatan = document.getElementById('materiCatatan').value.trim();
   const editId = editMateriId ? editMateriId.value : '';
 
-  if (!judul || !matkul || !pertemuan || !tanggal) {
-    showToast('Mohon lengkapi judul, matkul, pertemuan, dan tanggal', 'danger');
+  if (!matkul) {
+    showToast('Mohon pilih atau isi nama Mata Kuliah!', 'danger');
+    document.getElementById('materiMatkul').focus();
     return;
   }
 
-  // Simpan berkas materi jika ada
-  let fileMeta = null;
-  if (stagedMateriFile) {
-    if (stagedMateriFile.isNew) {
-      await saveUploadedFile(stagedMateriFile);
-
-      let cloudFile = null;
-      if (typeof uploadFileToFirebaseStorage === 'function') {
-        cloudFile = await uploadFileToFirebaseStorage(stagedMateriFile.data, stagedMateriFile.name, stagedMateriFile.id);
-      }
-
-      fileMeta = {
-        id: stagedMateriFile.id,
-        name: stagedMateriFile.name,
-        size: stagedMateriFile.size,
-        type: stagedMateriFile.type,
-        downloadUrl: cloudFile ? cloudFile.downloadUrl : '',
-        storagePath: cloudFile ? cloudFile.path : ''
-      };
-    } else if (stagedMateriFile.isExisting) {
-      fileMeta = {
-        id: stagedMateriFile.id,
-        name: stagedMateriFile.name,
-        size: stagedMateriFile.size,
-        type: stagedMateriFile.type,
-        downloadUrl: stagedMateriFile.downloadUrl || '',
-        storagePath: stagedMateriFile.storagePath || ''
-      };
+  // Jika judul kosong, otomatis buat judul dari nama file atau pertemuan
+  if (!judul) {
+    if (stagedMateriFile && stagedMateriFile.name) {
+      judul = stagedMateriFile.name.replace(/\.[^/.]+$/, "");
+    } else {
+      judul = `Materi Pertemuan ${pertemuan}${matkul ? ' - ' + matkul : ''}`;
     }
   }
 
-  let savedMateri = null;
-  if (editId) {
-    // Mode Edit
-    const materiIndex = materiList.findIndex(m => m.id === editId);
-    if (materiIndex !== -1) {
-      const oldMateri = materiList[materiIndex];
-      if (oldMateri.file && (!fileMeta || fileMeta.id !== oldMateri.file.id)) {
-        await deleteUploadedFile(oldMateri.file.id);
-        if (oldMateri.file.storagePath && typeof deleteFileFromFirebaseStorage === 'function') {
-          await deleteFileFromFirebaseStorage(oldMateri.file.storagePath);
-        }
-      }
+  const submitBtn = btnSubmitMateri || materiForm.querySelector('button[type="submit"]');
+  const originalBtnText = submitBtn ? submitBtn.textContent : 'Simpan Materi';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Menyimpan... ⏳';
+  }
 
-      materiList[materiIndex] = {
-        ...oldMateri,
+  try {
+    // Simpan berkas materi jika ada
+    let fileMeta = null;
+    if (stagedMateriFile) {
+      if (stagedMateriFile.isNew) {
+        await saveUploadedFile(stagedMateriFile);
+
+        let cloudFile = null;
+        if (typeof uploadFileToFirebaseStorage === 'function') {
+          cloudFile = await uploadFileToFirebaseStorage(stagedMateriFile.data, stagedMateriFile.name, stagedMateriFile.id);
+        }
+
+        fileMeta = {
+          id: stagedMateriFile.id,
+          name: stagedMateriFile.name,
+          size: stagedMateriFile.size,
+          type: stagedMateriFile.type,
+          downloadUrl: cloudFile ? cloudFile.downloadUrl : '',
+          storagePath: cloudFile ? cloudFile.path : ''
+        };
+      } else if (stagedMateriFile.isExisting) {
+        fileMeta = {
+          id: stagedMateriFile.id,
+          name: stagedMateriFile.name,
+          size: stagedMateriFile.size,
+          type: stagedMateriFile.type,
+          downloadUrl: stagedMateriFile.downloadUrl || '',
+          storagePath: stagedMateriFile.storagePath || ''
+        };
+      }
+    }
+
+    let savedMateri = null;
+    if (editId) {
+      // Mode Edit
+      const materiIndex = materiList.findIndex(m => m.id === editId);
+      if (materiIndex !== -1) {
+        const oldMateri = materiList[materiIndex];
+        if (oldMateri.file && (!fileMeta || fileMeta.id !== oldMateri.file.id)) {
+          await deleteUploadedFile(oldMateri.file.id);
+          if (oldMateri.file.storagePath && typeof deleteFileFromFirebaseStorage === 'function') {
+            await deleteFileFromFirebaseStorage(oldMateri.file.storagePath);
+          }
+        }
+
+        materiList[materiIndex] = {
+          ...oldMateri,
+          judul,
+          matkul,
+          pertemuan,
+          tanggal,
+          link,
+          file: fileMeta,
+          catatan
+        };
+        savedMateri = materiList[materiIndex];
+        showToast(`Materi pertemuan ${pertemuan} diperbarui! ✏️`, 'success');
+      }
+    } else {
+      // Mode Tambah Baru
+      savedMateri = {
+        id: 'mat-' + Date.now(),
         judul,
         matkul,
         pertemuan,
@@ -1534,32 +1618,27 @@ materiForm.addEventListener('submit', async (e) => {
         file: fileMeta,
         catatan
       };
-      savedMateri = materiList[materiIndex];
-      showToast(`Materi pertemuan ${pertemuan} diperbarui! ✏️`, 'success');
+      materiList.unshift(savedMateri);
+      showToast(`Materi pertemuan ${pertemuan} berhasil disimpan! 📖`, 'success');
     }
-  } else {
-    // Mode Tambah Baru
-    savedMateri = {
-      id: 'mat-' + Date.now(),
-      judul,
-      matkul,
-      pertemuan,
-      tanggal,
-      link,
-      file: fileMeta,
-      catatan
-    };
-    materiList.unshift(savedMateri);
-    showToast(`Materi pertemuan ${pertemuan} berhasil disimpan! 📖`, 'success');
-  }
 
-  saveStorage();
-  if (savedMateri && typeof syncMateriToCloud === 'function') {
-    syncMateriToCloud(savedMateri);
+    saveStorage();
+    if (savedMateri && typeof syncMateriToCloud === 'function') {
+      syncMateriToCloud(savedMateri);
+    }
+    renderCourseFilters();
+    renderMateri();
+    renderOverviewRecentMaterials();
+    materiModal.close();
+  } catch (err) {
+    console.error('Gagal menyimpan materi:', err);
+    showToast('Terjadi kesalahan: ' + err.message, 'danger');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalBtnText;
+    }
   }
-  renderCourseFilters();
-  renderMateri();
-  materiModal.close();
 });
 
 // SUBMIT MATA KULIAH (ADD & EDIT DENGAN CASCADE UPDATE)
