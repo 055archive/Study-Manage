@@ -14,7 +14,7 @@
 // FIREBASE CONFIG & INSTANCE VARIABLES
 // ============================================================================
 const DEFAULT_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyAMAn6gIvFDRH-pZpAfGnB09fw6LGazxTc",
+  apiKey: "AIzaSyAmAN6gIvFDRH-pZpAfGnB09fw6LGazxTc",
   authDomain: "study-manage-56252.firebaseapp.com",
   projectId: "study-manage-56252",
   storageBucket: "study-manage-56252.firebasestorage.app",
@@ -23,7 +23,7 @@ const DEFAULT_FIREBASE_CONFIG = {
   measurementId: "G-MMZM4JRVSJ"
 };
 
-const FIREBASE_CONFIG_STORAGE_KEY = 'studysync_firebase_config_v1';
+const FIREBASE_CONFIG_STORAGE_KEY = 'studysync_firebase_config_v2';
 
 // Instance Firebase global
 let firebaseApp = null;
