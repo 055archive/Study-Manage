@@ -2568,16 +2568,34 @@ button, input, select, textarea {
   }
 
   .topbar-left {
-    gap: 8px;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+    min-width: 44px !important;
+  }
+
+  .menu-toggle {
+    display: flex !important;
+    flex-shrink: 0 !important;
+    width: 38px !important;
+    height: 38px !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
   /* Sembunyikan searchbox topbar di HP agar muat tombol aksi */
   .topbar .search-box {
-    display: none;
+    display: none !important;
   }
 
   .topbar-right {
-    gap: 6px;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 6px !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
   }
 
   .cloud-sync-btn {
@@ -2591,6 +2609,7 @@ button, input, select, textarea {
 
   .quick-add-group {
     gap: 4px;
+    flex-shrink: 0;
   }
 
   .quick-add-group .btn {
@@ -2624,7 +2643,6 @@ button, input, select, textarea {
   .btn-claim-admin-topbar,
   .admin-pill-badge,
   .btn-topbar-admin-badge,
-  .btn-topbar-exit-admin,
   .notif-bell-btn,
   .theme-btn {
     min-height: 36px;
@@ -2637,9 +2655,17 @@ button, input, select, textarea {
     font-size: 0.74rem;
   }
 
-  .btn-topbar-exit-admin {
-    padding: 6px 8px;
-    font-size: 0.72rem;
+  /* Lenyapkan tombol keluar dari topbar secara permanen */
+  .btn-topbar-exit-admin,
+  .topbar-admin-group .btn-topbar-exit-admin {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
   }
 
   .admin-pill-badge {
@@ -3347,41 +3373,17 @@ input:-webkit-autofill:active {
   height: 13px;
 }
 
-/* Tombol Keluar dari Mode Pengurus di Topbar */
-.btn-topbar-exit-admin {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 11px;
-  border-radius: 999px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  color: #ef4444;
-  font-size: 0.74rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all var(--transition);
-  touch-action: manipulation;
-}
-
-[data-theme="dark"] .btn-topbar-exit-admin {
-  color: #f87171;
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(248, 113, 113, 0.35);
-}
-
-.btn-topbar-exit-admin:hover,
-.btn-topbar-exit-admin:active {
-  background: #ef4444;
-  color: #ffffff;
-  border-color: #ef4444;
-  transform: scale(1.02);
-}
-
-.btn-topbar-exit-admin i {
-  width: 12px;
-  height: 12px;
+/* Tombol Keluar dari Mode Pengurus di Topbar (DITUTUP TOTAL - DIGANTI KE SIDEBAR) */
+.btn-topbar-exit-admin,
+.topbar-admin-group .btn-topbar-exit-admin {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
 }
 
 .btn-claim-admin-topbar {

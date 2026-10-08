@@ -4,13 +4,44 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyManage - Portal Tugas & Materi Kuliah</title>
-  <link rel="stylesheet" href="style.css?v=4.6">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <link rel="stylesheet" href="style.css?v=5.0">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Feather Icons -->
   <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    /* PERBAIKAN DARURAT: Hilangkan tombol keluar topbar & pastikan menu garis 3 selalu muncul */
+    .btn-topbar-exit-admin,
+    .topbar-admin-group .btn-topbar-exit-admin {
+      display: none !important;
+      visibility: hidden !important;
+      width: 0 !important;
+      height: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      pointer-events: none !important;
+      opacity: 0 !important;
+    }
+    @media (max-width: 900px) {
+      .topbar-left {
+        display: flex !important;
+        align-items: center !important;
+        flex-shrink: 0 !important;
+        min-width: 44px !important;
+      }
+      .menu-toggle {
+        display: flex !important;
+        flex-shrink: 0 !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+    }
+  </style>
 </head>
 <body data-theme="light">
   <!-- ========================================================
@@ -1329,9 +1360,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=4.6"></script>
+  <script src="firebase-config.js?v=5.0"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=4.6"></script>
+  <script src="app.js?v=5.0"></script>
 </body>
 </html>

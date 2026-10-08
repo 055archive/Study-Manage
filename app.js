@@ -3659,6 +3659,9 @@ function updateAdminUI() {
     btnExitSidebar.style.display = isPengurus ? 'flex' : 'none';
   }
 
+  // Hapus bersih tombol keluar topbar dari DOM jika sempat muncul
+  document.querySelectorAll('.btn-topbar-exit-admin').forEach(el => el.remove());
+
   if (sidebarBadge) {
     sidebarBadge.innerHTML = '';
     sidebarBadge.style.display = 'none';
@@ -3676,6 +3679,20 @@ function updateAdminUI() {
 
   if (window.feather) feather.replace();
 }
+
+// Pengawas DOM Otomatis: Pastikan tombol keluar topbar tidak pernah bisa muncul di bar atas
+try {
+  const topbarCleanupObserver = new MutationObserver(() => {
+    document.querySelectorAll('.btn-topbar-exit-admin').forEach(el => el.remove());
+  });
+  if (document.body) {
+    topbarCleanupObserver.observe(document.body, { childList: true, subtree: true });
+  } else {
+    document.addEventListener('DOMContentLoaded', () => {
+      topbarCleanupObserver.observe(document.body, { childList: true, subtree: true });
+    });
+  }
+} catch (e) {}
 
 function openClaimAdminModal() {
   const modal = document.getElementById('claimAdminModal');
