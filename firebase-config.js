@@ -634,7 +634,7 @@ async function uploadFileToFirebaseStorage(fileBlobOrDataUrl, fileName, fileId) 
 
     const uploadPromise = storageRef.put(blob);
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Firebase Storage timeout')), 4000)
+      setTimeout(() => reject(new Error('Firebase Storage timeout')), 25000)
     );
     const snapshot = await Promise.race([uploadPromise, timeoutPromise]);
     const downloadUrl = await snapshot.ref.getDownloadURL();

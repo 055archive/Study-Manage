@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyManage - Portal Tugas & Materi Kuliah</title>
-  <link rel="stylesheet" href="style.css?v=3.4">
+  <link rel="stylesheet" href="style.css?v=3.5">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -321,8 +321,8 @@
             <input type="file" id="importBackupInput" accept=".json" style="display: none;">
           </label>
         </div>
-        <div style="margin-top: 8px;">
-          <button class="backup-btn cloud-sidebar-btn" id="btnOpenCloudModalSidebar" title="Pengaturan Cloud Sync Firebase">
+        <div style="margin-top: 8px; display: none;">
+          <button class="backup-btn cloud-sidebar-btn" id="btnOpenCloudModalSidebar" title="Pengaturan Cloud Sync Firebase" style="display: none;">
             <i data-feather="cloud-lightning"></i>
             <span>Cloud Sync (Firebase)</span>
           </button>
@@ -358,8 +358,8 @@
         </div>
 
         <div class="topbar-right">
-          <!-- Tombol Status Cloud Sync -->
-          <button class="cloud-sync-btn" id="btnOpenCloudModal" title="Pengaturan & Status Cloud Sync Firebase">
+          <!-- Tombol Status Cloud Sync (Tersembunyi - Hanya untuk Admin) -->
+          <button class="cloud-sync-btn" id="btnOpenCloudModal" title="Pengaturan & Status Cloud Sync Firebase" style="display: none;">
             <span class="cloud-status-dot offline" id="cloudStatusDot"></span>
             <i data-feather="cloud" id="cloudIcon"></i>
             <span class="cloud-status-text" id="cloudStatusText">Lokal</span>
@@ -707,7 +707,7 @@
               </div>
               <div class="dropzone-text">
                 <p class="dropzone-main"><strong>Klik untuk pilih berkas tugas</strong> atau seret ke sini</p>
-                <p class="dropzone-sub">PDF soal, Word, spreadsheet, ZIP, atau foto tugas (Maks. 25MB)</p>
+                <p class="dropzone-sub">PDF soal, Word, spreadsheet, ZIP, atau foto tugas (Maks. 6MB)</p>
               </div>
             </label>
 
@@ -789,7 +789,7 @@
               </div>
               <div class="dropzone-text">
                 <p class="dropzone-main"><strong>Klik untuk pilih berkas materi</strong> atau seret ke sini</p>
-                <p class="dropzone-sub">PDF, PowerPoint (PPTX), Word (DOCX), Excel, ZIP, atau Gambar (Maks. 25MB)</p>
+                <p class="dropzone-sub">PDF, PowerPoint (PPTX), Word (DOCX), Excel, ZIP, atau Gambar (Maks. 6MB)</p>
               </div>
             </label>
 
@@ -1052,6 +1052,110 @@
     </div>
   </dialog>
 
+  <!-- ========================================================
+       MODAL 6: VERIFIKASI AKSES ADMINISTRATOR (SECRET GATE)
+       ======================================================== -->
+  <dialog class="app-dialog auth-dialog" id="adminAuthModal">
+    <div class="dialog-box" style="max-width: 440px;">
+      <div class="dialog-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i data-feather="shield" style="color: var(--amber);"></i>
+          <h3 class="dialog-title">Akses Khusus Administrator</h3>
+        </div>
+        <button class="icon-btn btn-close-dialog" onclick="closeAdminAuthModal()">
+          <i data-feather="x"></i>
+        </button>
+      </div>
+
+      <form id="adminAuthForm" class="dialog-form" autocomplete="off">
+        <p class="forgot-modal-desc">
+          Fitur pengaturan Cloud Sync Firebase diproteksi. Masukkan kode rahasia pemilik untuk melanjutkan.
+        </p>
+
+        <div class="form-group" style="margin-top: 12px;">
+          <label for="adminSecretInput">Kode Rahasia Admin *</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="adminSecretInput" class="custom-input password-field" placeholder="Masukkan kode rahasia..." required autocomplete="off">
+            <button type="button" class="btn-toggle-pwd" onclick="togglePasswordInput('adminSecretInput', this)" title="Lihat Sandi">
+              <i data-feather="eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="login-error-msg" id="adminAuthErrorMsg" style="display: none; margin-bottom: 12px;">
+          <i data-feather="alert-circle"></i>
+          <span id="adminAuthErrorText">Kode rahasia salah! Akses ditolak.</span>
+        </div>
+
+        <div class="dialog-footer" style="padding: 0; margin-top: 16px;">
+          <button type="button" class="btn btn-secondary" onclick="closeAdminAuthModal()">Batal</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitAdminAuth">
+            <i data-feather="unlock"></i>
+            <span>Buka Pengaturan</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- ========================================================
+       MODAL 7: IN-APP DOCUMENT VIEWER (PRATINJAU DOKUMEN / GAMBAR)
+       ======================================================== -->
+  <dialog class="app-dialog file-viewer-dialog" id="fileViewerModal">
+    <div class="file-viewer-container">
+      <!-- Header Viewer -->
+      <div class="file-viewer-header">
+        <div class="file-viewer-meta">
+          <i data-feather="file-text" id="viewerFileIcon" class="viewer-file-icon"></i>
+          <div class="viewer-title-group">
+            <h3 class="viewer-filename" id="viewerFileName">Nama_Dokumen.pdf</h3>
+            <span class="viewer-filesize-badge" id="viewerFileSize">1.2 MB</span>
+          </div>
+        </div>
+
+        <div class="file-viewer-actions">
+          <button type="button" class="btn btn-secondary btn-sm" id="btnDownloadFromViewer" title="Unduh berkas ke perangkat">
+            <i data-feather="download"></i>
+            <span>Unduh</span>
+          </button>
+          <button type="button" class="icon-btn btn-close-viewer" onclick="closeFileViewer()" title="Tutup Pratinjau">
+            <i data-feather="x"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Body / Konten Viewer -->
+      <div class="file-viewer-body" id="fileViewerBody">
+        <!-- PDF Frame -->
+        <iframe id="fileViewerIframe" class="viewer-iframe" style="display: none;" title="Pratinjau PDF"></iframe>
+
+        <!-- Image Viewer -->
+        <div id="fileViewerImageWrapper" class="viewer-image-wrapper" style="display: none;">
+          <img id="fileViewerImage" src="" alt="Pratinjau Gambar" class="viewer-image">
+        </div>
+
+        <!-- Fallback Dokumen Lain (Word/PPT/Excel/ZIP) -->
+        <div id="fileViewerFallback" class="viewer-fallback-card" style="display: none;">
+          <div class="viewer-fallback-icon">
+            <i data-feather="file" id="viewerFallbackIcon"></i>
+          </div>
+          <h4 id="viewerFallbackTitle">Dokumen Siap Diunduh</h4>
+          <p id="viewerFallbackDesc">Format berkas ini paling optimal dibuka langsung dengan aplikasi pembaca di perangkat Anda.</p>
+          <button type="button" class="btn btn-primary" id="btnFallbackDownload">
+            <i data-feather="download"></i>
+            <span>Unduh & Buka Berkas</span>
+          </button>
+        </div>
+
+        <!-- Loading State -->
+        <div id="fileViewerLoading" class="viewer-loading" style="display: none;">
+          <div class="viewer-spinner"></div>
+          <span>Memuat dokumen...</span>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
   <!-- Container Notifikasi Toast -->
   <div class="toast-wrapper" id="toastWrapper"></div>
 
@@ -1062,9 +1166,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=3.4"></script>
+  <script src="firebase-config.js?v=3.5"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=3.4"></script>
+  <script src="app.js?v=3.5"></script>
 </body>
 </html>

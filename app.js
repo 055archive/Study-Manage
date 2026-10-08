@@ -371,48 +371,142 @@ function dataUrlToBlob(dataUrl) {
   return new Blob([uInt8Array], { type: contentType });
 }
 
+let currentViewerBlobUrl = null;
+
 window.handleOpenFile = async function(fileId, fileName, downloadUrl = '') {
+  await openFileViewer(fileId, fileName, downloadUrl);
+};
+
+window.openFileViewer = async function(fileId, fileName, downloadUrl = '') {
+  const viewerModal = document.getElementById('fileViewerModal');
+  const viewerFileName = document.getElementById('viewerFileName');
+  const viewerFileSize = document.getElementById('viewerFileSize');
+  const viewerFileIcon = document.getElementById('viewerFileIcon');
+  const viewerIframe = document.getElementById('fileViewerIframe');
+  const viewerImageWrapper = document.getElementById('fileViewerImageWrapper');
+  const viewerImage = document.getElementById('fileViewerImage');
+  const viewerFallback = document.getElementById('fileViewerFallback');
+  const viewerFallbackTitle = document.getElementById('viewerFallbackTitle');
+  const viewerFallbackDesc = document.getElementById('viewerFallbackDesc');
+  const viewerLoading = document.getElementById('fileViewerLoading');
+  const btnDownload = document.getElementById('btnDownloadFromViewer');
+  const btnFallbackDownload = document.getElementById('btnFallbackDownload');
+
+  if (!viewerModal) return;
+
+  // Bersihkan resource Blob URL sebelumnya
+  if (currentViewerBlobUrl) {
+    URL.revokeObjectURL(currentViewerBlobUrl);
+    currentViewerBlobUrl = null;
+  }
+
+  viewerFileName.textContent = fileName || 'Dokumen';
+  viewerFileSize.textContent = '-';
+  viewerIframe.style.display = 'none';
+  viewerIframe.src = '';
+  viewerImageWrapper.style.display = 'none';
+  viewerImage.src = '';
+  viewerFallback.style.display = 'none';
+  viewerLoading.style.display = 'flex';
+
+  viewerModal.showModal();
+  if (window.feather) feather.replace();
+
   try {
-    // Jika berkas tersimpan di Firebase Cloud Storage, buka langsung dari Cloud URL
+    let fileBlob = null;
+    let fileType = '';
+    let fileSize = 0;
+    let directUrl = downloadUrl;
+
     if (downloadUrl) {
-      window.open(downloadUrl, '_blank');
-      showToast(`Membuka berkas "${fileName}" dari Cloud...`, 'success');
-      return;
-    }
-
-    const record = await getUploadedFile(fileId);
-    if (!record || !record.data) {
-      showToast('Berkas fisik tidak ditemukan atau telah dihapus dari perangkat ini.', 'danger');
-      return;
-    }
-
-    const blob = dataUrlToBlob(record.data);
-    const blobUrl = URL.createObjectURL(blob);
-    const isViewable = record.type === 'application/pdf' || (record.type && record.type.startsWith('image/'));
-
-    if (isViewable) {
-      const opened = window.open(blobUrl, '_blank');
-      if (!opened) {
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.target = '_blank';
-        a.click();
-      }
+      // Jika dari Cloud Storage
+      const nameLower = (fileName || '').toLowerCase();
+      if (nameLower.endsWith('.pdf')) fileType = 'application/pdf';
+      else if (nameLower.match(/\.(png|jpg|jpeg|gif|webp)$/)) fileType = 'image/jpeg';
+      else fileType = 'application/octet-stream';
     } else {
+      // Jika dari IndexedDB lokal
+      const record = await getUploadedFile(fileId);
+      if (!record || !record.data) {
+        viewerLoading.style.display = 'none';
+        viewerFallback.style.display = 'flex';
+        viewerFallbackTitle.textContent = 'Berkas Tidak Ditemukan';
+        viewerFallbackDesc.textContent = 'Berkas fisik tersimpan di perangkat yang berbeda atau telah dihapus.';
+        if (btnFallbackDownload) btnFallbackDownload.style.display = 'none';
+        showToast('Berkas fisik tidak ditemukan di perangkat ini.', 'danger');
+        return;
+      }
+      fileType = record.type || '';
+      fileSize = record.size || 0;
+      fileBlob = dataUrlToBlob(record.data);
+      currentViewerBlobUrl = URL.createObjectURL(fileBlob);
+      directUrl = currentViewerBlobUrl;
+    }
+
+    if (fileSize) {
+      viewerFileSize.textContent = formatFileSize(fileSize);
+    }
+    const iconName = getFileIconName(fileName, fileType);
+    if (viewerFileIcon) viewerFileIcon.setAttribute('data-feather', iconName);
+
+    // Fungsi unduh berkas
+    const triggerDownload = () => {
       const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = fileName || record.name || 'berkas';
+      a.href = directUrl;
+      a.download = fileName || 'berkas';
+      a.target = '_blank';
       document.body.appendChild(a);
       a.click();
       a.remove();
+      showToast(`Mengunduh "${fileName}"...`, 'info');
+    };
+
+    if (btnDownload) {
+      btnDownload.onclick = triggerDownload;
+    }
+    if (btnFallbackDownload) {
+      btnFallbackDownload.style.display = 'inline-flex';
+      btnFallbackDownload.onclick = triggerDownload;
     }
 
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-    showToast(`Membuka berkas "${fileName || record.name}"...`, 'success');
+    viewerLoading.style.display = 'none';
+
+    // Deteksi tipe file untuk viewer
+    const isPdf = fileType === 'application/pdf' || (fileName || '').toLowerCase().endsWith('.pdf');
+    const isImage = fileType.startsWith('image/') || (fileName || '').toLowerCase().match(/\.(png|jpg|jpeg|gif|webp)$/);
+
+    if (isPdf) {
+      viewerIframe.style.display = 'block';
+      viewerIframe.src = directUrl;
+    } else if (isImage) {
+      viewerImageWrapper.style.display = 'flex';
+      viewerImage.src = directUrl;
+    } else {
+      // Dokumen Word, PPT, Excel, ZIP dll.
+      viewerFallback.style.display = 'flex';
+      viewerFallbackTitle.textContent = `Dokumen: ${fileName}`;
+      viewerFallbackDesc.textContent = `Berkas ini berformat dokumen (${fileName.split('.').pop().toUpperCase()}). Klik tombol di bawah untuk membuka langsung di perangkat Anda.`;
+    }
+
+    if (window.feather) feather.replace();
   } catch (err) {
-    console.error('Gagal membuka berkas:', err);
-    showToast('Terjadi kesalahan saat memuat berkas: ' + err.message, 'danger');
+    console.error('Error saat memuat file viewer:', err);
+    viewerLoading.style.display = 'none';
+    viewerFallback.style.display = 'flex';
+    viewerFallbackTitle.textContent = 'Gagal Memuat Berkas';
+    viewerFallbackDesc.textContent = err.message || 'Terjadi kesalahan saat memuat berkas.';
   }
+};
+
+window.closeFileViewer = function() {
+  const viewerModal = document.getElementById('fileViewerModal');
+  const viewerIframe = document.getElementById('fileViewerIframe');
+  if (viewerIframe) viewerIframe.src = '';
+  if (currentViewerBlobUrl) {
+    URL.revokeObjectURL(currentViewerBlobUrl);
+    currentViewerBlobUrl = null;
+  }
+  if (viewerModal) viewerModal.close();
 };
 
 function setupFileUploader({
@@ -475,9 +569,9 @@ function setupFileUploader({
   });
 
   function processSelectedFile(file) {
-    const maxBytes = 25 * 1024 * 1024;
+    const maxBytes = 6 * 1024 * 1024;
     if (file.size > maxBytes) {
-      showToast('Ukuran berkas melebihi batas maksimal 25MB!', 'danger');
+      showToast('Ukuran berkas melebihi batas maksimal 6MB! Gunakan file lebih kecil atau lampirkan link Google Drive.', 'danger');
       return;
     }
 
@@ -2023,7 +2117,7 @@ if (importBackupInput) {
 }
 
 // ============================================================================
-// 10B. CLOUD MODAL & FIREBASE CONTROLS
+// 10B. CLOUD MODAL & FIREBASE CONTROLS (AKSES RAHASIA KHUSUS ADMINISTRATOR)
 // ============================================================================
 const cloudModal = document.getElementById('cloudModal');
 const btnOpenCloudModal = document.getElementById('btnOpenCloudModal');
@@ -2049,8 +2143,76 @@ function closeCloudModal() {
 window.openCloudModal = openCloudModal;
 window.closeCloudModal = closeCloudModal;
 
-if (btnOpenCloudModal) btnOpenCloudModal.addEventListener('click', openCloudModal);
-if (btnOpenCloudModalSidebar) btnOpenCloudModalSidebar.addEventListener('click', openCloudModal);
+// ----------------------------------------------------------------------------
+// SISTEM VERIFIKASI AKSES ADMINISTRATOR (SECRET GATE & PASSWORD: @Mikasa262728)
+// ----------------------------------------------------------------------------
+const adminAuthModal = document.getElementById('adminAuthModal');
+const adminAuthForm = document.getElementById('adminAuthForm');
+const adminSecretInput = document.getElementById('adminSecretInput');
+const adminAuthErrorMsg = document.getElementById('adminAuthErrorMsg');
+
+function triggerAdminSecretDoor() {
+  if (!adminAuthModal) return;
+  if (adminSecretInput) adminSecretInput.value = '';
+  if (adminAuthErrorMsg) adminAuthErrorMsg.style.display = 'none';
+  adminAuthModal.showModal();
+  setTimeout(() => { if (adminSecretInput) adminSecretInput.focus(); }, 150);
+}
+
+window.closeAdminAuthModal = function() {
+  if (adminAuthModal) adminAuthModal.close();
+};
+
+if (adminAuthForm) {
+  adminAuthForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const entered = adminSecretInput ? adminSecretInput.value.trim() : '';
+    if (entered === '@Mikasa262728') {
+      closeAdminAuthModal();
+      openCloudModal();
+      showToast('Akses Administrator diberikan! 🛡️', 'success');
+    } else {
+      if (adminAuthErrorMsg) {
+        adminAuthErrorMsg.style.display = 'flex';
+        adminAuthErrorMsg.style.animation = 'none';
+        void adminAuthErrorMsg.offsetWidth;
+        adminAuthErrorMsg.style.animation = 'shakeError 0.35s ease';
+      }
+    }
+  });
+}
+
+// 1. Ketuk Logo 5x dalam 3 detik untuk membuka pintu rahasia admin
+let adminLogoClickCount = 0;
+let adminLogoClickTimer = null;
+
+const brandElements = document.querySelectorAll('.logo, .logo-icon, .login-brand');
+brandElements.forEach(el => {
+  el.style.cursor = 'pointer';
+  el.addEventListener('click', (e) => {
+    adminLogoClickCount++;
+    clearTimeout(adminLogoClickTimer);
+    if (adminLogoClickCount >= 5) {
+      adminLogoClickCount = 0;
+      triggerAdminSecretDoor();
+    } else {
+      adminLogoClickTimer = setTimeout(() => {
+        adminLogoClickCount = 0;
+      }, 3000);
+    }
+  });
+});
+
+// 2. Shortcut Keyboard Rahasia: Alt + C
+document.addEventListener('keydown', (e) => {
+  if (e.altKey && (e.key === 'c' || e.key === 'C')) {
+    e.preventDefault();
+    triggerAdminSecretDoor();
+  }
+});
+
+if (btnOpenCloudModal) btnOpenCloudModal.addEventListener('click', triggerAdminSecretDoor);
+if (btnOpenCloudModalSidebar) btnOpenCloudModalSidebar.addEventListener('click', triggerAdminSecretDoor);
 
 if (cloudModal) {
   cloudModal.addEventListener('click', (e) => {
