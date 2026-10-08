@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyManage - Portal Tugas & Materi Kuliah</title>
-  <link rel="stylesheet" href="style.css?v=3.8">
+  <link rel="stylesheet" href="style.css?v=4.0">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -310,6 +310,13 @@
           </div>
         </div>
 
+        <!-- Badge & Tombol Klaim Akses Pengurus di Sidebar -->
+        <div id="sidebarAdminBadge" style="display: none; margin-bottom: 8px;"></div>
+        <button type="button" class="backup-btn" id="btnClaimAdminSidebar" onclick="openClaimAdminModal()" style="margin-bottom: 8px;" title="Klaim Hak Akses Pengurus Kelas (Ketua Kelas/Sekretaris/PJ MK/Designer)">
+          <i data-feather="key"></i>
+          <span>Akses Pengurus Kelas</span>
+        </button>
+
         <div class="academic-badge">
           <i data-feather="award"></i>
           <div>
@@ -372,6 +379,29 @@
             <span class="cloud-status-text" id="cloudStatusText">Lokal</span>
           </button>
 
+          <!-- Notifikasi & Pengingat (Lonceng) -->
+          <div class="notif-wrapper" id="notifWrapper">
+            <button type="button" class="icon-btn notif-bell-btn" id="btnNotifBell" title="Notifikasi Tugas & Materi Kelas" aria-label="Notifikasi">
+              <i data-feather="bell"></i>
+              <span class="notif-badge" id="notifBadge" style="display: none;">0</span>
+            </button>
+            <div class="notif-dropdown" id="notifDropdown" style="display: none;">
+              <div class="notif-header">
+                <div>
+                  <h4>Notifikasi Kelas</h4>
+                  <small id="notifSubtext">Pengingat H-1 & tugas baru</small>
+                </div>
+                <button type="button" class="btn-text-sm" id="btnMarkAllNotifsRead">Tandai Dibaca</button>
+              </div>
+              <div class="notif-list" id="notifList">
+                <div class="notif-empty">Belum ada notifikasi</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lencana Pengurus / Akses Pengurus di Topbar -->
+          <div id="topbarAdminBadgeContainer"></div>
+
           <!-- Toggle Dark / Light Theme -->
           <button class="icon-btn theme-btn" id="themeToggleBtn" aria-label="Ganti Tema" title="Ganti Mode Gelap / Terang">
             <i data-feather="moon" id="themeIcon"></i>
@@ -402,6 +432,23 @@
 
       <!-- Main Body Container -->
       <main class="content-container">
+
+        <!-- Banner Peringatan H-1 Deadline -->
+        <div id="urgentDeadlinesBanner" class="deadline-alert-banner" style="display: none;">
+          <div class="alert-banner-left">
+            <div class="alert-banner-icon">
+              <i data-feather="alert-triangle"></i>
+            </div>
+            <div class="alert-banner-info">
+              <strong id="urgentBannerTitle">Peringatan Deadline H-1!</strong>
+              <p id="urgentBannerDesc">Ada tugas yang harus dikumpulkan dalam waktu kurang dari 24 jam.</p>
+            </div>
+          </div>
+          <button type="button" class="btn-banner-action" onclick="switchTab('tab-tugas')">
+            <span>Lihat Tugas</span>
+            <i data-feather="arrow-right"></i>
+          </button>
+        </div>
 
         <!-- ========================================================
              TAB 1: RINGKASAN & OVERVIEW
@@ -662,6 +709,17 @@
       <form id="tugasForm" class="dialog-form">
         <input type="hidden" id="editTugasId" value="">
 
+        <!-- Opsi Publikasi Resmi Kelas (Khusus Pengurus / Admin) -->
+        <div class="form-group is-kelas-toggle-group" id="tugasIsKelasGroup" style="display: none;">
+          <label class="custom-checkbox-card">
+            <input type="checkbox" id="tugasIsKelasCheckbox" checked>
+            <div class="checkbox-card-body">
+              <span class="checkbox-card-title"><i data-feather="users"></i> Publikasikan sebagai Tugas Resmi Kelas</span>
+              <span class="checkbox-card-sub">Tugas ini akan otomatis masuk ke akun seluruh teman sekelas.</span>
+            </div>
+          </label>
+        </div>
+
         <div class="form-group">
           <label for="tugasJudul">Nama / Judul Tugas (Opsional - otomatis dari berkas/matkul)</label>
           <input type="text" id="tugasJudul" class="custom-input" placeholder="Contoh: Makalah Sistem Terdistribusi (atau biarkan kosong jika ada berkas)">
@@ -761,6 +819,17 @@
 
       <form id="materiForm" class="dialog-form">
         <input type="hidden" id="editMateriId" value="">
+
+        <!-- Opsi Publikasi Resmi Kelas (Khusus Pengurus / Admin) -->
+        <div class="form-group is-kelas-toggle-group" id="materiIsKelasGroup" style="display: none;">
+          <label class="custom-checkbox-card">
+            <input type="checkbox" id="materiIsKelasCheckbox" checked>
+            <div class="checkbox-card-body">
+              <span class="checkbox-card-title"><i data-feather="users"></i> Publikasikan sebagai Materi Resmi Kelas</span>
+              <span class="checkbox-card-sub">Materi ini akan otomatis dapat diakses oleh seluruh teman sekelas.</span>
+            </div>
+          </label>
+        </div>
 
         <div class="form-group">
           <label for="materiJudul">Judul / Topik Bahasan (Opsional - otomatis terisi dari nama berkas/pertemuan)</label>
@@ -1107,7 +1176,58 @@
   </dialog>
 
   <!-- ========================================================
-       MODAL 7: IN-APP DOCUMENT VIEWER (PRATINJAU DOKUMEN / GAMBAR)
+       MODAL 7: KLAIM HAK AKSES PENGURUS KELAS
+       ======================================================== -->
+  <dialog class="app-dialog auth-dialog" id="claimAdminModal">
+    <div class="dialog-box" style="max-width: 440px;">
+      <div class="dialog-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i data-feather="key" style="color: var(--primary);"></i>
+          <h3 class="dialog-title">Aktivasi Pengurus Kelas</h3>
+        </div>
+        <button class="icon-btn btn-close-dialog" onclick="closeClaimAdminModal()">
+          <i data-feather="x"></i>
+        </button>
+      </div>
+
+      <form id="claimAdminForm" class="dialog-form" autocomplete="off">
+        <p class="forgot-modal-desc">
+          Khusus untuk <strong>Ketua Kelas, Sekretaris, PJ Mata Kuliah, dan Designer Web</strong>. Pengurus dapat mempublikasikan tugas & materi resmi yang otomatis masuk ke akun seluruh teman sekelas.
+        </p>
+
+        <div class="form-group" style="margin-top: 12px;">
+          <label for="adminRoleSelect">Jabatan / Peran Anda di Kelas *</label>
+          <select id="adminRoleSelect" class="custom-select" required>
+            <option value="Ketua Kelas">Ketua Kelas</option>
+            <option value="Wakil Ketua Kelas">Wakil Ketua Kelas</option>
+            <option value="Sekretaris">Sekretaris</option>
+            <option value="PJ Mata Kuliah">PJ Mata Kuliah (PJ MK)</option>
+            <option value="Designer Web">Designer Web</option>
+            <option value="Pengurus Kelas">Pengurus Kelas Lainnya</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="adminAccessCode">Kode Akses Pengurus *</label>
+          <input type="password" id="adminAccessCode" class="custom-input" placeholder="Masukkan kode akses (Ad1 - Ad10)" required autocomplete="off">
+          <small class="form-hint" style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px; display: block;">
+            Kode akses disediakan untuk pengurus kelas terdaftar.
+          </small>
+        </div>
+
+        <div class="dialog-footer" style="padding: 0; margin-top: 16px;">
+          <button type="button" class="btn btn-secondary" onclick="closeClaimAdminModal()">Batal</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitClaimAdmin">
+            <i data-feather="check-circle"></i>
+            <span>Aktifkan Hak Akses</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- ========================================================
+       MODAL 8: IN-APP DOCUMENT VIEWER (PRATINJAU DOKUMEN / GAMBAR)
        ======================================================== -->
   <dialog class="app-dialog file-viewer-dialog" id="fileViewerModal">
     <div class="file-viewer-container">
@@ -1174,9 +1294,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=3.8"></script>
+  <script src="firebase-config.js?v=4.0"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=3.8"></script>
+  <script src="app.js?v=4.0"></script>
 </body>
 </html>

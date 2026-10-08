@@ -118,42 +118,157 @@ const DEFAULT_MATKUL = [
   }
 ];
 
+// Storage Keys untuk data bersama kelas & status pengerjaan
+const CLASS_TUGAS_STORAGE_KEY = 'study_class_tugas_v2';
+const CLASS_MATERI_STORAGE_KEY = 'study_class_materi_v2';
+const TUGAS_STATUS_STORAGE_KEY = 'study_tugas_status_cache';
+const NOTIFS_STORAGE_KEY = 'study_notifs_cache';
+
 // Daftar tugas dan materi dimulai dari 0 (bersih) agar mahasiswa bebas mengunggah tugas & materinya sendiri
 const DEFAULT_TUGAS = [];
 const DEFAULT_MATERI = [];
 
 let matkulList = loadFromStorage(MATKUL_STORAGE_KEY, DEFAULT_MATKUL);
-let tugasList = loadFromStorage(TUGAS_STORAGE_KEY, DEFAULT_TUGAS);
-let materiList = loadFromStorage(MATERI_STORAGE_KEY, DEFAULT_MATERI);
+let personalTugas = loadFromStorage(TUGAS_STORAGE_KEY, DEFAULT_TUGAS);
+let classTugas = loadFromStorage(CLASS_TUGAS_STORAGE_KEY, []);
+let personalMateri = loadFromStorage(MATERI_STORAGE_KEY, DEFAULT_MATERI);
+let classMateri = loadFromStorage(CLASS_MATERI_STORAGE_KEY, []);
+let tugasStatusMap = loadFromStorage(TUGAS_STATUS_STORAGE_KEY, {});
+
+// Array gabungan (tugas resmi kelas + tugas pribadi) yang ditampilkan ke UI
+let tugasList = [];
+let materiList = [];
 let activeMatkulFilter = 'ALL';
+
+// Profil & Hak Akses Pengurus
+let currentUserProfile = null;
+let isCurrentUserAdmin = false;
 
 function loadFromStorage(key, defaultData) {
   const saved = localStorage.getItem(key);
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
-        const cleaned = parsed.filter(item => {
-          if (!item || typeof item !== 'object') return false;
-          if (key === MATKUL_STORAGE_KEY) return !!item.nama;
-          if (key === TUGAS_STORAGE_KEY) return !!item.judul && !!item.matkul;
-          if (key === MATERI_STORAGE_KEY) return !!item.judul && !!item.matkul;
-          return true;
-        });
-        return cleaned;
+      if (Array.isArray(defaultData)) {
+        if (Array.isArray(parsed)) return parsed;
+      } else if (typeof defaultData === 'object' && defaultData !== null) {
+        if (typeof parsed === 'object' && parsed !== null) return parsed;
       }
     } catch (e) {
       console.error(`Gagal mengurai ${key}:`, e);
     }
   }
-  localStorage.setItem(key, JSON.stringify(defaultData));
-  return [...defaultData];
+  try {
+    localStorage.setItem(key, JSON.stringify(defaultData));
+  } catch (e) {}
+  return Array.isArray(defaultData) ? [...defaultData] : { ...defaultData };
 }
 
 function saveStorage() {
-  localStorage.setItem(MATKUL_STORAGE_KEY, JSON.stringify(matkulList));
-  localStorage.setItem(TUGAS_STORAGE_KEY, JSON.stringify(tugasList));
-  localStorage.setItem(MATERI_STORAGE_KEY, JSON.stringify(materiList));
+  try {
+    localStorage.setItem(MATKUL_STORAGE_KEY, JSON.stringify(matkulList));
+    localStorage.setItem(TUGAS_STORAGE_KEY, JSON.stringify(personalTugas));
+    localStorage.setItem(CLASS_TUGAS_STORAGE_KEY, JSON.stringify(classTugas));
+    localStorage.setItem(MATERI_STORAGE_KEY, JSON.stringify(personalMateri));
+    localStorage.setItem(CLASS_MATERI_STORAGE_KEY, JSON.stringify(classMateri));
+    localStorage.setItem(TUGAS_STATUS_STORAGE_KEY, JSON.stringify(tugasStatusMap));
+  } catch (e) {}
+}
+
+/**
+ * Gabungkan tugas kelas + tugas pribadi menjadi satu daftar tugasList
+ */
+function rebuildTugasList() {
+  const combined = [];
+  const seenIds = new Set();
+
+  // 1. Tugas Resmi Kelas (Status pengerjaan diambil dari status per-user)
+  if (Array.isArray(classTugas)) {
+    classTugas.forEach(ct => {
+      if (!ct || !ct.id) return;
+      const isCompleted = !!tugasStatusMap[ct.id];
+      combined.push({
+        ...ct,
+        isKelas: true,
+        completed: isCompleted
+      });
+      seenIds.add(ct.id);
+    });
+  }
+
+  // 2. Tugas Pribadi Mahasiswa
+  if (Array.isArray(personalTugas)) {
+    personalTugas.forEach(pt => {
+      if (!pt || !pt.id) return;
+      if (!seenIds.has(pt.id)) {
+        combined.push({
+          ...pt,
+          isKelas: false,
+          completed: !!pt.completed
+        });
+        seenIds.add(pt.id);
+      }
+    });
+  }
+
+  tugasList = combined;
+  saveStorage();
+  checkDeadlinesAndNotify();
+
+  try {
+    renderCourseFilters();
+    renderTugas();
+    renderOverviewUrgent();
+    if (window.feather) feather.replace();
+  } catch (e) {
+    console.warn('rebuildTugasList error:', e);
+  }
+}
+
+/**
+ * Gabungkan materi kelas + materi pribadi menjadi satu daftar materiList
+ */
+function rebuildMateriList() {
+  const combined = [];
+  const seenIds = new Set();
+
+  // 1. Materi Resmi Kelas
+  if (Array.isArray(classMateri)) {
+    classMateri.forEach(cm => {
+      if (!cm || !cm.id) return;
+      combined.push({
+        ...cm,
+        isKelas: true
+      });
+      seenIds.add(cm.id);
+    });
+  }
+
+  // 2. Catatan Materi Pribadi
+  if (Array.isArray(personalMateri)) {
+    personalMateri.forEach(pm => {
+      if (!pm || !pm.id) return;
+      if (!seenIds.has(pm.id)) {
+        combined.push({
+          ...pm,
+          isKelas: false
+        });
+        seenIds.add(pm.id);
+      }
+    });
+  }
+
+  materiList = combined;
+  saveStorage();
+
+  try {
+    renderCourseFilters();
+    renderMateri();
+    renderOverviewRecentMaterials();
+    if (window.feather) feather.replace();
+  } catch (e) {
+    console.warn('rebuildMateriList error:', e);
+  }
 }
 
 // ============================================================================
@@ -806,9 +921,11 @@ navTabButtons.forEach(btn => {
 
 function getAllMataKuliahList() {
   const set = new Set();
-  matkulList.forEach(m => m && m.nama && set.add(m.nama.trim()));
-  tugasList.forEach(t => t && t.matkul && set.add(t.matkul.trim()));
-  materiList.forEach(m => m && m.matkul && set.add(m.matkul.trim()));
+  if (Array.isArray(matkulList)) matkulList.forEach(m => m && m.nama && set.add(m.nama.trim()));
+  if (Array.isArray(tugasList)) tugasList.forEach(t => t && t.matkul && set.add(t.matkul.trim()));
+  if (Array.isArray(materiList)) materiList.forEach(m => m && m.matkul && set.add(m.matkul.trim()));
+  if (Array.isArray(classTugas)) classTugas.forEach(t => t && t.matkul && set.add(t.matkul.trim()));
+  if (Array.isArray(classMateri)) classMateri.forEach(m => m && m.matkul && set.add(m.matkul.trim()));
   return Array.from(set).sort();
 }
 
@@ -969,15 +1086,34 @@ function renderTugas() {
 
     filtered.forEach(task => {
       const deadlineInfo = calculateDeadlineInfo(task.deadline);
+      const isUrgentH1 = !task.completed && task.deadline && (() => {
+        const diffHours = (new Date(task.deadline) - new Date()) / (1000 * 60 * 60);
+        return diffHours > 0 && diffHours <= 24;
+      })();
+
+      const canEditDelete = !task.isKelas || isCurrentUserAdmin;
       const card = document.createElement('div');
       card.className = `task-card ${task.completed ? 'completed' : ''}`;
 
       card.innerHTML = `
         <div class="task-card-top">
-          <span class="matkul-pill" style="border-left: 3px solid ${getCourseColor(task.matkul || '')};">
-            <i data-feather="book"></i>
-            ${escapeHtml(task.matkul || '-')}
-          </span>
+          <div class="task-card-tags">
+            <span class="matkul-pill" style="border-left: 3px solid ${getCourseColor(task.matkul || '')};">
+              <i data-feather="book"></i>
+              ${escapeHtml(task.matkul || '-')}
+            </span>
+            ${task.isKelas ? `
+              <span class="kelas-badge" title="Tugas resmi kelas dipublikasikan oleh pengurus">
+                <i data-feather="users"></i>
+                <span>Resmi Kelas • ${escapeHtml(task.authorJabatan || 'Pengurus')}</span>
+              </span>
+            ` : `
+              <span class="personal-badge" title="Catatan tugas pribadi Anda">
+                <i data-feather="user"></i>
+                <span>Pribadi</span>
+              </span>
+            `}
+          </div>
           <span class="task-priority-badge ${(task.prioritas || 'Sedang').toLowerCase()}">
             ${task.prioritas || 'Sedang'}
           </span>
@@ -989,6 +1125,7 @@ function renderTugas() {
         <div class="task-deadline-badge ${deadlineInfo.type}">
           <i data-feather="calendar"></i>
           <span>Deadline: ${deadlineInfo.text}</span>
+          ${isUrgentH1 ? '<span class="h1-tag-pulse">🔥 H-1 Deadline!</span>' : ''}
         </div>
 
         ${task.file ? `
@@ -1009,12 +1146,19 @@ function renderTugas() {
           </label>
 
           <div class="card-actions-group">
-            <button class="btn-edit-item" onclick="openEditTugasModal('${task.id}')" title="Edit Tugas">
-              <i data-feather="edit-2"></i>
+            <button type="button" class="btn-wa-share" onclick="shareTugasToWA('${task.id}')" title="Kirim Pengingat Tugas ke WhatsApp">
+              <i data-feather="share-2"></i>
+              <span>Share WA</span>
             </button>
-            <button class="btn-delete-item" onclick="deleteTugas('${task.id}')" title="Hapus Tugas">
-              <i data-feather="trash-2"></i>
-            </button>
+
+            ${canEditDelete ? `
+              <button class="btn-edit-item" onclick="openEditTugasModal('${task.id}')" title="Edit Tugas">
+                <i data-feather="edit-2"></i>
+              </button>
+              <button class="btn-delete-item" onclick="deleteTugas('${task.id}')" title="Hapus Tugas">
+                <i data-feather="trash-2"></i>
+              </button>
+            ` : ''}
           </div>
         </div>
       `;
@@ -1029,32 +1173,64 @@ function renderTugas() {
 
 window.toggleTugasComplete = function(id) {
   const task = tugasList.find(t => t.id === id);
-  if (task) {
-    task.completed = !task.completed;
-    saveStorage();
-    renderTugas();
-    renderOverviewUrgent();
-    showToast(task.completed ? 'Tugas ditandai selesai! 🎉' : 'Tugas dikembalikan ke belum selesai', 'success');
-    if (typeof syncTugasToCloud === 'function') {
-      syncTugasToCloud(task);
+  if (!task) return;
+
+  const newStatus = !task.completed;
+  task.completed = newStatus;
+
+  if (task.isKelas) {
+    tugasStatusMap[id] = newStatus;
+    try {
+      localStorage.setItem(TUGAS_STATUS_STORAGE_KEY, JSON.stringify(tugasStatusMap));
+    } catch (e) {}
+    if (typeof syncTugasStatusToCloud === 'function') {
+      syncTugasStatusToCloud(id, newStatus);
+    }
+  } else {
+    const pTask = personalTugas.find(t => t.id === id);
+    if (pTask) {
+      pTask.completed = newStatus;
+      if (typeof syncTugasToCloud === 'function') {
+        syncTugasToCloud(pTask);
+      }
     }
   }
+
+  saveStorage();
+  renderTugas();
+  renderOverviewUrgent();
+  showToast(newStatus ? 'Tugas ditandai selesai! 🎉' : 'Tugas dikembalikan ke belum selesai', 'success');
 };
 
 window.deleteTugas = async function(id) {
   const task = tugasList.find(t => t.id === id);
-  if (confirm(`Hapus tugas "${task ? task.judul : 'ini'}"?`)) {
-    if (task && task.file && task.file.id) {
+  if (!task) return;
+
+  if (task.isKelas && !isCurrentUserAdmin) {
+    showToast('Hanya Pengurus Kelas yang dapat menghapus tugas resmi kelas.', 'warning');
+    return;
+  }
+
+  const confirmMsg = task.isKelas
+    ? `Hapus tugas resmi kelas "${task.judul}"? Tugas ini akan terhapus dari akun SELURUH mahasiswa di kelas.`
+    : `Hapus tugas "${task.judul}"?`;
+
+  if (confirm(confirmMsg)) {
+    if (task.file && task.file.id) {
       await deleteUploadedFile(task.file.id);
     }
-    tugasList = tugasList.filter(t => t.id !== id);
-    saveStorage();
-    if (typeof deleteTugasFromCloud === 'function') {
-      deleteTugasFromCloud(id);
+    if (task.isKelas) {
+      classTugas = classTugas.filter(t => t.id !== id);
+      if (typeof deleteKelasTugasFromCloud === 'function') {
+        deleteKelasTugasFromCloud(id);
+      }
+    } else {
+      personalTugas = personalTugas.filter(t => t.id !== id);
+      if (typeof deleteTugasFromCloud === 'function') {
+        deleteTugasFromCloud(id);
+      }
     }
-    renderCourseFilters();
-    renderTugas();
-    renderOverviewUrgent();
+    rebuildTugasList();
     showToast('Tugas berhasil dihapus', 'danger');
   }
 };
@@ -1095,15 +1271,29 @@ function renderMateri() {
     emptyMateriState.style.display = 'none';
 
     filtered.forEach(m => {
+      const canEditDelete = !m.isKelas || isCurrentUserAdmin;
       const card = document.createElement('div');
       card.className = 'materi-card';
 
       card.innerHTML = `
         <div class="materi-card-header">
-          <span class="pertemuan-pill">
-            <i data-feather="bookmark"></i>
-            Pertemuan ${m.pertemuan}
-          </span>
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span class="pertemuan-pill">
+              <i data-feather="bookmark"></i>
+              Pertemuan ${m.pertemuan}
+            </span>
+            ${m.isKelas ? `
+              <span class="kelas-badge" title="Materi resmi perkuliahan dari pengurus kelas">
+                <i data-feather="users"></i>
+                <span>Materi Kelas • ${escapeHtml(m.authorJabatan || 'Pengurus')}</span>
+              </span>
+            ` : `
+              <span class="personal-badge" title="Catatan materi pribadi Anda">
+                <i data-feather="user"></i>
+                <span>Pribadi</span>
+              </span>
+            `}
+          </div>
           <span class="materi-date">
             <i data-feather="calendar"></i>
             ${formatIndoDate(m.tanggal)}
@@ -1136,14 +1326,16 @@ function renderMateri() {
             ` : (!m.file ? `<span class="no-attachment-text">Tanpa lampiran berkas</span>` : '')}
           </div>
 
-          <div class="card-actions-group">
-            <button class="btn-edit-item" onclick="openEditMateriModal('${m.id}')" title="Edit Materi">
-              <i data-feather="edit-2"></i>
-            </button>
-            <button class="btn-delete-item" onclick="deleteMateri('${m.id}')" title="Hapus Catatan">
-              <i data-feather="trash-2"></i>
-            </button>
-          </div>
+          ${canEditDelete ? `
+            <div class="card-actions-group">
+              <button class="btn-edit-item" onclick="openEditMateriModal('${m.id}')" title="Edit Materi">
+                <i data-feather="edit-2"></i>
+              </button>
+              <button class="btn-delete-item" onclick="deleteMateri('${m.id}')" title="Hapus Catatan">
+                <i data-feather="trash-2"></i>
+              </button>
+            </div>
+          ` : ''}
         </div>
       `;
 
@@ -1157,19 +1349,34 @@ function renderMateri() {
 
 window.deleteMateri = async function(id) {
   const materi = materiList.find(m => m.id === id);
-  if (confirm(`Hapus materi "${materi ? materi.judul : 'ini'}"?`)) {
+  if (!materi) return;
+
+  if (materi.isKelas && !isCurrentUserAdmin) {
+    showToast('Hanya Pengurus Kelas yang dapat menghapus materi resmi kelas.', 'warning');
+    return;
+  }
+
+  const confirmMsg = materi.isKelas
+    ? `Hapus materi resmi kelas "${materi.judul}"? Materi ini akan terhapus dari akun SELURUH mahasiswa.`
+    : `Hapus materi "${materi.judul}"?`;
+
+  if (confirm(confirmMsg)) {
     if (materi && materi.file && materi.file.id) {
       await deleteUploadedFile(materi.file.id);
     }
-    materiList = materiList.filter(m => m.id !== id);
-    saveStorage();
-    if (typeof deleteMateriFromCloud === 'function') {
-      deleteMateriFromCloud(id);
+    if (materi.isKelas) {
+      classMateri = classMateri.filter(item => item.id !== id);
+      if (typeof deleteKelasMateriFromCloud === 'function') {
+        deleteKelasMateriFromCloud(id);
+      }
+    } else {
+      personalMateri = personalMateri.filter(item => item.id !== id);
+      if (typeof deleteMateriFromCloud === 'function') {
+        deleteMateriFromCloud(id);
+      }
     }
-    renderCourseFilters();
-    renderMateri();
-    renderOverviewRecentMaterials();
-    showToast('Catatan materi dihapus', 'danger');
+    rebuildMateriList();
+    showToast('Materi berhasil dihapus', 'danger');
   }
 };
 
@@ -1328,6 +1535,19 @@ function openAddTugasModal() {
   if (tugasModalTitle) tugasModalTitle.textContent = 'Tambah Tugas Kuliah';
   if (btnSubmitTugas) btnSubmitTugas.textContent = 'Simpan Tugas';
 
+  // Toggle Opsi Publikasi Resmi Kelas (khusus pengurus / admin)
+  const tugasIsKelasGroup = document.getElementById('tugasIsKelasGroup');
+  const tugasIsKelasCheckbox = document.getElementById('tugasIsKelasCheckbox');
+  if (tugasIsKelasGroup && tugasIsKelasCheckbox) {
+    if (isCurrentUserAdmin) {
+      tugasIsKelasGroup.style.display = 'block';
+      tugasIsKelasCheckbox.checked = true; // Default aktif untuk pengurus kelas
+    } else {
+      tugasIsKelasGroup.style.display = 'none';
+      tugasIsKelasCheckbox.checked = false;
+    }
+  }
+
   // Reset staged file & uploader
   stagedTugasFile = null;
   if (tugasFileInput) tugasFileInput.value = '';
@@ -1358,9 +1578,27 @@ function openEditTugasModal(id) {
   const task = tugasList.find(t => t.id === id);
   if (!task) return;
 
+  if (task.isKelas && !isCurrentUserAdmin) {
+    showToast('Hanya Pengurus Kelas yang dapat mengedit tugas resmi kelas.', 'warning');
+    return;
+  }
+
   if (editTugasId) editTugasId.value = task.id;
   if (tugasModalTitle) tugasModalTitle.textContent = 'Edit Tugas Kuliah';
   if (btnSubmitTugas) btnSubmitTugas.textContent = 'Perbarui Tugas';
+
+  // Opsi Publikasi Resmi Kelas
+  const tugasIsKelasGroup = document.getElementById('tugasIsKelasGroup');
+  const tugasIsKelasCheckbox = document.getElementById('tugasIsKelasCheckbox');
+  if (tugasIsKelasGroup && tugasIsKelasCheckbox) {
+    if (isCurrentUserAdmin) {
+      tugasIsKelasGroup.style.display = 'block';
+      tugasIsKelasCheckbox.checked = !!task.isKelas;
+    } else {
+      tugasIsKelasGroup.style.display = 'none';
+      tugasIsKelasCheckbox.checked = false;
+    }
+  }
 
   // Pastikan daftar pilihan mata kuliah selalu terupdate dari page mata kuliah
   renderCourseFilters();
@@ -1415,6 +1653,19 @@ function openAddMateriModal() {
   if (materiModalTitle) materiModalTitle.textContent = 'Tambah Materi Kuliah';
   if (btnSubmitMateri) btnSubmitMateri.textContent = 'Simpan Materi';
 
+  // Toggle Opsi Publikasi Resmi Kelas (khusus pengurus / admin)
+  const materiIsKelasGroup = document.getElementById('materiIsKelasGroup');
+  const materiIsKelasCheckbox = document.getElementById('materiIsKelasCheckbox');
+  if (materiIsKelasGroup && materiIsKelasCheckbox) {
+    if (isCurrentUserAdmin) {
+      materiIsKelasGroup.style.display = 'block';
+      materiIsKelasCheckbox.checked = true; // Default aktif untuk pengurus kelas
+    } else {
+      materiIsKelasGroup.style.display = 'none';
+      materiIsKelasCheckbox.checked = false;
+    }
+  }
+
   // Reset staged file & toggle
   stagedMateriFile = null;
   if (materiFileInput) materiFileInput.value = '';
@@ -1443,9 +1694,27 @@ function openEditMateriModal(id) {
   const m = materiList.find(item => item.id === id);
   if (!m) return;
 
+  if (m.isKelas && !isCurrentUserAdmin) {
+    showToast('Hanya Pengurus Kelas yang dapat mengedit materi resmi kelas.', 'warning');
+    return;
+  }
+
   if (editMateriId) editMateriId.value = m.id;
   if (materiModalTitle) materiModalTitle.textContent = 'Edit Materi Kuliah';
   if (btnSubmitMateri) btnSubmitMateri.textContent = 'Perbarui Materi';
+
+  // Opsi Publikasi Resmi Kelas
+  const materiIsKelasGroup = document.getElementById('materiIsKelasGroup');
+  const materiIsKelasCheckbox = document.getElementById('materiIsKelasCheckbox');
+  if (materiIsKelasGroup && materiIsKelasCheckbox) {
+    if (isCurrentUserAdmin) {
+      materiIsKelasGroup.style.display = 'block';
+      materiIsKelasCheckbox.checked = !!m.isKelas;
+    } else {
+      materiIsKelasGroup.style.display = 'none';
+      materiIsKelasCheckbox.checked = false;
+    }
+  }
 
   // Pastikan daftar pilihan mata kuliah selalu terupdate dari page mata kuliah
   renderCourseFilters();
@@ -1565,6 +1834,9 @@ tugasForm.addEventListener('submit', async (e) => {
   const deskripsi = document.getElementById('tugasDeskripsi').value.trim();
   const editId = editTugasId ? editTugasId.value : '';
 
+  const isKelasCheckbox = document.getElementById('tugasIsKelasCheckbox');
+  const willBeKelas = isCurrentUserAdmin && isKelasCheckbox ? isKelasCheckbox.checked : false;
+
   if (!matkul) {
     showToast('Mohon pilih Mata Kuliah!', 'danger');
     document.getElementById('tugasMatkul').focus();
@@ -1605,75 +1877,125 @@ tugasForm.addEventListener('submit', async (e) => {
           cloudFile = await uploadFileToFirebaseStorage(stagedTugasFile.data, stagedTugasFile.name, stagedTugasFile.id);
         }
 
-      fileMeta = {
-        id: stagedTugasFile.id,
-        name: stagedTugasFile.name,
-        size: stagedTugasFile.size,
-        type: stagedTugasFile.type,
-        downloadUrl: cloudFile ? cloudFile.downloadUrl : '',
-        storagePath: cloudFile ? cloudFile.path : ''
-      };
-    } else if (stagedTugasFile.isExisting) {
-      fileMeta = {
-        id: stagedTugasFile.id,
-        name: stagedTugasFile.name,
-        size: stagedTugasFile.size,
-        type: stagedTugasFile.type,
-        downloadUrl: stagedTugasFile.downloadUrl || '',
-        storagePath: stagedTugasFile.storagePath || ''
-      };
-    }
-  }
-
-  let savedTask = null;
-  if (editId) {
-    // Mode Edit
-    const taskIndex = tugasList.findIndex(t => t.id === editId);
-    if (taskIndex !== -1) {
-      const oldTask = tugasList[taskIndex];
-      // Jika berkas lama diganti atau dihapus, hapus dari IndexedDB dan Firebase Storage
-      if (oldTask.file && (!fileMeta || fileMeta.id !== oldTask.file.id)) {
-        await deleteUploadedFile(oldTask.file.id);
-        if (oldTask.file.storagePath && typeof deleteFileFromFirebaseStorage === 'function') {
-          await deleteFileFromFirebaseStorage(oldTask.file.storagePath);
-        }
+        fileMeta = {
+          id: stagedTugasFile.id,
+          name: stagedTugasFile.name,
+          size: stagedTugasFile.size,
+          type: stagedTugasFile.type,
+          downloadUrl: cloudFile ? cloudFile.downloadUrl : '',
+          storagePath: cloudFile ? cloudFile.path : ''
+        };
+      } else if (stagedTugasFile.isExisting) {
+        fileMeta = {
+          id: stagedTugasFile.id,
+          name: stagedTugasFile.name,
+          size: stagedTugasFile.size,
+          type: stagedTugasFile.type,
+          downloadUrl: stagedTugasFile.downloadUrl || '',
+          storagePath: stagedTugasFile.storagePath || ''
+        };
       }
+    }
 
-      tugasList[taskIndex] = {
-        ...oldTask,
+    let savedTask = null;
+    if (editId) {
+      // Mode Edit
+      const classIdx = classTugas.findIndex(t => t.id === editId);
+      const personalIdx = personalTugas.findIndex(t => t.id === editId);
+      const wasKelas = classIdx !== -1;
+      const oldTask = wasKelas ? classTugas[classIdx] : (personalIdx !== -1 ? personalTugas[personalIdx] : null);
+
+      if (oldTask) {
+        // Jika berkas lama diganti atau dihapus
+        if (oldTask.file && (!fileMeta || fileMeta.id !== oldTask.file.id)) {
+          await deleteUploadedFile(oldTask.file.id);
+          if (oldTask.file.storagePath && typeof deleteFileFromFirebaseStorage === 'function') {
+            await deleteFileFromFirebaseStorage(oldTask.file.storagePath);
+          }
+        }
+
+        savedTask = {
+          ...oldTask,
+          judul,
+          matkul,
+          deadline: `${date}T${time}`,
+          prioritas,
+          deskripsi,
+          file: fileMeta,
+          isKelas: willBeKelas,
+          updatedAt: new Date().toISOString()
+        };
+
+        if (willBeKelas) {
+          if (!savedTask.authorJabatan && currentUserProfile) {
+            savedTask.authorJabatan = currentUserProfile.role || 'Pengurus';
+            savedTask.authorNama = currentUserProfile.nama || 'Pengurus';
+          }
+          if (wasKelas) {
+            classTugas[classIdx] = savedTask;
+          } else {
+            if (personalIdx !== -1) personalTugas.splice(personalIdx, 1);
+            if (typeof deleteTugasFromCloud === 'function') deleteTugasFromCloud(editId);
+            classTugas.unshift(savedTask);
+          }
+          if (typeof syncKelasTugasToCloud === 'function') {
+            syncKelasTugasToCloud(savedTask);
+          }
+        } else {
+          if (wasKelas) {
+            classTugas.splice(classIdx, 1);
+            if (typeof deleteKelasTugasFromCloud === 'function') deleteKelasTugasFromCloud(editId);
+            personalTugas.unshift(savedTask);
+          } else {
+            personalTugas[personalIdx] = savedTask;
+          }
+          if (typeof syncTugasToCloud === 'function') {
+            syncTugasToCloud(savedTask);
+          }
+        }
+        showToast('Tugas berhasil diperbarui! ✏️', 'success');
+      }
+    } else {
+      // Mode Tambah Baru
+      const newId = 'tgs-' + Date.now();
+      savedTask = {
+        id: newId,
         judul,
         matkul,
         deadline: `${date}T${time}`,
         prioritas,
         deskripsi,
-        file: fileMeta
+        file: fileMeta,
+        completed: false,
+        isKelas: willBeKelas,
+        createdAt: new Date().toISOString()
       };
-      savedTask = tugasList[taskIndex];
-      showToast('Tugas berhasil diperbarui! ✏️', 'success');
+
+      if (willBeKelas) {
+        savedTask.authorJabatan = currentUserProfile ? (currentUserProfile.role || 'Pengurus') : 'Pengurus';
+        savedTask.authorNama = currentUserProfile ? (currentUserProfile.nama || 'Pengurus') : 'Pengurus';
+        classTugas.unshift(savedTask);
+        if (typeof syncKelasTugasToCloud === 'function') {
+          syncKelasTugasToCloud(savedTask);
+        }
+        addNotification({
+          type: 'tugas',
+          title: `Tugas Baru: ${savedTask.matkul}`,
+          message: `${savedTask.judul} (Deadline: ${formatIndoDate(savedTask.deadline)})`,
+          time: new Date().toISOString()
+        });
+        showToast('Tugas resmi kelas berhasil dipublikasikan untuk seluruh kelas! 📢', 'success');
+      } else {
+        personalTugas.unshift(savedTask);
+        if (typeof syncTugasToCloud === 'function') {
+          syncTugasToCloud(savedTask);
+        }
+        showToast('Tugas pribadi berhasil disimpan! 📋', 'success');
+      }
     }
-  } else {
-    // Mode Tambah Baru
-    savedTask = {
-      id: 'tgs-' + Date.now(),
-      judul,
-      matkul,
-      deadline: `${date}T${time}`,
-      prioritas,
-      deskripsi,
-      file: fileMeta,
-      completed: false
-    };
-    tugasList.unshift(savedTask);
-    showToast('Tugas baru berhasil disimpan! 📋', 'success');
-  }
 
     saveStorage();
-    if (savedTask && typeof syncTugasToCloud === 'function') {
-      syncTugasToCloud(savedTask);
-    }
-    renderCourseFilters();
-    renderTugas();
-    renderOverviewUrgent();
+    rebuildTugasList();
     tugasModal.close();
   } catch (err) {
     console.error('Gagal menyimpan tugas:', err);
@@ -1697,6 +2019,9 @@ materiForm.addEventListener('submit', async (e) => {
   const link = document.getElementById('materiLink').value.trim();
   const catatan = document.getElementById('materiCatatan').value.trim();
   const editId = editMateriId ? editMateriId.value : '';
+
+  const isKelasCheckbox = document.getElementById('materiIsKelasCheckbox');
+  const willBeKelas = isCurrentUserAdmin && isKelasCheckbox ? isKelasCheckbox.checked : false;
 
   if (!matkul) {
     showToast('Mohon pilih Mata Kuliah!', 'danger');
@@ -1755,9 +2080,12 @@ materiForm.addEventListener('submit', async (e) => {
     let savedMateri = null;
     if (editId) {
       // Mode Edit
-      const materiIndex = materiList.findIndex(m => m.id === editId);
-      if (materiIndex !== -1) {
-        const oldMateri = materiList[materiIndex];
+      const classIdx = classMateri.findIndex(m => m.id === editId);
+      const personalIdx = personalMateri.findIndex(m => m.id === editId);
+      const wasKelas = classIdx !== -1;
+      const oldMateri = wasKelas ? classMateri[classIdx] : (personalIdx !== -1 ? personalMateri[personalIdx] : null);
+
+      if (oldMateri) {
         if (oldMateri.file && (!fileMeta || fileMeta.id !== oldMateri.file.id)) {
           await deleteUploadedFile(oldMateri.file.id);
           if (oldMateri.file.storagePath && typeof deleteFileFromFirebaseStorage === 'function') {
@@ -1765,7 +2093,7 @@ materiForm.addEventListener('submit', async (e) => {
           }
         }
 
-        materiList[materiIndex] = {
+        savedMateri = {
           ...oldMateri,
           judul,
           matkul,
@@ -1773,34 +2101,81 @@ materiForm.addEventListener('submit', async (e) => {
           tanggal,
           link,
           file: fileMeta,
-          catatan
+          catatan,
+          isKelas: willBeKelas,
+          updatedAt: new Date().toISOString()
         };
-        savedMateri = materiList[materiIndex];
+
+        if (willBeKelas) {
+          if (!savedMateri.authorJabatan && currentUserProfile) {
+            savedMateri.authorJabatan = currentUserProfile.role || 'Pengurus';
+            savedMateri.authorNama = currentUserProfile.nama || 'Pengurus';
+          }
+          if (wasKelas) {
+            classMateri[classIdx] = savedMateri;
+          } else {
+            if (personalIdx !== -1) personalMateri.splice(personalIdx, 1);
+            if (typeof deleteMateriFromCloud === 'function') deleteMateriFromCloud(editId);
+            classMateri.unshift(savedMateri);
+          }
+          if (typeof syncKelasMateriToCloud === 'function') {
+            syncKelasMateriToCloud(savedMateri);
+          }
+        } else {
+          if (wasKelas) {
+            classMateri.splice(classIdx, 1);
+            if (typeof deleteKelasMateriFromCloud === 'function') deleteKelasMateriFromCloud(editId);
+            personalMateri.unshift(savedMateri);
+          } else {
+            personalMateri[personalIdx] = savedMateri;
+          }
+          if (typeof syncMateriToCloud === 'function') {
+            syncMateriToCloud(savedMateri);
+          }
+        }
         showToast(`Materi pertemuan ${pertemuan} diperbarui! ✏️`, 'success');
       }
     } else {
       // Mode Tambah Baru
+      const newId = 'mat-' + Date.now();
       savedMateri = {
-        id: 'mat-' + Date.now(),
+        id: newId,
         judul,
         matkul,
         pertemuan,
         tanggal,
         link,
         file: fileMeta,
-        catatan
+        catatan,
+        isKelas: willBeKelas,
+        createdAt: new Date().toISOString()
       };
-      materiList.unshift(savedMateri);
-      showToast(`Materi pertemuan ${pertemuan} berhasil disimpan! 📖`, 'success');
+
+      if (willBeKelas) {
+        savedMateri.authorJabatan = currentUserProfile ? (currentUserProfile.role || 'Pengurus') : 'Pengurus';
+        savedMateri.authorNama = currentUserProfile ? (currentUserProfile.nama || 'Pengurus') : 'Pengurus';
+        classMateri.unshift(savedMateri);
+        if (typeof syncKelasMateriToCloud === 'function') {
+          syncKelasMateriToCloud(savedMateri);
+        }
+        addNotification({
+          type: 'materi',
+          title: `Materi Baru: ${savedMateri.matkul}`,
+          message: `Pertemuan ${savedMateri.pertemuan}: ${savedMateri.judul}`,
+          time: new Date().toISOString()
+        });
+        showToast(`Materi resmi pertemuan ${pertemuan} berhasil dibagikan ke seluruh kelas! 📚`, 'success');
+      } else {
+        personalMateri.unshift(savedMateri);
+        if (typeof syncMateriToCloud === 'function') {
+          syncMateriToCloud(savedMateri);
+        }
+        showToast(`Catatan materi pertemuan ${pertemuan} berhasil disimpan! 📖`, 'success');
+      }
     }
 
     saveStorage();
-    if (savedMateri && typeof syncMateriToCloud === 'function') {
-      syncMateriToCloud(savedMateri);
-    }
-    renderCourseFilters();
-    renderMateri();
-    renderOverviewRecentMaterials();
+    rebuildMateriList();
     materiModal.close();
   } catch (err) {
     console.error('Gagal menyimpan materi:', err);
@@ -2463,6 +2838,9 @@ if (btnSwitchToLogin) {
  */
 function updateStudentProfileUI(profile) {
   if (!profile) return;
+  currentUserProfile = profile;
+  isCurrentUserAdmin = !!(profile.role && profile.role !== 'Mahasiswa') || !!profile.isAdmin;
+
   try {
     localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(profile));
   } catch (e) {}
@@ -2484,6 +2862,15 @@ function updateStudentProfileUI(profile) {
   const dbNim = document.getElementById('dashboardStudentNim');
   if (dbName) dbName.textContent = profile.nama || 'Mahasiswa';
   if (dbNim) dbNim.textContent = profile.nim ? `NIM: ${profile.nim}` : 'NIM: -';
+
+  // Perbarui status & badge hak akses Pengurus Kelas
+  if (typeof updateAdminUI === 'function') {
+    updateAdminUI();
+  }
+
+  // Rebuild tugas & materi agar hak akses edit/hapus dan status pengerjaan sesuai
+  if (typeof rebuildTugasList === 'function') rebuildTugasList();
+  if (typeof rebuildMateriList === 'function') rebuildMateriList();
 }
 
 /**
@@ -2977,6 +3364,449 @@ if (changePasswordForm) {
 }
 
 // ============================================================================
+// 10D. FITUR PENGURUS KELAS (ADMIN ROLES) & NOTIFIKASI
+// ============================================================================
+
+/**
+ * 1. SHARE KE WHATSAPP (1-Klik Bagikan Rincian Tugas ke Grup WA)
+ */
+window.shareTugasToWA = function(id) {
+  const task = tugasList.find(t => t.id === id);
+  if (!task) return;
+
+  const dlInfo = calculateDeadlineInfo(task.deadline);
+  const waText = 
+    `🔔 *PENGINGAT TUGAS KULIAH* 🔔\n\n` +
+    `📚 *Mata Kuliah:* ${task.matkul || '-'}\n` +
+    `📌 *Judul:* ${task.judul || '-'}\n` +
+    `⏰ *Tenggat / Deadline:* ${dlInfo.text}\n` +
+    `⚡ *Prioritas:* ${task.prioritas || 'Sedang'}\n` +
+    (task.deskripsi ? `📝 *Deskripsi:* ${task.deskripsi}\n` : '') +
+    (task.authorJabatan ? `👤 *Info dari:* ${task.authorJabatan}\n` : '') +
+    `\n👉 *Akses & kumpulkan di Portal Kuliah:* ${window.location.origin}${window.location.pathname}`;
+
+  const encoded = encodeURIComponent(waText);
+  window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
+};
+
+/**
+ * 2. SISTEM NOTIFIKASI & PENGINGAT DEADLINE
+ */
+function getNotifications() {
+  try {
+    const raw = localStorage.getItem(NOTIFS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveNotifications(notifs) {
+  try {
+    localStorage.setItem(NOTIFS_STORAGE_KEY, JSON.stringify(notifs.slice(0, 30)));
+  } catch (e) {}
+}
+
+function addNotification({ type, title, message, time, taskId }) {
+  const notifs = getNotifications();
+  // Hindari notifikasi duplikat untuk task yang sama dengan tipe yang sama
+  const exists = notifs.some(n => n.taskId && n.taskId === taskId && n.type === type);
+  if (exists) return;
+
+  const newNotif = {
+    id: 'notif-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+    type: type || 'info',
+    title: title || 'Notifikasi',
+    message: message || '',
+    time: time || new Date().toISOString(),
+    read: false,
+    taskId: taskId || null
+  };
+
+  notifs.unshift(newNotif);
+  saveNotifications(notifs);
+  renderNotificationsUI();
+
+  // Browser Push Notification (jika pengguna mengizinkan)
+  triggerBrowserPushNotification(title, message);
+}
+
+function triggerBrowserPushNotification(title, body) {
+  if (!('Notification' in window)) return;
+
+  if (Notification.permission === 'granted') {
+    try {
+      new Notification(title, {
+        body: body,
+        icon: 'icons/icon-192.png'
+      });
+    } catch (e) {}
+  } else if (Notification.permission !== 'denied') {
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        try {
+          new Notification(title, {
+            body: body,
+            icon: 'icons/icon-192.png'
+          });
+        } catch (e) {}
+      }
+    });
+  }
+}
+
+function renderNotificationsUI() {
+  const notifs = getNotifications();
+  const badge = document.getElementById('notifBadge');
+  const listEl = document.getElementById('notifList');
+  if (!listEl) return;
+
+  const unreadCount = notifs.filter(n => !n.read).length;
+  if (badge) {
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+      badge.style.display = 'inline-flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  if (notifs.length === 0) {
+    listEl.innerHTML = `<div class="notif-empty"><i data-feather="bell-off"></i><span>Belum ada notifikasi baru</span></div>`;
+    if (window.feather) feather.replace();
+    return;
+  }
+
+  listEl.innerHTML = notifs.map(n => {
+    let icon = 'info';
+    let iconClass = 'notif-icon-info';
+    if (n.type === 'h1' || n.type === 'deadline') {
+      icon = 'alert-triangle';
+      iconClass = 'notif-icon-warning';
+    } else if (n.type === 'tugas') {
+      icon = 'check-square';
+      iconClass = 'notif-icon-primary';
+    } else if (n.type === 'materi') {
+      icon = 'book-open';
+      iconClass = 'notif-icon-accent';
+    }
+
+    const timeAgo = formatTimeAgo(n.time);
+
+    return `
+      <div class="notif-item ${n.read ? 'read' : 'unread'}" onclick="handleNotifItemClick('${n.id}', '${n.taskId || ''}')">
+        <div class="notif-item-icon ${iconClass}">
+          <i data-feather="${icon}"></i>
+        </div>
+        <div class="notif-item-content">
+          <div class="notif-item-title">${escapeHtml(n.title)}</div>
+          <div class="notif-item-msg">${escapeHtml(n.message)}</div>
+          <div class="notif-item-time">${timeAgo}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (window.feather) feather.replace();
+}
+
+function formatTimeAgo(isoString) {
+  if (!isoString) return '';
+  const diff = Date.now() - new Date(isoString).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Baru saja';
+  if (mins < 60) return `${mins} mnt lalu`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} jam lalu`;
+  const days = Math.floor(hours / 24);
+  return `${days} hari lalu`;
+}
+
+window.handleNotifItemClick = function(notifId, taskId) {
+  const notifs = getNotifications();
+  const item = notifs.find(n => n.id === notifId);
+  if (item) item.read = true;
+  saveNotifications(notifs);
+  renderNotificationsUI();
+
+  const dropdown = document.getElementById('notifDropdown');
+  if (dropdown) dropdown.style.display = 'none';
+
+  if (taskId) {
+    switchTab('tab-tugas');
+  }
+};
+
+window.markAllNotificationsRead = function() {
+  const notifs = getNotifications();
+  notifs.forEach(n => n.read = true);
+  saveNotifications(notifs);
+  renderNotificationsUI();
+  showToast('Semua notifikasi ditandai dibaca', 'info');
+};
+
+/**
+ * 3. PERIKSA DEADLINE H-1 & ALARM BANNER
+ */
+function checkDeadlinesAndNotify() {
+  const urgentTasks = [];
+  const now = new Date();
+
+  tugasList.forEach(t => {
+    if (!t.completed && t.deadline) {
+      const deadlineDate = new Date(t.deadline);
+      const diffMs = deadlineDate - now;
+      const diffHours = diffMs / (1000 * 60 * 60);
+
+      // Kurang dari 24 jam dan belum lewat waktu (H-1)
+      if (diffHours > 0 && diffHours <= 24) {
+        urgentTasks.push(t);
+        // Tambahkan ke sistem notifikasi
+        addNotification({
+          type: 'h1',
+          title: `⚠️ H-1 Deadline: ${t.matkul}`,
+          message: `Tugas "${t.judul}" harus selesai dalam ${Math.round(diffHours)} jam lagi!`,
+          time: new Date().toISOString(),
+          taskId: t.id
+        });
+      }
+    }
+  });
+
+  // Tampilkan Banner H-1 di atas dashboard
+  const banner = document.getElementById('urgentDeadlinesBanner');
+  const bannerDesc = document.getElementById('urgentBannerDesc');
+
+  if (banner) {
+    if (urgentTasks.length > 0) {
+      banner.style.display = 'flex';
+      if (bannerDesc) {
+        if (urgentTasks.length === 1) {
+          bannerDesc.textContent = `Tugas "${urgentTasks[0].judul}" (${urgentTasks[0].matkul}) harus dikumpulkan dalam waktu kurang dari 24 jam!`;
+        } else {
+          bannerDesc.textContent = `Ada ${urgentTasks.length} tugas yang harus dikumpulkan dalam waktu kurang dari 24 jam!`;
+        }
+      }
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
+  renderNotificationsUI();
+}
+
+/**
+ * 4. PENGURUS KELAS MODAL & HAK AKSES UI
+ */
+function updateAdminUI() {
+  const topbarContainer = document.getElementById('topbarAdminBadgeContainer');
+  const sidebarBadge = document.getElementById('sidebarAdminBadge');
+  const btnClaimSidebar = document.getElementById('btnClaimAdminSidebar');
+  const btnCloudModal = document.getElementById('btnOpenCloudModal');
+
+  const role = currentUserProfile ? currentUserProfile.role : null;
+  const isPengurus = isCurrentUserAdmin;
+
+  // 1. Topbar
+  if (topbarContainer) {
+    if (isPengurus && role) {
+      topbarContainer.innerHTML = `
+        <span class="admin-pill-badge" title="Status: ${escapeHtml(role)}">
+          <i data-feather="shield"></i>
+          <span>${escapeHtml(role)}</span>
+        </span>
+      `;
+    } else {
+      topbarContainer.innerHTML = `
+        <button type="button" class="btn-claim-admin-topbar" onclick="openClaimAdminModal()" title="Klaim Hak Akses Pengurus Kelas">
+          <i data-feather="key"></i>
+          <span>Pengurus</span>
+        </button>
+      `;
+    }
+  }
+
+  // 2. Sidebar Footer
+  if (sidebarBadge) {
+    if (isPengurus && role) {
+      sidebarBadge.innerHTML = `
+        <span class="sidebar-role-pill">
+          <i data-feather="award"></i>
+          <span>${escapeHtml(role)}</span>
+        </span>
+      `;
+      sidebarBadge.style.display = 'block';
+    } else {
+      sidebarBadge.innerHTML = '';
+      sidebarBadge.style.display = 'none';
+    }
+  }
+
+  if (btnClaimSidebar) {
+    if (isPengurus) {
+      btnClaimSidebar.innerHTML = `<i data-feather="check-circle"></i><span>Pengurus Aktif</span>`;
+      btnClaimSidebar.onclick = () => openClaimAdminModal();
+    } else {
+      btnClaimSidebar.innerHTML = `<i data-feather="key"></i><span>Aktivasi Pengurus</span>`;
+      btnClaimSidebar.onclick = () => openClaimAdminModal();
+    }
+  }
+
+  // 3. Tombol Cloud Modal (hanya untuk pengurus / admin)
+  if (btnCloudModal) {
+    btnCloudModal.style.display = isPengurus ? 'inline-flex' : 'none';
+  }
+
+  if (window.feather) feather.replace();
+}
+
+function openClaimAdminModal() {
+  const modal = document.getElementById('claimAdminModal');
+  const form = document.getElementById('claimAdminForm');
+  const roleSelect = document.getElementById('adminRoleSelect');
+  const codeInput = document.getElementById('adminAccessCode');
+
+  if (form) form.reset();
+  if (codeInput) codeInput.value = '';
+  if (roleSelect && currentUserProfile && currentUserProfile.role && currentUserProfile.role !== 'Mahasiswa') {
+    roleSelect.value = currentUserProfile.role;
+  }
+  if (modal) modal.showModal();
+}
+
+function closeClaimAdminModal() {
+  const modal = document.getElementById('claimAdminModal');
+  if (modal) modal.close();
+}
+
+window.openClaimAdminModal = openClaimAdminModal;
+window.closeClaimAdminModal = closeClaimAdminModal;
+
+// Handler Form Klaim Hak Akses Pengurus
+const claimAdminForm = document.getElementById('claimAdminForm');
+if (claimAdminForm) {
+  claimAdminForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const roleSelect = document.getElementById('adminRoleSelect');
+    const codeInput = document.getElementById('adminAccessCode');
+    const selectedRole = roleSelect ? roleSelect.value : 'Pengurus Kelas';
+    const enteredCode = codeInput ? codeInput.value.trim() : '';
+
+    const validCodes = ['AD1', 'AD2', 'AD3', 'AD4', 'AD5', 'AD6', 'AD7', 'AD8', 'AD9', 'AD10', 'AD1-AD10'];
+    const isCodeValid = (typeof isValidAdminCode === 'function')
+      ? isValidAdminCode(enteredCode)
+      : validCodes.includes(enteredCode.toUpperCase());
+
+    if (!isCodeValid) {
+      showToast('Kode akses salah! Kode akses khusus untuk pengurus (Ad1 - Ad10).', 'danger');
+      if (codeInput) {
+        codeInput.focus();
+        codeInput.select();
+      }
+      return;
+    }
+
+    try {
+      // Perbarui profil user
+      const updatedProfile = {
+        ...(currentUserProfile || {}),
+        role: selectedRole,
+        isAdmin: true
+      };
+
+      currentUserProfile = updatedProfile;
+      isCurrentUserAdmin = true;
+
+      // Simpan di LocalStorage
+      try {
+        localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(updatedProfile));
+      } catch (e) {}
+
+      // Simpan di Firestore jika user sedang login
+      if (typeof updateUserProfile === 'function' && typeof getCurrentUserUID === 'function') {
+        const uid = getCurrentUserUID();
+        if (uid) {
+          await updateUserProfile(uid, { role: selectedRole, isAdmin: true });
+        }
+      }
+
+      updateAdminUI();
+      rebuildTugasList();
+      rebuildMateriList();
+      closeClaimAdminModal();
+
+      showToast(`Selamat! Hak akses ${selectedRole} berhasil diaktifkan. Anda kini dapat mempublikasikan tugas & materi resmi kelas! 🎉`, 'success');
+    } catch (err) {
+      console.error('Gagal aktivasi pengurus:', err);
+      showToast('Terjadi kesalahan: ' + err.message, 'danger');
+    }
+  });
+}
+
+/**
+ * 5. FIREBASE CLOUD REAL-TIME CALLBACKS
+ */
+window.handleCloudPersonalTugas = function(cloudData) {
+  personalTugas = Array.isArray(cloudData) ? cloudData : [];
+  rebuildTugasList();
+};
+
+window.handleCloudKelasTugas = function(cloudData) {
+  classTugas = Array.isArray(cloudData) ? cloudData : [];
+  rebuildTugasList();
+};
+
+window.handleCloudTugasStatus = function(statusMap) {
+  tugasStatusMap = statusMap || {};
+  try {
+    localStorage.setItem(TUGAS_STATUS_STORAGE_KEY, JSON.stringify(tugasStatusMap));
+  } catch (e) {}
+  rebuildTugasList();
+};
+
+window.handleCloudPersonalMateri = function(cloudData) {
+  personalMateri = Array.isArray(cloudData) ? cloudData : [];
+  rebuildMateriList();
+};
+
+window.handleCloudKelasMateri = function(cloudData) {
+  classMateri = Array.isArray(cloudData) ? cloudData : [];
+  rebuildMateriList();
+};
+
+/**
+ * 6. NOTIFICATION BELL TOGGLE & EVENT LISTENERS
+ */
+const btnNotifBell = document.getElementById('btnNotifBell');
+const notifDropdown = document.getElementById('notifDropdown');
+const btnMarkAllNotifsRead = document.getElementById('btnMarkAllNotifsRead');
+
+if (btnNotifBell && notifDropdown) {
+  btnNotifBell.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isShowing = notifDropdown.style.display === 'block';
+    notifDropdown.style.display = isShowing ? 'none' : 'block';
+    if (!isShowing) {
+      renderNotificationsUI();
+    }
+  });
+
+  // Tutup dropdown saat klik di luar
+  document.addEventListener('click', (e) => {
+    if (notifDropdown && !notifDropdown.contains(e.target) && !btnNotifBell.contains(e.target)) {
+      notifDropdown.style.display = 'none';
+    }
+  });
+}
+
+if (btnMarkAllNotifsRead) {
+  btnMarkAllNotifsRead.addEventListener('click', (e) => {
+    e.stopPropagation();
+    markAllNotificationsRead();
+  });
+}
+
+// ============================================================================
 // 11. INITIALIZATION
 // ============================================================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -2999,12 +3829,18 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       updateStudentProfileUI(JSON.parse(cachedProfile));
     } catch (e) {}
+  } else {
+    updateAdminUI();
   }
 
+  try { rebuildTugasList(); } catch (e) { console.warn('Init rebuildTugasList error:', e); }
+  try { rebuildMateriList(); } catch (e) { console.warn('Init rebuildMateriList error:', e); }
   try { renderMatkul(); } catch (e) { console.warn('Init renderMatkul error:', e); }
   try { renderCourseFilters(); } catch (e) { console.warn('Init renderCourseFilters error:', e); }
   try { renderTugas(); } catch (e) { console.warn('Init renderTugas error:', e); }
   try { renderMateri(); } catch (e) { console.warn('Init renderMateri error:', e); }
+  try { renderNotificationsUI(); } catch (e) { console.warn('Init renderNotificationsUI error:', e); }
+  try { checkDeadlinesAndNotify(); } catch (e) { console.warn('Init checkDeadlinesAndNotify error:', e); }
 
   // Inisialisasi Firebase & Auth State Listener
   if (typeof initFirebase === 'function') {

@@ -445,11 +445,26 @@ function updateCloudStatusUI(connected, message) {
 }
 
 // ============================================================================
-// REAL-TIME LISTENERS (PER-USER)
+// HAK AKSES PENGURUS KELAS (ADMIN CODES)
+// ============================================================================
+// Kode akses resmi untuk: Ketua Kelas, Sekretaris, PJ Mata Kuliah, Designer Web
+const VALID_ADMIN_CODES = ['AD1', 'AD2', 'AD3', 'AD4', 'AD5', 'AD6', 'AD7', 'AD8', 'AD9', 'AD10', 'AD1-AD10'];
+
+function isValidAdminCode(code) {
+  if (!code) return false;
+  return VALID_ADMIN_CODES.includes(code.trim().toUpperCase());
+}
+
+// ============================================================================
+// REAL-TIME LISTENERS (PER-USER & SHARED KELAS)
 // ============================================================================
 let isInitialSyncTugas = true;
 let isInitialSyncMateri = true;
 let isInitialSyncMatkul = true;
+
+let unsubscribeKelasTugas = null;
+let unsubscribeKelasMateri = null;
+let unsubscribeTugasStatus = null;
 
 /**
  * Hentikan semua real-time listener (dipanggil saat logout)
@@ -458,12 +473,16 @@ function stopRealtimeListeners() {
   if (unsubscribeTugas) { unsubscribeTugas(); unsubscribeTugas = null; }
   if (unsubscribeMateri) { unsubscribeMateri(); unsubscribeMateri = null; }
   if (unsubscribeMatkul) { unsubscribeMatkul(); unsubscribeMatkul = null; }
-  console.log('🔌 Real-time listeners dihentikan.');
+  if (unsubscribeKelasTugas) { unsubscribeKelasTugas(); unsubscribeKelasTugas = null; }
+  if (unsubscribeKelasMateri) { unsubscribeKelasMateri(); unsubscribeKelasMateri = null; }
+  if (unsubscribeTugasStatus) { unsubscribeTugasStatus(); unsubscribeTugasStatus = null; }
+  console.log('🔌 Seluruh real-time listeners dihentikan.');
 }
 
 /**
- * Setup Real-time Listeners Firestore - KHUSUS untuk UID user yang sedang login
- * Data mahasiswa A tidak akan muncul di akun mahasiswa B
+ * Setup Real-time Listeners Firestore
+ * - Koleksi Pribadi: users/{uid}/tugas, materi, matkul, tugas_status
+ * - Koleksi Bersama (Seluruh Kelas): kelas_tugas, kelas_materi
  */
 function setupRealtimeListeners(uid) {
   if (!firestoreDb || !uid) return;
@@ -502,12 +521,12 @@ function setupRealtimeListeners(uid) {
     } catch (e) { console.warn('Gagal merender matkul dari cloud:', e); }
   }, (err) => console.error('Error listener matkul:', err));
 
-  // 2. Listener Tugas Kuliah (Mulai dari 0 tugas untuk pengguna baru)
+  // 2. Listener Tugas Kuliah Pribadi (users/{uid}/tugas)
   unsubscribeTugas = userRef.collection('tugas').onSnapshot((snapshot) => {
     if (snapshot.empty && isInitialSyncTugas) {
       isInitialSyncTugas = false;
-      if (tugasList && tugasList.length > 0) {
-        uploadInitialCollection('tugas', tugasList, uid);
+      if (typeof personalTugas !== 'undefined' && personalTugas && personalTugas.length > 0) {
+        uploadInitialCollection('tugas', personalTugas, uid);
         return;
       }
     }
@@ -519,22 +538,26 @@ function setupRealtimeListeners(uid) {
       if (data && (data.judul || data.matkul)) cloudData.push({ id: doc.id, ...data });
     });
 
-    tugasList = cloudData;
-    saveStorage();
-    try {
-      renderCourseFilters();
-      renderTugas();
-      renderOverviewUrgent();
-      if (window.feather) feather.replace();
-    } catch (e) { console.warn('Gagal merender tugas dari cloud:', e); }
-  }, (err) => console.error('Error listener tugas:', err));
+    if (typeof handleCloudPersonalTugas === 'function') {
+      handleCloudPersonalTugas(cloudData);
+    } else {
+      tugasList = cloudData;
+      saveStorage();
+      try {
+        renderCourseFilters();
+        renderTugas();
+        renderOverviewUrgent();
+        if (window.feather) feather.replace();
+      } catch (e) { console.warn('Gagal merender tugas dari cloud:', e); }
+    }
+  }, (err) => console.error('Error listener tugas pribadi:', err));
 
-  // 3. Listener Materi Kuliah (Mulai dari 0 materi untuk pengguna baru)
+  // 3. Listener Materi Kuliah Pribadi (users/{uid}/materi)
   unsubscribeMateri = userRef.collection('materi').onSnapshot((snapshot) => {
     if (snapshot.empty && isInitialSyncMateri) {
       isInitialSyncMateri = false;
-      if (materiList && materiList.length > 0) {
-        uploadInitialCollection('materi', materiList, uid);
+      if (typeof personalMateri !== 'undefined' && personalMateri && personalMateri.length > 0) {
+        uploadInitialCollection('materi', personalMateri, uid);
         return;
       }
     }
@@ -546,16 +569,58 @@ function setupRealtimeListeners(uid) {
       if (data && (data.judul || data.matkul)) cloudData.push({ id: doc.id, ...data });
     });
 
-    materiList = cloudData;
-    saveStorage();
-    try {
-      renderMateri();
-      renderOverviewRecentMaterials();
-      if (window.feather) feather.replace();
-    } catch (e) { console.warn('Gagal merender materi dari cloud:', e); }
-  }, (err) => console.error('Error listener materi:', err));
+    if (typeof handleCloudPersonalMateri === 'function') {
+      handleCloudPersonalMateri(cloudData);
+    } else {
+      materiList = cloudData;
+      saveStorage();
+      try {
+        renderMateri();
+        renderOverviewRecentMaterials();
+        if (window.feather) feather.replace();
+      } catch (e) { console.warn('Gagal merender materi dari cloud:', e); }
+    }
+  }, (err) => console.error('Error listener materi pribadi:', err));
 
-  console.log('👂 Real-time listeners aktif untuk UID:', uid);
+  // 4. Listener Tugas Resmi Kelas (Root Collection: kelas_tugas)
+  unsubscribeKelasTugas = firestoreDb.collection('kelas_tugas').onSnapshot((snapshot) => {
+    const cloudData = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data && (data.judul || data.matkul)) cloudData.push({ id: doc.id, ...data });
+    });
+    console.log(`📢 ${cloudData.length} tugas resmi kelas tersinkron.`);
+    if (typeof handleCloudKelasTugas === 'function') {
+      handleCloudKelasTugas(cloudData);
+    }
+  }, (err) => console.error('Error listener kelas_tugas:', err));
+
+  // 5. Listener Materi Resmi Kelas (Root Collection: kelas_materi)
+  unsubscribeKelasMateri = firestoreDb.collection('kelas_materi').onSnapshot((snapshot) => {
+    const cloudData = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data && (data.judul || data.matkul)) cloudData.push({ id: doc.id, ...data });
+    });
+    console.log(`📚 ${cloudData.length} materi resmi kelas tersinkron.`);
+    if (typeof handleCloudKelasMateri === 'function') {
+      handleCloudKelasMateri(cloudData);
+    }
+  }, (err) => console.error('Error listener kelas_materi:', err));
+
+  // 6. Listener Status Selesai Tugas Kelas (users/{uid}/tugas_status)
+  unsubscribeTugasStatus = userRef.collection('tugas_status').onSnapshot((snapshot) => {
+    const statusMap = {};
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data) statusMap[doc.id] = !!data.completed;
+    });
+    if (typeof handleCloudTugasStatus === 'function') {
+      handleCloudTugasStatus(statusMap);
+    }
+  }, (err) => console.error('Error listener tugas_status:', err));
+
+  console.log('👂 Real-time listeners aktif (Pribadi & Kelas) untuk UID:', uid);
 }
 
 // ============================================================================
@@ -579,9 +644,10 @@ async function uploadInitialCollection(collectionName, items, uid) {
 }
 
 // ============================================================================
-// CLOUD CRUD HELPERS (PER-USER)
+// CLOUD CRUD HELPERS (PRIBADI & RESMI KELAS)
 // ============================================================================
 
+// PRIBADI: TUGAS
 async function syncTugasToCloud(task) {
   const uid = getCurrentUserUID();
   if (!isFirebaseConnected || !firestoreDb || !uid) return;
@@ -598,6 +664,36 @@ async function deleteTugasFromCloud(id) {
   } catch (err) { console.error('Gagal hapus tugas dari cloud:', err); }
 }
 
+// RESMI KELAS: TUGAS
+async function syncKelasTugasToCloud(task) {
+  if (!isFirebaseConnected || !firestoreDb) return;
+  try {
+    await firestoreDb.collection('kelas_tugas').doc(task.id).set(task, { merge: true });
+    console.log('✅ Tugas resmi kelas tersimpan di cloud:', task.judul);
+  } catch (err) { console.error('Gagal sync tugas kelas ke cloud:', err); }
+}
+
+async function deleteKelasTugasFromCloud(id) {
+  if (!isFirebaseConnected || !firestoreDb) return;
+  try {
+    await firestoreDb.collection('kelas_tugas').doc(id).delete();
+    console.log('🗑️ Tugas resmi kelas dihapus dari cloud:', id);
+  } catch (err) { console.error('Gagal hapus tugas kelas dari cloud:', err); }
+}
+
+// STATUS PENGERJAAN TUGAS KELAS (PER-USER)
+async function syncTugasStatusToCloud(taskId, isCompleted) {
+  const uid = getCurrentUserUID();
+  if (!isFirebaseConnected || !firestoreDb || !uid) return;
+  try {
+    await firestoreDb.collection('users').doc(uid).collection('tugas_status').doc(taskId).set({
+      completed: !!isCompleted,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+  } catch (err) { console.error('Gagal sync status tugas ke cloud:', err); }
+}
+
+// PRIBADI: MATERI
 async function syncMateriToCloud(materi) {
   const uid = getCurrentUserUID();
   if (!isFirebaseConnected || !firestoreDb || !uid) return;
@@ -614,6 +710,24 @@ async function deleteMateriFromCloud(id) {
   } catch (err) { console.error('Gagal hapus materi dari cloud:', err); }
 }
 
+// RESMI KELAS: MATERI
+async function syncKelasMateriToCloud(materi) {
+  if (!isFirebaseConnected || !firestoreDb) return;
+  try {
+    await firestoreDb.collection('kelas_materi').doc(materi.id).set(materi, { merge: true });
+    console.log('✅ Materi resmi kelas tersimpan di cloud:', materi.judul);
+  } catch (err) { console.error('Gagal sync materi kelas ke cloud:', err); }
+}
+
+async function deleteKelasMateriFromCloud(id) {
+  if (!isFirebaseConnected || !firestoreDb) return;
+  try {
+    await firestoreDb.collection('kelas_materi').doc(id).delete();
+    console.log('🗑️ Materi resmi kelas dihapus dari cloud:', id);
+  } catch (err) { console.error('Gagal hapus materi kelas dari cloud:', err); }
+}
+
+// MATA KULIAH
 async function syncMatkulToCloud(matkul) {
   const uid = getCurrentUserUID();
   if (!isFirebaseConnected || !firestoreDb || !uid) return;
