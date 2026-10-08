@@ -1770,14 +1770,24 @@ button, input, select, textarea {
 
 .login-card {
   width: 100%;
-  max-width: 410px;
+  max-width: 440px;
+  max-height: 94vh;
+  overflow-y: auto;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
-  padding: 36px 30px;
+  padding: 32px 28px;
   box-shadow: var(--shadow-dialog);
   text-align: center;
   animation: loginCardPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.login-card::-webkit-scrollbar {
+  width: 5px;
+}
+.login-card::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 10px;
 }
 
 @keyframes loginCardPop {
@@ -1786,7 +1796,7 @@ button, input, select, textarea {
 }
 
 .login-brand {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .login-icon-badge {
@@ -1798,7 +1808,7 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 14px auto;
+  margin: 0 auto 12px auto;
 }
 
 .login-icon-badge i {
@@ -1819,10 +1829,129 @@ button, input, select, textarea {
   color: var(--text-muted);
 }
 
+/* Tab Switcher: Masuk vs Daftar */
+.auth-tab-switcher {
+  display: flex;
+  background-color: var(--bg-surface-secondary);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  margin: 18px 0 16px 0;
+  border: 1px solid var(--border-light);
+  gap: 4px;
+}
+
+.auth-tab-btn {
+  flex: 1;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+
+.auth-tab-btn:hover {
+  color: var(--text-main);
+}
+
+.auth-tab-btn.active {
+  background-color: var(--bg-surface);
+  color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Google Sign-In Button */
+.btn-google-signin {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+
+.btn-google-signin:hover {
+  background-color: var(--bg-surface-secondary);
+  border-color: var(--border-card);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-google-signin svg {
+  flex-shrink: 0;
+}
+
+/* Divider: atau masuk dengan NIM */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 6px 0;
+  color: var(--text-subtle);
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.auth-divider span {
+  padding: 0 10px;
+}
+
+/* Hints and helper links */
+.auth-input-hint {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.35;
+}
+
+.auth-switch-hint {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.btn-link-inline {
+  background: transparent;
+  border: none;
+  color: var(--primary);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.82rem;
+  font-family: inherit;
+  text-decoration: underline;
+}
+
+.btn-link-inline:hover {
+  color: var(--primary-hover);
+}
+
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   text-align: left;
 }
 
@@ -1984,6 +2113,77 @@ button, input, select, textarea {
 
 .app-layout.locked {
   display: none !important;
+}
+
+/* Sidebar User Profile Badge */
+.user-profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--sidebar-border);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), #818cf8);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
+  text-transform: uppercase;
+}
+
+.user-meta {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  text-align: left;
+}
+
+.user-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-nim {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-family: 'JetBrains Mono', monospace, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+/* Dashboard Banner NIM pill */
+.banner-nim-pill {
+  display: inline-block;
+  background-color: var(--primary-subtle);
+  color: var(--primary-text);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  margin-right: 6px;
+  font-family: monospace;
+}
+
+/* Auth Dialog Description */
+.forgot-modal-desc {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  line-height: 1.5;
 }
 
 /* ==========================================================================
@@ -2149,12 +2349,44 @@ button, input, select, textarea {
 }
 
 .course-card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
   border-top: 1px solid var(--border-light);
   padding-top: 14px;
   margin-top: auto;
+}
+
+.btn-course-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background-color: var(--bg-surface-secondary);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+  text-decoration: none;
+  width: 100%;
+}
+
+.btn-course-action:hover {
+  background-color: var(--primary-subtle);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.btn-course-action i {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
 }
 
 /* Color Picker */
@@ -2400,6 +2632,10 @@ button, input, select, textarea {
 
   .task-card, .materi-card, .course-card-full {
     padding: 16px;
+  }
+
+  .course-card-footer {
+    gap: 8px;
   }
 
   .active-filter-indicator {

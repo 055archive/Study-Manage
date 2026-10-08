@@ -10,9 +10,8 @@ const TUGAS_STORAGE_KEY = 'studysync_tugas_v1';
 const MATERI_STORAGE_KEY = 'studysync_materi_v1';
 const MATKUL_STORAGE_KEY = 'studysync_matkul_v1';
 const THEME_STORAGE_KEY = 'studysync_theme_v1';
-const AUTH_STORAGE_KEY = 'studysync_auth_state_v1';
-const PASSWORD_STORAGE_KEY = 'studysync_pass_hash_v1';
-const DEFAULT_RAW_PASSWORD = '@Mikasa262728';
+const AUTH_STORAGE_KEY = 'studysync_auth_state_v2';
+const USER_PROFILE_STORAGE_KEY = 'studysync_profile_v2';
 
 // Data Mata Kuliah Default
 const DEFAULT_MATKUL = [
@@ -1817,9 +1816,13 @@ function renderMatkul() {
         </div>
 
         <div class="course-card-footer">
-          <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 14px;" onclick="viewCourseDetails('${escapeHtml(course.nama)}')">
-            <i data-feather="filter"></i>
-            <span>Buka Tugas & Materi</span>
+          <button type="button" class="btn-course-action" onclick="viewCourseTasks('${escapeHtml(course.nama)}')" title="Lihat semua tugas untuk mata kuliah ini">
+            <i data-feather="check-square"></i>
+            <span>Buka Tugas</span>
+          </button>
+          <button type="button" class="btn-course-action" onclick="viewCourseMaterials('${escapeHtml(course.nama)}')" title="Lihat semua catatan & materi untuk mata kuliah ini">
+            <i data-feather="file-text"></i>
+            <span>Buka Materi</span>
           </button>
         </div>
       `;
@@ -1831,10 +1834,20 @@ function renderMatkul() {
   feather.replace();
 }
 
-window.viewCourseDetails = function(courseName) {
-  setMatkulFilter(courseName);
+window.viewCourseTasks = function(courseName) {
+  setMatkulFilter(courseName, false);
   switchTab('tab-tugas');
-  showToast(`Menampilkan data untuk: ${courseName}`, 'info');
+  showToast(`Menampilkan tugas untuk: ${courseName}`, 'info');
+};
+
+window.viewCourseMaterials = function(courseName) {
+  setMatkulFilter(courseName, false);
+  switchTab('tab-materi');
+  showToast(`Menampilkan materi untuk: ${courseName}`, 'info');
+};
+
+window.viewCourseDetails = function(courseName) {
+  viewCourseTasks(courseName);
 };
 
 window.deleteMatkul = function(id) {
@@ -2099,17 +2112,57 @@ if (btnDisconnectFirebase) {
 }
 
 // ============================================================================
-// 10C. KEAMANAN & AUTENTIKASI PORTAL (PASSWORD LOCK & CHANGE PASSWORD)
+// ============================================================================
+// 10C. KEAMANAN & AUTENTIKASI PORTAL (FIREBASE AUTH & NIM LOOKUP)
 // ============================================================================
 const loginOverlay = document.getElementById('loginOverlay');
 const appLayout = document.getElementById('appLayout');
+
+// Auth Form Elements
 const loginForm = document.getElementById('loginForm');
+const registerForm = document.getElementById('registerForm');
+const loginNimInput = document.getElementById('loginNimInput');
 const loginPasswordInput = document.getElementById('loginPasswordInput');
-const rememberMeCheckbox = document.getElementById('rememberMeCheckbox');
+const btnSubmitLogin = document.getElementById('btnSubmitLogin');
 const loginErrorMsg = document.getElementById('loginErrorMsg');
 const loginErrorText = document.getElementById('loginErrorText');
 const btnToggleLoginPwd = document.getElementById('btnToggleLoginPwd');
-const loginEyeIcon = document.getElementById('loginEyeIcon');
+
+// Register Elements
+const regNamaInput = document.getElementById('regNamaInput');
+const regNimInput = document.getElementById('regNimInput');
+const regEmailInput = document.getElementById('regEmailInput');
+const regPasswordInput = document.getElementById('regPasswordInput');
+const regConfirmPasswordInput = document.getElementById('regConfirmPasswordInput');
+const btnSubmitRegister = document.getElementById('btnSubmitRegister');
+const registerErrorMsg = document.getElementById('registerErrorMsg');
+const registerErrorText = document.getElementById('registerErrorText');
+const btnToggleRegPwd = document.getElementById('btnToggleRegPwd');
+const btnToggleRegConfirmPwd = document.getElementById('btnToggleRegConfirmPwd');
+
+// Google Sign In & Switch Buttons
+const btnGoogleSignIn = document.getElementById('btnGoogleSignIn');
+const btnGoogleSignInRegister = document.getElementById('btnGoogleSignInRegister');
+const btnSwitchToLogin = document.getElementById('btnSwitchToLogin');
+const btnForgotPassword = document.getElementById('btnForgotPassword');
+
+// Modals
+const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+const forgotNimInput = document.getElementById('forgotNimInput');
+const forgotErrorMsg = document.getElementById('forgotErrorMsg');
+const forgotErrorText = document.getElementById('forgotErrorText');
+const btnSubmitForgot = document.getElementById('btnSubmitForgot');
+const btnCloseForgotModal = document.getElementById('btnCloseForgotModal');
+const btnCancelForgotModal = document.getElementById('btnCancelForgotModal');
+
+const completeNIMModal = document.getElementById('completeNIMModal');
+const completeNIMForm = document.getElementById('completeNIMForm');
+const googleNamaInput = document.getElementById('googleNamaInput');
+const googleNimInput = document.getElementById('googleNimInput');
+const completeNIMErrorMsg = document.getElementById('completeNIMErrorMsg');
+const completeNIMErrorText = document.getElementById('completeNIMErrorText');
+const btnSubmitCompleteNIM = document.getElementById('btnSubmitCompleteNIM');
 
 const changePasswordModal = document.getElementById('changePasswordModal');
 const changePasswordForm = document.getElementById('changePasswordForm');
@@ -2117,113 +2170,91 @@ const oldPasswordInput = document.getElementById('oldPasswordInput');
 const newPasswordInput = document.getElementById('newPasswordInput');
 const confirmNewPasswordInput = document.getElementById('confirmNewPasswordInput');
 const btnOpenChangePassword = document.getElementById('btnOpenChangePassword');
-const btnOpenChangePasswordFromLogin = document.getElementById('btnOpenChangePasswordFromLogin');
-const btnOpenChangePasswordFromLoginFooter = document.getElementById('btnOpenChangePasswordFromLoginFooter');
+
 const btnLogout = document.getElementById('btnLogout');
 const btnQuickLock = document.getElementById('btnQuickLock');
 
 /**
- * Hash password menggunakan SHA-256 (Web Crypto API)
+ * Switch antara tab Masuk dan Daftar Akun
  */
-async function hashPassword(str) {
-  try {
-    if (window.crypto && crypto.subtle) {
-      const buffer = new TextEncoder().encode(str);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-  } catch (e) {
-    console.warn('Web Crypto API tidak tersedia, menggunakan fallback:', e);
-  }
-  return btoa(unescape(encodeURIComponent(str)));
-}
+function switchAuthTab(tab) {
+  const tabBtnMasuk = document.getElementById('tabBtnMasuk');
+  const tabBtnDaftar = document.getElementById('tabBtnDaftar');
 
-/**
- * Mengambil hash sandi yang tersimpan atau inisialisasi dengan sandi default (@Mikasa262728)
- */
-async function getStoredPasswordHash() {
-  let hash = localStorage.getItem(PASSWORD_STORAGE_KEY);
-  if (!hash) {
-    hash = await hashPassword(DEFAULT_RAW_PASSWORD);
-    localStorage.setItem(PASSWORD_STORAGE_KEY, hash);
-  }
-  return hash;
-}
-
-/**
- * Verifikasi apakah sandi yang dimasukkan cocok
- */
-async function verifyPassword(inputPassword) {
-  const targetHash = await getStoredPasswordHash();
-  const inputHash = await hashPassword(inputPassword.trim());
-  return inputHash === targetHash;
-}
-
-/**
- * Mengubah kata sandi portal
- */
-async function updatePortalPassword(oldPass, newPass) {
-  const isOldValid = await verifyPassword(oldPass);
-  if (!isOldValid) {
-    throw new Error('Kata sandi saat ini (lama) tidak sesuai!');
-  }
-  if (!newPass || newPass.trim().length < 6) {
-    throw new Error('Kata sandi baru minimal harus 6 karakter!');
-  }
-  const newHash = await hashPassword(newPass.trim());
-  localStorage.setItem(PASSWORD_STORAGE_KEY, newHash);
-  return true;
-}
-
-/**
- * Periksa status autentikasi saat website dibuka
- */
-function checkAuthStatus() {
-  const isLocalStorageUnlocked = localStorage.getItem(AUTH_STORAGE_KEY) === 'unlocked';
-  const isSessionUnlocked = sessionStorage.getItem(AUTH_STORAGE_KEY) === 'unlocked';
-
-  if (isLocalStorageUnlocked || isSessionUnlocked) {
-    unlockPortal(false);
+  if (tab === 'masuk') {
+    if (tabBtnMasuk) tabBtnMasuk.classList.add('active');
+    if (tabBtnDaftar) tabBtnDaftar.classList.remove('active');
+    if (loginForm) loginForm.style.display = 'flex';
+    if (registerForm) registerForm.style.display = 'none';
   } else {
-    lockPortal();
+    if (tabBtnMasuk) tabBtnMasuk.classList.remove('active');
+    if (tabBtnDaftar) tabBtnDaftar.classList.add('active');
+    if (loginForm) loginForm.style.display = 'none';
+    if (registerForm) registerForm.style.display = 'flex';
   }
+  if (window.feather) feather.replace();
+}
+window.switchAuthTab = switchAuthTab;
+
+if (btnSwitchToLogin) {
+  btnSwitchToLogin.addEventListener('click', () => switchAuthTab('masuk'));
 }
 
 /**
- * Buka kunci portal dan tampilkan konten
+ * Tampilkan data profil mahasiswa di sidebar dan dashboard
  */
-function unlockPortal(showToastAlert = true) {
-  if (loginOverlay) {
-    loginOverlay.classList.add('hidden');
+function updateStudentProfileUI(profile) {
+  if (!profile) return;
+  try {
+    localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(profile));
+  } catch (e) {}
+
+  // Sidebar elements
+  const sbName = document.getElementById('sidebarUserName');
+  const sbNim = document.getElementById('sidebarUserNim');
+  const sbAvatar = document.getElementById('sidebarUserAvatar');
+
+  if (sbName) sbName.textContent = profile.nama || 'Mahasiswa';
+  if (sbNim) sbNim.textContent = profile.nim ? `NIM: ${profile.nim}` : 'NIM: -';
+  if (sbAvatar) {
+    const initial = (profile.nama || 'M').trim().charAt(0).toUpperCase();
+    sbAvatar.textContent = initial;
   }
-  if (appLayout) {
-    appLayout.classList.remove('locked');
-  }
+
+  // Dashboard banner elements
+  const dbName = document.getElementById('dashboardStudentName');
+  const dbNim = document.getElementById('dashboardStudentNim');
+  if (dbName) dbName.textContent = profile.nama || 'Mahasiswa';
+  if (dbNim) dbNim.textContent = profile.nim ? `NIM: ${profile.nim}` : 'NIM: -';
+}
+
+/**
+ * Buka kunci portal dan tampilkan seluruh data
+ */
+function unlockPortal(showToastAlert = false) {
+  if (loginOverlay) loginOverlay.classList.add('hidden');
+  if (appLayout) appLayout.classList.remove('locked');
   if (showToastAlert) {
-    showToast('Akses berhasil dibuka! Selamat datang kembali 🎓', 'success');
+    const cached = localStorage.getItem(USER_PROFILE_STORAGE_KEY);
+    let name = 'Mahasiswa';
+    if (cached) {
+      try { name = JSON.parse(cached).nama || name; } catch (e) {}
+    }
+    showToast(`Selamat datang kembali, ${name}! 🎓`, 'success');
   }
-  feather.replace();
+  if (window.feather) feather.replace();
 }
 
 /**
  * Kunci portal dan tampilkan layar login
  */
 function lockPortal() {
-  if (loginOverlay) {
-    loginOverlay.classList.remove('hidden');
-  }
-  if (appLayout) {
-    appLayout.classList.add('locked');
-  }
-  if (loginPasswordInput) {
-    loginPasswordInput.value = '';
-    setTimeout(() => loginPasswordInput.focus(), 150);
-  }
-  if (loginErrorMsg) {
-    loginErrorMsg.style.display = 'none';
-  }
-  feather.replace();
+  if (loginOverlay) loginOverlay.classList.remove('hidden');
+  if (appLayout) appLayout.classList.add('locked');
+  if (loginPasswordInput) loginPasswordInput.value = '';
+  if (loginErrorMsg) loginErrorMsg.style.display = 'none';
+  if (registerErrorMsg) registerErrorMsg.style.display = 'none';
+  if (window.feather) feather.replace();
 }
 
 /**
@@ -2235,60 +2266,323 @@ window.togglePasswordInput = function(inputId, btnEl) {
   const isPassword = input.type === 'password';
   input.type = isPassword ? 'text' : 'password';
 
-  const icon = btnEl.querySelector('i');
+  const icon = btnEl ? btnEl.querySelector('i') : null;
   if (icon) {
     icon.setAttribute('data-feather', isPassword ? 'eye-off' : 'eye');
-    feather.replace();
+    if (window.feather) feather.replace();
   }
 };
 
-// Toggle sandi di Login Screen
 if (btnToggleLoginPwd) {
-  btnToggleLoginPwd.addEventListener('click', () => {
-    togglePasswordInput('loginPasswordInput', btnToggleLoginPwd);
+  btnToggleLoginPwd.addEventListener('click', () => togglePasswordInput('loginPasswordInput', btnToggleLoginPwd));
+}
+if (btnToggleRegPwd) {
+  btnToggleRegPwd.addEventListener('click', () => togglePasswordInput('regPasswordInput', btnToggleRegPwd));
+}
+if (btnToggleRegConfirmPwd) {
+  btnToggleRegConfirmPwd.addEventListener('click', () => togglePasswordInput('regConfirmPasswordInput', btnToggleRegConfirmPwd));
+}
+
+/**
+ * Auth State Listener (Observer Firebase Auth)
+ */
+function setupAuthObserver() {
+  if (!firebaseAuth) return;
+
+  firebaseAuth.onAuthStateChanged(async (user) => {
+    currentUser = user;
+    if (user) {
+      console.log('👤 Auth state: Logged in sebagai', user.email, '| UID:', user.uid);
+
+      // Ambil profil dari Firestore
+      let profile = await getUserProfile(user.uid);
+
+      if (!profile) {
+        // Pengguna Google baru yang belum mengisi NIM
+        if (googleNamaInput) googleNamaInput.value = user.displayName || '';
+        if (completeNIMModal) completeNIMModal.showModal();
+        return;
+      }
+
+      updateStudentProfileUI(profile);
+      unlockPortal(false);
+
+      // Hubungkan real-time listeners untuk user ini
+      setupRealtimeListeners(user.uid);
+    } else {
+      console.log('🔒 Auth state: Belum login / Sesi berakhir');
+      lockPortal();
+    }
   });
 }
 
-// Submit Form Login
+// ----------------------------------------------------------------------------
+// 1. SUBMIT FORM LOGIN (NIM + Password)
+// ----------------------------------------------------------------------------
 if (loginForm) {
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const pwd = loginPasswordInput.value;
+    const nim = loginNimInput ? loginNimInput.value.trim() : '';
+    const pwd = loginPasswordInput ? loginPasswordInput.value : '';
 
-    const isValid = await verifyPassword(pwd);
-    if (isValid) {
-      if (loginErrorMsg) loginErrorMsg.style.display = 'none';
-      if (rememberMeCheckbox && rememberMeCheckbox.checked) {
-        localStorage.setItem(AUTH_STORAGE_KEY, 'unlocked');
-      } else {
-        sessionStorage.setItem(AUTH_STORAGE_KEY, 'unlocked');
-      }
-      unlockPortal(true);
-    } else {
-      if (loginErrorMsg) {
+    if (!nim || !pwd) return;
+
+    if (loginErrorMsg) loginErrorMsg.style.display = 'none';
+    if (btnSubmitLogin) {
+      btnSubmitLogin.disabled = true;
+      btnSubmitLogin.innerHTML = '<span>Memverifikasi...</span>';
+    }
+
+    try {
+      await loginWithNIMPassword(nim, pwd);
+      showToast('Login berhasil! Memuat portal...', 'success');
+      // Auth observer onAuthStateChanged akan membuka portal dan me-load data otomatis
+    } catch (err) {
+      console.error('Login error:', err);
+      if (loginErrorMsg && loginErrorText) {
+        let msg = err.message;
+        if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+          msg = 'Kata sandi salah! Periksa kembali huruf besar/kecil.';
+        } else if (err.code === 'auth/user-not-found') {
+          msg = 'Akun tidak ditemukan. Silakan daftar akun baru.';
+        } else if (err.code === 'auth/too-many-requests') {
+          msg = 'Terlalu banyak percobaan gagal. Silakan tunggu beberapa saat.';
+        }
+        loginErrorText.textContent = msg;
         loginErrorMsg.style.display = 'flex';
         loginErrorMsg.style.animation = 'none';
         void loginErrorMsg.offsetWidth;
         loginErrorMsg.style.animation = 'shakeError 0.35s ease';
       }
-      loginPasswordInput.value = '';
-      loginPasswordInput.focus();
+    } finally {
+      if (btnSubmitLogin) {
+        btnSubmitLogin.disabled = false;
+        btnSubmitLogin.innerHTML = '<i data-feather="log-in"></i><span>Masuk ke Portal</span>';
+        if (window.feather) feather.replace();
+      }
     }
   });
 }
 
-// Kunci Portal (Logout)
-function handleLockAction() {
-  localStorage.removeItem(AUTH_STORAGE_KEY);
-  sessionStorage.removeItem(AUTH_STORAGE_KEY);
-  lockPortal();
-  showToast('Portal berhasil dikunci 🔒', 'info');
+// ----------------------------------------------------------------------------
+// 2. SUBMIT FORM DAFTAR AKUN BARU
+// ----------------------------------------------------------------------------
+if (registerForm) {
+  registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nama = regNamaInput ? regNamaInput.value.trim() : '';
+    const nim = regNimInput ? regNimInput.value.trim() : '';
+    const email = regEmailInput ? regEmailInput.value.trim() : '';
+    const pwd = regPasswordInput ? regPasswordInput.value : '';
+    const confirmPwd = regConfirmPasswordInput ? regConfirmPasswordInput.value : '';
+
+    if (pwd !== confirmPwd) {
+      if (registerErrorMsg && registerErrorText) {
+        registerErrorText.textContent = 'Konfirmasi kata sandi tidak cocok!';
+        registerErrorMsg.style.display = 'flex';
+      }
+      return;
+    }
+
+    if (pwd.length < 6) {
+      if (registerErrorMsg && registerErrorText) {
+        registerErrorText.textContent = 'Kata sandi minimal 6 karakter!';
+        registerErrorMsg.style.display = 'flex';
+      }
+      return;
+    }
+
+    if (registerErrorMsg) registerErrorMsg.style.display = 'none';
+    if (btnSubmitRegister) {
+      btnSubmitRegister.disabled = true;
+      btnSubmitRegister.innerHTML = '<span>Mendaftarkan akun...</span>';
+    }
+
+    try {
+      await registerWithEmailPassword(email, pwd, nama, nim);
+      showToast(`Akun berhasil dibuat untuk ${nama}! 🎉`, 'success');
+      registerForm.reset();
+      // onAuthStateChanged akan menangani profil dan membuka portal
+    } catch (err) {
+      console.error('Register error:', err);
+      if (registerErrorMsg && registerErrorText) {
+        let msg = err.message;
+        if (err.code === 'auth/email-already-in-use') {
+          msg = 'Alamat email ini sudah terdaftar! Gunakan email lain.';
+        } else if (err.code === 'auth/invalid-email') {
+          msg = 'Format alamat email tidak valid.';
+        } else if (err.code === 'auth/weak-password') {
+          msg = 'Kata sandi terlalu sederhana. Tambahkan kombinasi angka.';
+        }
+        registerErrorText.textContent = msg;
+        registerErrorMsg.style.display = 'flex';
+        registerErrorMsg.style.animation = 'none';
+        void registerErrorMsg.offsetWidth;
+        registerErrorMsg.style.animation = 'shakeError 0.35s ease';
+      }
+    } finally {
+      if (btnSubmitRegister) {
+        btnSubmitRegister.disabled = false;
+        btnSubmitRegister.innerHTML = '<i data-feather="user-plus"></i><span>Buat Akun Sekarang</span>';
+        if (window.feather) feather.replace();
+      }
+    }
+  });
 }
 
-if (btnLogout) btnLogout.addEventListener('click', handleLockAction);
-if (btnQuickLock) btnQuickLock.addEventListener('click', handleLockAction);
+// ----------------------------------------------------------------------------
+// 3. GOOGLE SIGN-IN HANDLER
+// ----------------------------------------------------------------------------
+async function handleGoogleLoginAction() {
+  try {
+    const res = await loginWithGoogle();
+    if (res.isNewUser) {
+      showToast('Akun Google terhubung! Silakan lengkapi NIM Anda.', 'info');
+    } else {
+      showToast('Login dengan Google berhasil! 🎓', 'success');
+    }
+  } catch (err) {
+    console.error('Google Sign-in error:', err);
+    if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+      showToast('Gagal masuk dengan Google: ' + err.message, 'danger');
+    }
+  }
+}
 
-// Modal Ganti Sandi
+if (btnGoogleSignIn) btnGoogleSignIn.addEventListener('click', handleGoogleLoginAction);
+if (btnGoogleSignInRegister) btnGoogleSignInRegister.addEventListener('click', handleGoogleLoginAction);
+
+// ----------------------------------------------------------------------------
+// 4. LENGKAPI NIM MODAL HANDLER (untuk User Google)
+// ----------------------------------------------------------------------------
+if (completeNIMForm) {
+  completeNIMForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nama = googleNamaInput ? googleNamaInput.value.trim() : '';
+    const nim = googleNimInput ? googleNimInput.value.trim() : '';
+
+    if (!currentUser) return;
+    if (completeNIMErrorMsg) completeNIMErrorMsg.style.display = 'none';
+    if (btnSubmitCompleteNIM) btnSubmitCompleteNIM.disabled = true;
+
+    try {
+      // Cek apakah NIM sudah dipakai akun lain
+      const existingEmail = await lookupEmailByNIM(nim);
+      if (existingEmail && existingEmail !== currentUser.email) {
+        throw new Error(`NIM ${nim} sudah terdaftar di akun lain!`);
+      }
+
+      const profileData = {
+        nama: nama || currentUser.displayName || 'Mahasiswa',
+        nim: nim,
+        email: currentUser.email,
+        createdAt: new Date().toISOString()
+      };
+
+      await saveUserProfile(currentUser.uid, profileData);
+      await registerNIMIndex(nim, currentUser.uid, currentUser.email);
+
+      if (completeNIMModal) completeNIMModal.close();
+      updateStudentProfileUI(profileData);
+      unlockPortal(true);
+      setupRealtimeListeners(currentUser.uid);
+      showToast('Data tersimpan! Selamat datang di StudySync 🎓', 'success');
+    } catch (err) {
+      if (completeNIMErrorMsg && completeNIMErrorText) {
+        completeNIMErrorText.textContent = err.message;
+        completeNIMErrorMsg.style.display = 'flex';
+      }
+    } finally {
+      if (btnSubmitCompleteNIM) btnSubmitCompleteNIM.disabled = false;
+    }
+  });
+}
+
+// ----------------------------------------------------------------------------
+// 5. LUPA KATA SANDI VIA NIM HANDLER
+// ----------------------------------------------------------------------------
+if (btnForgotPassword) {
+  btnForgotPassword.addEventListener('click', () => {
+    if (forgotPasswordForm) forgotPasswordForm.reset();
+    if (forgotErrorMsg) forgotErrorMsg.style.display = 'none';
+    if (forgotPasswordModal) forgotPasswordModal.showModal();
+  });
+}
+
+if (btnCloseForgotModal) {
+  btnCloseForgotModal.addEventListener('click', () => {
+    if (forgotPasswordModal) forgotPasswordModal.close();
+  });
+}
+
+if (btnCancelForgotModal) {
+  btnCancelForgotModal.addEventListener('click', () => {
+    if (forgotPasswordModal) forgotPasswordModal.close();
+  });
+}
+
+if (forgotPasswordForm) {
+  forgotPasswordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nim = forgotNimInput ? forgotNimInput.value.trim() : '';
+
+    if (!nim) return;
+    if (forgotErrorMsg) forgotErrorMsg.style.display = 'none';
+    if (btnSubmitForgot) {
+      btnSubmitForgot.disabled = true;
+      btnSubmitForgot.innerHTML = '<span>Mencari data & mengirim...</span>';
+    }
+
+    try {
+      const email = await sendPasswordResetByNIM(nim);
+      const maskedEmail = email.replace(/^(.)(.*)(@.*)$/, (_, a, b, c) => a + '***' + c);
+
+      if (forgotPasswordModal) forgotPasswordModal.close();
+      showToast(`Link reset sandi telah dikirim ke email (${maskedEmail})! Periksa Inbox atau Spam Anda. 📧`, 'success');
+    } catch (err) {
+      console.error('Forgot password error:', err);
+      if (forgotErrorMsg && forgotErrorText) {
+        forgotErrorText.textContent = err.message;
+        forgotErrorMsg.style.display = 'flex';
+      }
+    } finally {
+      if (btnSubmitForgot) {
+        btnSubmitForgot.disabled = false;
+        btnSubmitForgot.innerHTML = '<i data-feather="send"></i><span>Kirim Link Reset Sandi</span>';
+        if (window.feather) feather.replace();
+      }
+    }
+  });
+}
+
+// ----------------------------------------------------------------------------
+// 6. LOGOUT & KUNCI
+// ----------------------------------------------------------------------------
+async function handleLogoutAction() {
+  if (confirm('Apakah Anda yakin ingin keluar dari akun ini?')) {
+    try {
+      await logoutUser();
+      localStorage.removeItem(USER_PROFILE_STORAGE_KEY);
+      lockPortal();
+      showToast('Anda telah keluar dari akun. Sampai jumpa! 👋', 'info');
+    } catch (err) {
+      console.error('Logout error:', err);
+      showToast('Gagal logout: ' + err.message, 'danger');
+    }
+  }
+}
+
+if (btnLogout) btnLogout.addEventListener('click', handleLogoutAction);
+if (btnQuickLock) {
+  btnQuickLock.addEventListener('click', () => {
+    lockPortal();
+    showToast('Portal dikunci sementara 🔒', 'info');
+  });
+}
+
+// ----------------------------------------------------------------------------
+// 7. GANTI KATA SANDI MODAL (KETIKA SUDAH LOGIN)
+// ----------------------------------------------------------------------------
 function openChangePasswordModal() {
   if (changePasswordForm) changePasswordForm.reset();
   if (changePasswordModal) changePasswordModal.showModal();
@@ -2303,12 +2597,6 @@ window.closeChangePasswordModal = closeChangePasswordModal;
 
 if (btnOpenChangePassword) {
   btnOpenChangePassword.addEventListener('click', openChangePasswordModal);
-}
-if (btnOpenChangePasswordFromLogin) {
-  btnOpenChangePasswordFromLogin.addEventListener('click', openChangePasswordModal);
-}
-if (btnOpenChangePasswordFromLoginFooter) {
-  btnOpenChangePasswordFromLoginFooter.addEventListener('click', openChangePasswordModal);
 }
 
 if (changePasswordModal) {
@@ -2326,22 +2614,48 @@ if (changePasswordModal) {
 if (changePasswordForm) {
   changePasswordForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const oldPass = oldPasswordInput.value;
-    const newPass = newPasswordInput.value;
-    const confirmPass = confirmNewPasswordInput.value;
+    const oldPass = oldPasswordInput ? oldPasswordInput.value : '';
+    const newPass = newPasswordInput ? newPasswordInput.value : '';
+    const confirmPass = confirmNewPasswordInput ? confirmNewPasswordInput.value : '';
 
     if (newPass !== confirmPass) {
       showToast('Konfirmasi kata sandi baru tidak cocok!', 'danger');
       return;
     }
 
+    if (newPass.length < 6) {
+      showToast('Kata sandi baru minimal harus 6 karakter!', 'danger');
+      return;
+    }
+
     try {
-      await updatePortalPassword(oldPass, newPass);
-      showToast('Kata sandi portal berhasil diubah! 🔑 Simpan sandi baru Anda.', 'success');
+      if (!currentUser) {
+        showToast('Anda belum login ke Firebase!', 'danger');
+        return;
+      }
+
+      // Jika ada kata sandi lama dan user menggunakan email/password
+      if (oldPass && currentUser.email) {
+        try {
+          const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, oldPass);
+          await currentUser.reauthenticateWithCredential(cred);
+        } catch (authErr) {
+          showToast('Kata sandi lama salah! Periksa kembali.', 'danger');
+          return;
+        }
+      }
+
+      await currentUser.updatePassword(newPass);
+      showToast('Kata sandi akun Anda berhasil diperbarui! 🔑', 'success');
       closeChangePasswordModal();
       changePasswordForm.reset();
     } catch (err) {
-      showToast(err.message, 'danger');
+      console.error('Ganti password error:', err);
+      if (err.code === 'auth/requires-recent-login') {
+        showToast('Demi keamanan, silakan logout dan login ulang sebelum mengganti kata sandi.', 'warning');
+      } else {
+        showToast('Gagal mengubah sandi: ' + err.message, 'danger');
+      }
     }
   });
 }
@@ -2354,29 +2668,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Set Tanggal Hari Ini di Header Banner
   const now = new Date();
-  currentDateDisplay.textContent = now.toLocaleDateString('id-ID', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  });
+  if (currentDateDisplay) {
+    currentDateDisplay.textContent = now.toLocaleDateString('id-ID', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  }
+
+  // Tampilkan profil dari cache lokal jika ada sambil menunggu Firestore
+  const cachedProfile = localStorage.getItem(USER_PROFILE_STORAGE_KEY);
+  if (cachedProfile) {
+    try {
+      updateStudentProfileUI(JSON.parse(cachedProfile));
+    } catch (e) {}
+  }
 
   try { renderMatkul(); } catch (e) { console.warn('Init renderMatkul error:', e); }
   try { renderCourseFilters(); } catch (e) { console.warn('Init renderCourseFilters error:', e); }
   try { renderTugas(); } catch (e) { console.warn('Init renderTugas error:', e); }
   try { renderMateri(); } catch (e) { console.warn('Init renderMateri error:', e); }
 
-  // Coba hubungkan ke Firebase jika config sudah ada
+  // Inisialisasi Firebase & Auth State Listener
   if (typeof initFirebase === 'function') {
     try {
-      initFirebase();
+      const connected = initFirebase();
+      if (connected) {
+        setupAuthObserver();
+      }
     } catch (e) {
       console.warn('initFirebase invocation error:', e);
     }
   }
 
-  // Periksa autentikasi (Layar Kunci Sandi)
-  try { checkAuthStatus(); } catch (e) { console.warn('checkAuthStatus error:', e); }
-
   try { feather.replace(); } catch (e) { console.warn('feather.replace error:', e); }
 });
+

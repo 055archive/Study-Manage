@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyManage - Portal Tugas & Materi Kuliah</title>
-  <link rel="stylesheet" href="style.css?v=2.2">
+  <link rel="stylesheet" href="style.css?v=3.0">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,30 +14,49 @@
 </head>
 <body data-theme="light">
   <!-- ========================================================
-       SCREEN 0: LOGIN & PORTAL LOCK OVERLAY
+       SCREEN 0: PORTAL AUTENTIKASI (LOGIN / DAFTAR / RESET)
        ======================================================== -->
   <div class="login-overlay" id="loginOverlay">
     <div class="login-card">
       <div class="login-brand">
         <div class="login-icon-badge">
-          <i data-feather="lock"></i>
+          <i data-feather="book-open"></i>
         </div>
         <h2 class="login-title">Study<span class="gradient-text">Sync</span></h2>
-        <p class="login-subtitle">Portal Tugas & Materi Kuliah</p>
+        <p class="login-subtitle">Portal Manajemen Perkuliahan</p>
       </div>
 
-      <form id="loginForm" class="login-form" autocomplete="off">
+      <!-- TAB SWITCHER: Masuk / Daftar -->
+      <div class="auth-tab-switcher">
+        <button type="button" class="auth-tab-btn active" id="tabBtnMasuk" onclick="switchAuthTab('masuk')">Masuk</button>
+        <button type="button" class="auth-tab-btn" id="tabBtnDaftar" onclick="switchAuthTab('daftar')">Daftar Akun</button>
+      </div>
+
+      <!-- ===== FORM MASUK (NIM + Password) ===== -->
+      <form id="loginForm" class="login-form auth-tab-panel active" data-tab="masuk" autocomplete="off">
+
+        <!-- Tombol Login Google -->
+        <button type="button" class="btn-google-signin" id="btnGoogleSignIn">
+          <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+            <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+            <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/>
+            <path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.347 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+            <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+          </svg>
+          <span>Lanjutkan dengan Google</span>
+        </button>
+
+        <div class="auth-divider"><span>atau masuk dengan NIM</span></div>
+
         <div class="form-group">
-          <label for="loginPasswordInput">Kata Sandi Akses</label>
+          <label for="loginNimInput">NIM Mahasiswa</label>
+          <input type="text" id="loginNimInput" class="custom-input" placeholder="Masukkan NIM kamu..." required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label for="loginPasswordInput">Kata Sandi</label>
           <div class="password-input-wrapper">
-            <input 
-              type="password" 
-              id="loginPasswordInput" 
-              class="custom-input password-field" 
-              placeholder="Masukin pw dulu y..." 
-              required
-              autofocus
-            >
+            <input type="password" id="loginPasswordInput" class="custom-input password-field" placeholder="Kata sandi kamu..." required autofocus>
             <button type="button" class="btn-toggle-pwd" id="btnToggleLoginPwd" title="Lihat Sandi">
               <i data-feather="eye" id="loginEyeIcon"></i>
             </button>
@@ -45,35 +64,169 @@
         </div>
 
         <div class="login-options-row">
-          <label class="remember-checkbox-label">
-            <input type="checkbox" id="rememberMeCheckbox" checked>
-            <span>Inget gue</span>
-          </label>
-          <button type="button" class="btn-link-pwd" id="btnOpenChangePasswordFromLogin">
-            Ganti Sandi?
+          <div></div>
+          <button type="button" class="btn-link-pwd" id="btnForgotPassword">
+            Lupa kata sandi?
           </button>
         </div>
 
         <div class="login-error-msg" id="loginErrorMsg" style="display: none;">
           <i data-feather="alert-circle"></i>
-          <span id="loginErrorText">HAHAHAHAHAH SALAH YA PW NYA</span>
+          <span id="loginErrorText">NIM atau kata sandi salah!</span>
         </div>
 
         <button type="submit" class="btn btn-primary btn-login-submit" id="btnSubmitLogin">
-          <i data-feather="key"></i>
-          <span>Buka Portal Kuliah</span>
+          <i data-feather="log-in"></i>
+          <span>Masuk ke Portal</span>
         </button>
       </form>
 
-      <div class="login-footer">
-        <p>🔒 Hanya pemilik yang dapat mengakses data portal ini.</p>
-        <button type="button" class="btn-link-pwd-footer" id="btnOpenChangePasswordFromLoginFooter">
-          <i data-feather="shield"></i>
-          <span>Mau ganti pw? Klik di sini</span>
+      <!-- ===== FORM DAFTAR AKUN BARU ===== -->
+      <form id="registerForm" class="login-form auth-tab-panel" data-tab="daftar" autocomplete="off" style="display: none;">
+
+        <!-- Tombol Daftar dengan Google -->
+        <button type="button" class="btn-google-signin" id="btnGoogleSignInRegister">
+          <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+            <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+            <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/>
+            <path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.347 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+            <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+          </svg>
+          <span>Daftar dengan Google</span>
         </button>
+
+        <div class="auth-divider"><span>atau daftar dengan email & NIM</span></div>
+
+        <div class="form-group">
+          <label for="regNamaInput">Nama Lengkap Mahasiswa</label>
+          <input type="text" id="regNamaInput" class="custom-input" placeholder="Nama lengkap sesuai KTM..." required>
+        </div>
+
+        <div class="form-group">
+          <label for="regNimInput">NIM Mahasiswa</label>
+          <input type="text" id="regNimInput" class="custom-input" placeholder="Contoh: 231011400123" required>
+        </div>
+
+        <div class="form-group">
+          <label for="regEmailInput">Alamat Email</label>
+          <input type="email" id="regEmailInput" class="custom-input" placeholder="email.kamu@gmail.com" required>
+          <small class="auth-input-hint">Email untuk pemulihan & verifikasi lupa password. Sehari-hari login cukup pakai NIM.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="regPasswordInput">Buat Kata Sandi</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="regPasswordInput" class="custom-input password-field" placeholder="Minimal 6 karakter..." required minlength="6">
+            <button type="button" class="btn-toggle-pwd" id="btnToggleRegPwd" title="Lihat Sandi">
+              <i data-feather="eye" id="regEyeIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="regConfirmPasswordInput">Konfirmasi Kata Sandi</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="regConfirmPasswordInput" class="custom-input password-field" placeholder="Ulangi kata sandi..." required minlength="6">
+            <button type="button" class="btn-toggle-pwd" id="btnToggleRegConfirmPwd" title="Lihat Sandi">
+              <i data-feather="eye" id="regConfirmEyeIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="login-error-msg" id="registerErrorMsg" style="display: none;">
+          <i data-feather="alert-circle"></i>
+          <span id="registerErrorText">Gagal mendaftar.</span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-login-submit" id="btnSubmitRegister">
+          <i data-feather="user-plus"></i>
+          <span>Buat Akun Sekarang</span>
+        </button>
+
+        <p class="auth-switch-hint">
+          Sudah punya akun? <button type="button" class="btn-link-inline" id="btnSwitchToLogin">Masuk di sini</button>
+        </p>
+      </form>
+
+      <div class="login-footer">
+        <p>🎓 Portal Mahasiswa StudySync. Data tugas & materi terisolasi per akun.</p>
       </div>
     </div>
   </div>
+
+  <!-- ===== MODAL: LUPA KATA SANDI (via NIM) ===== -->
+  <dialog id="forgotPasswordModal" class="app-dialog auth-dialog">
+    <div class="dialog-box">
+      <div class="dialog-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i data-feather="mail" style="color: var(--primary);"></i>
+          <h3 class="dialog-title">Reset Kata Sandi</h3>
+        </div>
+        <button class="icon-btn btn-close-dialog" id="btnCloseForgotModal" aria-label="Tutup">
+          <i data-feather="x"></i>
+        </button>
+      </div>
+      <div class="dialog-body" style="padding: 16px 20px 24px 20px;">
+        <p class="forgot-modal-desc">
+          Masukkan <strong>NIM</strong> Anda. Kami akan mencari email Anda dan mengirimkan tautan reset kata sandi resmi dari Google Firebase.
+        </p>
+        <form id="forgotPasswordForm" class="dialog-form" style="margin-top: 14px;">
+          <div class="form-group">
+            <label for="forgotNimInput">NIM Mahasiswa *</label>
+            <input type="text" id="forgotNimInput" class="custom-input" placeholder="Masukkan NIM kamu..." required>
+          </div>
+          <div class="login-error-msg" id="forgotErrorMsg" style="display: none; margin-bottom: 12px;">
+            <i data-feather="alert-circle"></i>
+            <span id="forgotErrorText"></span>
+          </div>
+          <div class="dialog-footer" style="padding: 0; margin-top: 16px;">
+            <button type="button" class="btn btn-secondary" id="btnCancelForgotModal">Batal</button>
+            <button type="submit" class="btn btn-primary" id="btnSubmitForgot">
+              <i data-feather="send"></i>
+              <span>Kirim Link Reset Sandi</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ===== MODAL: LENGKAPI NIM (Untuk Pengguna Login Google Pertama Kali) ===== -->
+  <dialog id="completeNIMModal" class="app-dialog auth-dialog">
+    <div class="dialog-box">
+      <div class="dialog-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i data-feather="user-check" style="color: var(--primary);"></i>
+          <h3 class="dialog-title">Lengkapi Data Mahasiswa</h3>
+        </div>
+      </div>
+      <div class="dialog-body" style="padding: 16px 20px 24px 20px;">
+        <p class="forgot-modal-desc">
+          Selamat datang! Karena kamu masuk dengan Google, mohon masukkan <strong>NIM</strong> dan pastikan nama lengkapmu agar data perkuliahan tersinkronisasi.
+        </p>
+        <form id="completeNIMForm" class="dialog-form" style="margin-top: 14px;">
+          <div class="form-group">
+            <label for="googleNamaInput">Nama Lengkap *</label>
+            <input type="text" id="googleNamaInput" class="custom-input" placeholder="Nama lengkap sesuai KTM..." required>
+          </div>
+          <div class="form-group">
+            <label for="googleNimInput">NIM Mahasiswa *</label>
+            <input type="text" id="googleNimInput" class="custom-input" placeholder="Contoh: 231011400123" required>
+          </div>
+          <div class="login-error-msg" id="completeNIMErrorMsg" style="display: none; margin-bottom: 12px;">
+            <i data-feather="alert-circle"></i>
+            <span id="completeNIMErrorText"></span>
+          </div>
+          <div class="dialog-footer" style="padding: 0; margin-top: 16px;">
+            <button type="submit" class="btn btn-primary" id="btnSubmitCompleteNIM" style="width: 100%; justify-content: center;">
+              <i data-feather="check-circle"></i>
+              <span>Simpan & Masuk ke Portal</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </dialog>
 
   <div class="app-layout" id="appLayout">
     <!-- Sidebar Navigasi -->
@@ -122,6 +275,15 @@
       </nav>
 
       <div class="sidebar-footer">
+        <!-- Badge Profil Mahasiswa -->
+        <div class="user-profile-badge" id="sidebarUserProfile">
+          <div class="user-avatar" id="sidebarUserAvatar">M</div>
+          <div class="user-meta">
+            <span class="user-name" id="sidebarUserName">Mahasiswa</span>
+            <span class="user-nim" id="sidebarUserNim">NIM: -</span>
+          </div>
+        </div>
+
         <div class="academic-badge">
           <i data-feather="award"></i>
           <div>
@@ -147,13 +309,13 @@
           </button>
         </div>
         <div class="security-actions-group" style="margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-          <button class="backup-btn" id="btnOpenChangePassword" title="Ubah kata sandi portal kuliah">
+          <button class="backup-btn" id="btnOpenChangePassword" title="Ubah kata sandi akun">
             <i data-feather="shield"></i>
             <span>Ganti Sandi</span>
           </button>
-          <button class="backup-btn btn-logout-action" id="btnLogout" title="Kunci portal kuliah">
+          <button class="backup-btn btn-logout-action" id="btnLogout" title="Keluar dari akun">
             <i data-feather="log-out"></i>
-            <span>Kunci</span>
+            <span>Keluar</span>
           </button>
         </div>
       </div>
@@ -221,8 +383,8 @@
         <section class="tab-pane active" id="tab-overview">
           <div class="page-title-banner">
             <div>
-              <h1 class="welcome-heading">Selamat Belajar! 🎓</h1>
-              <p class="welcome-sub">Kelola seluruh tenggat tugas dan arsip materi kuliahmu secara terpusat.</p>
+              <h1 class="welcome-heading">Selamat Belajar, <span id="dashboardStudentName">Mahasiswa</span>! 🎓</h1>
+              <p class="welcome-sub"><span class="banner-nim-pill" id="dashboardStudentNim">NIM: -</span> Kelola seluruh tenggat tugas dan arsip materi kuliahmu secara terpusat.</p>
             </div>
             <div class="semester-info-pill">
               <i data-feather="calendar"></i>
@@ -881,9 +1043,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=2.2"></script>
+  <script src="firebase-config.js?v=3.0"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=2.2"></script>
+  <script src="app.js?v=3.0"></script>
 </body>
 </html>

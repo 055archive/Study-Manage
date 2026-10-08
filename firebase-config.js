@@ -1,11 +1,18 @@
 /**
- * StudySync - Firebase Configuration & Real-Time Cloud Sync
+ * StudySync - Firebase Configuration, Authentication & Per-User Cloud Sync
  * Menggunakan Firebase Compat SDK (tanpa build tool/bundler, langsung jalan di browser)
+ *
+ * ARSITEKTUR DATA (Per-User Isolation):
+ * - users/{uid}/profile    → Nama, NIM, email mahasiswa
+ * - users/{uid}/tugas      → Tugas kuliah pribadi
+ * - users/{uid}/materi     → Materi kuliah pribadi
+ * - users/{uid}/matkul     → Mata kuliah semester ini
+ * - nim_index/{nim}        → Lookup NIM → email (untuk login pakai NIM)
  */
 
-// Konfigurasi Firebase Anda
-// Anda bisa menempelkan (paste) config dari Firebase Console di sini,
-// atau mengisinya lewat tombol "Cloud Sync" di halaman web.
+// ============================================================================
+// FIREBASE CONFIG & INSTANCE VARIABLES
+// ============================================================================
 const DEFAULT_FIREBASE_CONFIG = {
   apiKey: "AIzaSyAMAn6gIvFDRH-pZpAfGnB09fw6LGazxTc",
   authDomain: "study-manage-56252.firebaseapp.com",
@@ -16,26 +23,32 @@ const DEFAULT_FIREBASE_CONFIG = {
   measurementId: "G-MMZM4JRVSJ"
 };
 
-// Key storage untuk menyimpan config yang diinput lewat browser
 const FIREBASE_CONFIG_STORAGE_KEY = 'studysync_firebase_config_v1';
 
-// Variabel instance Firebase global
+// Instance Firebase global
 let firebaseApp = null;
 let firestoreDb = null;
 let firebaseStorage = null;
+let firebaseAuth = null;
 let isFirebaseConnected = false;
 
-/**
- * Mengambil konfigurasi aktif (dari localStorage atau DEFAULT_FIREBASE_CONFIG)
- */
+// User yang sedang aktif login
+let currentUser = null;
+
+// Real-time listener unsubscribers
+let unsubscribeTugas = null;
+let unsubscribeMateri = null;
+let unsubscribeMatkul = null;
+
+// ============================================================================
+// CONFIG HELPERS
+// ============================================================================
 function getActiveFirebaseConfig() {
   const saved = localStorage.getItem(FIREBASE_CONFIG_STORAGE_KEY);
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      if (parsed.apiKey && parsed.projectId) {
-        return parsed;
-      }
+      if (parsed.apiKey && parsed.projectId) return parsed;
     } catch (e) {
       console.warn('Gagal membaca saved Firebase config:', e);
     }
@@ -44,12 +57,28 @@ function getActiveFirebaseConfig() {
 }
 
 /**
- * Inisialisasi Firebase App, Firestore, dan Storage
+ * Mengembalikan referensi Firestore collection per-user.
+ * Contoh: getUserCollection('tugas') → db.collection('users').doc(uid).collection('tugas')
  */
+function getUserCollection(collectionName, uid) {
+  const targetUid = uid || (currentUser ? currentUser.uid : null);
+  if (!firestoreDb || !targetUid) return null;
+  return firestoreDb.collection('users').doc(targetUid).collection(collectionName);
+}
+
+/**
+ * Mendapatkan UID user yang sedang aktif
+ */
+function getCurrentUserUID() {
+  return currentUser ? currentUser.uid : null;
+}
+
+// ============================================================================
+// FIREBASE INITIALIZATION
+// ============================================================================
 function initFirebase() {
   const config = getActiveFirebaseConfig();
 
-  // Jika apiKey belum diisi, gunakan mode lokal
   if (!config.apiKey || !config.projectId) {
     updateCloudStatusUI(false, 'Mode Lokal (Belum Terhubung)');
     return false;
@@ -70,8 +99,8 @@ function initFirebase() {
     }
 
     firestoreDb = firebase.firestore();
-    
-    // Aktifkan persistensi offline Firestore jika didukung
+
+    // Persistensi offline Firestore
     firestoreDb.enablePersistence({ synchronizeTabs: true }).catch((err) => {
       if (err.code === 'failed-precondition') {
         console.warn('Firestore persistence gagal: banyak tab terbuka');
@@ -80,21 +109,24 @@ function initFirebase() {
       }
     });
 
+    // Firebase Storage
     if (config.storageBucket && firebase.storage) {
       try {
         firebaseStorage = firebase.storage();
       } catch (stErr) {
-        console.warn('Firebase Storage belum aktif (menggunakan Firestore & IndexedDB):', stErr);
+        console.warn('Firebase Storage belum aktif:', stErr);
         firebaseStorage = null;
       }
     }
+
+    // Firebase Authentication
+    firebaseAuth = firebase.auth();
+    firebaseAuth.languageCode = 'id'; // Email reset dalam Bahasa Indonesia
 
     isFirebaseConnected = true;
     updateCloudStatusUI(true, 'Tersambung (Real-time)');
     console.log('✅ Firebase berhasil terhubung ke project:', config.projectId);
 
-    // Jalankan listener real-time
-    setupRealtimeListeners();
     return true;
   } catch (err) {
     console.error('Gagal menghubungkan Firebase:', err);
@@ -104,45 +136,268 @@ function initFirebase() {
   }
 }
 
+// ============================================================================
+// FIREBASE AUTHENTICATION FUNCTIONS
+// ============================================================================
+
 /**
- * Memperbarui tampilan indikator status Cloud di Topbar & Modal
+ * DAFTAR AKUN BARU dengan Email + Password
+ * Setelah daftar, simpan profil (nama, NIM) dan index NIM → email
  */
+async function registerWithEmailPassword(email, password, nama, nim) {
+  if (!firebaseAuth) throw new Error('Firebase Auth belum diinisialisasi.');
+
+  const trimmedNIM = nim.trim();
+  const trimmedEmail = email.trim().toLowerCase();
+
+  // Cek apakah NIM sudah terdaftar sebelum membuat akun
+  const existingEmail = await lookupEmailByNIM(trimmedNIM);
+  if (existingEmail) {
+    throw new Error(`NIM ${trimmedNIM} sudah terdaftar. Silakan gunakan NIM lain atau langsung login.`);
+  }
+
+  // Buat akun Firebase Auth
+  const userCredential = await firebaseAuth.createUserWithEmailAndPassword(trimmedEmail, password);
+  const user = userCredential.user;
+
+  // Update display name di Firebase Auth
+  await user.updateProfile({ displayName: nama.trim() });
+
+  // Simpan profil lengkap ke Firestore
+  await saveUserProfile(user.uid, {
+    nama: nama.trim(),
+    nim: trimmedNIM,
+    email: trimmedEmail,
+    createdAt: new Date().toISOString()
+  });
+
+  // Simpan NIM index untuk lookup saat login
+  await registerNIMIndex(trimmedNIM, user.uid, trimmedEmail);
+
+  console.log('✅ Akun berhasil dibuat untuk:', nama, '| NIM:', trimmedNIM);
+  return user;
+}
+
+/**
+ * LOGIN dengan NIM + Password
+ * Cari email berdasarkan NIM, lalu login ke Firebase Auth dengan email tersebut
+ */
+async function loginWithNIMPassword(nim, password) {
+  if (!firebaseAuth) throw new Error('Firebase Auth belum diinisialisasi.');
+
+  const trimmedNIM = nim.trim();
+
+  // Cari email berdasarkan NIM
+  const email = await lookupEmailByNIM(trimmedNIM);
+  if (!email) {
+    throw new Error(`NIM ${trimmedNIM} tidak ditemukan. Pastikan NIM benar atau daftar akun baru.`);
+  }
+
+  // Login dengan email yang ditemukan
+  const userCredential = await firebaseAuth.signInWithEmailAndPassword(email, password);
+  return userCredential.user;
+}
+
+/**
+ * LOGIN dengan Akun Google (1-klik)
+ */
+async function loginWithGoogle() {
+  if (!firebaseAuth) throw new Error('Firebase Auth belum diinisialisasi.');
+
+  const provider = new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+
+  const userCredential = await firebaseAuth.signInWithPopup(provider);
+  const user = userCredential.user;
+
+  // Cek apakah profil sudah ada di Firestore
+  const existingProfile = await getUserProfile(user.uid);
+
+  return { user, isNewUser: !existingProfile };
+}
+
+/**
+ * LUPA PASSWORD - Kirim link reset ke email berdasarkan NIM
+ */
+async function sendPasswordResetByNIM(nim) {
+  if (!firebaseAuth) throw new Error('Firebase Auth belum diinisialisasi.');
+
+  const trimmedNIM = nim.trim();
+  const email = await lookupEmailByNIM(trimmedNIM);
+
+  if (!email) {
+    throw new Error(`NIM ${trimmedNIM} tidak ditemukan. Pastikan NIM yang kamu masukkan benar.`);
+  }
+
+  await firebaseAuth.sendPasswordResetEmail(email);
+  console.log('📧 Link reset password berhasil dikirim ke:', email);
+  return email; // Return email untuk ditampilkan di UI (opsional, bisa disamarkan)
+}
+
+/**
+ * LOGOUT - Keluar dari akun
+ */
+async function logoutUser() {
+  if (!firebaseAuth) return;
+
+  // Hentikan semua real-time listener sebelum logout
+  stopRealtimeListeners();
+
+  await firebaseAuth.signOut();
+  currentUser = null;
+  console.log('👋 User berhasil logout.');
+}
+
+// ============================================================================
+// USER PROFILE & NIM INDEX FUNCTIONS
+// ============================================================================
+
+/**
+ * Simpan profil mahasiswa ke Firestore: users/{uid}/profile
+ */
+async function saveUserProfile(uid, profileData) {
+  if (!firestoreDb) return;
+  try {
+    await firestoreDb.collection('users').doc(uid).set({
+      profile: profileData
+    }, { merge: true });
+    console.log('✅ Profil mahasiswa tersimpan:', profileData.nama);
+  } catch (err) {
+    console.error('Gagal menyimpan profil:', err);
+    throw err;
+  }
+}
+
+/**
+ * Ambil profil mahasiswa dari Firestore: users/{uid}
+ */
+async function getUserProfile(uid) {
+  if (!firestoreDb || !uid) return null;
+  try {
+    const doc = await firestoreDb.collection('users').doc(uid).get();
+    if (doc.exists && doc.data().profile) {
+      return doc.data().profile;
+    }
+    return null;
+  } catch (err) {
+    console.warn('Gagal mengambil profil:', err);
+    return null;
+  }
+}
+
+/**
+ * Update profil mahasiswa (untuk edit nama/NIM)
+ */
+async function updateUserProfile(uid, updates) {
+  if (!firestoreDb || !uid) return;
+  try {
+    // Jika NIM berubah, perbarui juga nim_index
+    if (updates.nim) {
+      const profile = await getUserProfile(uid);
+      if (profile && profile.nim && profile.nim !== updates.nim) {
+        // Hapus index NIM lama
+        await firestoreDb.collection('nim_index').doc(profile.nim).delete();
+        // Daftarkan NIM baru
+        await registerNIMIndex(updates.nim, uid, profile.email);
+      }
+    }
+    await firestoreDb.collection('users').doc(uid).set({ profile: updates }, { merge: true });
+  } catch (err) {
+    console.error('Gagal update profil:', err);
+    throw err;
+  }
+}
+
+/**
+ * Simpan index NIM → email untuk keperluan login
+ * Struktur: nim_index/{nim} = { email, uid, createdAt }
+ */
+async function registerNIMIndex(nim, uid, email) {
+  if (!firestoreDb) return;
+  try {
+    await firestoreDb.collection('nim_index').doc(nim).set({
+      email: email,
+      uid: uid,
+      createdAt: new Date().toISOString()
+    });
+    console.log('✅ NIM index terdaftar:', nim, '→', email);
+  } catch (err) {
+    console.error('Gagal mendaftarkan NIM index:', err);
+    throw err;
+  }
+}
+
+/**
+ * Cari email berdasarkan NIM
+ * Return email string jika ditemukan, null jika tidak ada
+ */
+async function lookupEmailByNIM(nim) {
+  if (!firestoreDb) return null;
+  try {
+    const doc = await firestoreDb.collection('nim_index').doc(nim.trim()).get();
+    if (doc.exists) {
+      return doc.data().email;
+    }
+    return null;
+  } catch (err) {
+    console.warn('Gagal lookup NIM:', err);
+    return null;
+  }
+}
+
+// ============================================================================
+// CLOUD STATUS UI
+// ============================================================================
 function updateCloudStatusUI(connected, message) {
   const dot = document.getElementById('cloudStatusDot');
   const text = document.getElementById('cloudStatusText');
   const modalStatus = document.getElementById('cloudModalStatusText');
   const modalBadge = document.getElementById('cloudModalStatusBadge');
 
-  if (dot) {
-    dot.className = `cloud-status-dot ${connected ? 'online' : 'offline'}`;
-  }
-  if (text) {
-    text.textContent = connected ? 'Cloud Aktif' : 'Lokal';
-  }
-  if (modalStatus) {
-    modalStatus.textContent = message;
-  }
+  if (dot) dot.className = `cloud-status-dot ${connected ? 'online' : 'offline'}`;
+  if (text) text.textContent = connected ? 'Cloud Aktif' : 'Lokal';
+  if (modalStatus) modalStatus.textContent = message;
   if (modalBadge) {
     modalBadge.className = `status-pill ${connected ? 'success' : 'warning'}`;
     modalBadge.textContent = connected ? '🟢 Terhubung' : '🟡 Mode Lokal';
   }
 }
 
-/**
- * Setup Real-time Listeners Firestore
- * Saat data diubah di perangkat lain (laptop/HP), otomatis perbarui tampilan di sini!
- */
+// ============================================================================
+// REAL-TIME LISTENERS (PER-USER)
+// ============================================================================
 let isInitialSyncTugas = true;
 let isInitialSyncMateri = true;
 let isInitialSyncMatkul = true;
 
-function setupRealtimeListeners() {
-  if (!firestoreDb) return;
+/**
+ * Hentikan semua real-time listener (dipanggil saat logout)
+ */
+function stopRealtimeListeners() {
+  if (unsubscribeTugas) { unsubscribeTugas(); unsubscribeTugas = null; }
+  if (unsubscribeMateri) { unsubscribeMateri(); unsubscribeMateri = null; }
+  if (unsubscribeMatkul) { unsubscribeMatkul(); unsubscribeMatkul = null; }
+  console.log('🔌 Real-time listeners dihentikan.');
+}
+
+/**
+ * Setup Real-time Listeners Firestore - KHUSUS untuk UID user yang sedang login
+ * Data mahasiswa A tidak akan muncul di akun mahasiswa B
+ */
+function setupRealtimeListeners(uid) {
+  if (!firestoreDb || !uid) return;
+
+  // Reset flag sync awal
+  isInitialSyncTugas = true;
+  isInitialSyncMateri = true;
+  isInitialSyncMatkul = true;
+
+  const userRef = firestoreDb.collection('users').doc(uid);
 
   // 1. Listener Mata Kuliah
-  firestoreDb.collection('matkul').onSnapshot((snapshot) => {
+  unsubscribeMatkul = userRef.collection('matkul').onSnapshot((snapshot) => {
     if (snapshot.empty && isInitialSyncMatkul) {
-      uploadInitialCollection('matkul', matkulList);
+      uploadInitialCollection('matkul', matkulList, uid);
       isInitialSyncMatkul = false;
       return;
     }
@@ -151,9 +406,7 @@ function setupRealtimeListeners() {
     const cloudData = [];
     snapshot.forEach(doc => {
       const data = doc.data();
-      if (data && (data.nama || data.kode)) {
-        cloudData.push({ id: doc.id, ...data });
-      }
+      if (data && (data.nama || data.kode)) cloudData.push({ id: doc.id, ...data });
     });
 
     matkulList = cloudData;
@@ -162,15 +415,13 @@ function setupRealtimeListeners() {
       renderMatkul();
       renderCourseFilters();
       if (window.feather) feather.replace();
-    } catch (e) {
-      console.warn('Gagal merender matkul dari cloud:', e);
-    }
+    } catch (e) { console.warn('Gagal merender matkul dari cloud:', e); }
   }, (err) => console.error('Error listener matkul:', err));
 
   // 2. Listener Tugas Kuliah
-  firestoreDb.collection('tugas').onSnapshot((snapshot) => {
+  unsubscribeTugas = userRef.collection('tugas').onSnapshot((snapshot) => {
     if (snapshot.empty && isInitialSyncTugas) {
-      uploadInitialCollection('tugas', tugasList);
+      uploadInitialCollection('tugas', tugasList, uid);
       isInitialSyncTugas = false;
       return;
     }
@@ -179,9 +430,7 @@ function setupRealtimeListeners() {
     const cloudData = [];
     snapshot.forEach(doc => {
       const data = doc.data();
-      if (data && (data.judul || data.matkul)) {
-        cloudData.push({ id: doc.id, ...data });
-      }
+      if (data && (data.judul || data.matkul)) cloudData.push({ id: doc.id, ...data });
     });
 
     tugasList = cloudData;
@@ -191,15 +440,13 @@ function setupRealtimeListeners() {
       renderTugas();
       renderOverviewUrgent();
       if (window.feather) feather.replace();
-    } catch (e) {
-      console.warn('Gagal merender tugas dari cloud:', e);
-    }
+    } catch (e) { console.warn('Gagal merender tugas dari cloud:', e); }
   }, (err) => console.error('Error listener tugas:', err));
 
   // 3. Listener Materi Kuliah
-  firestoreDb.collection('materi').onSnapshot((snapshot) => {
+  unsubscribeMateri = userRef.collection('materi').onSnapshot((snapshot) => {
     if (snapshot.empty && isInitialSyncMateri) {
-      uploadInitialCollection('materi', materiList);
+      uploadInitialCollection('materi', materiList, uid);
       isInitialSyncMateri = false;
       return;
     }
@@ -208,9 +455,7 @@ function setupRealtimeListeners() {
     const cloudData = [];
     snapshot.forEach(doc => {
       const data = doc.data();
-      if (data && (data.judul || data.matkul)) {
-        cloudData.push({ id: doc.id, ...data });
-      }
+      if (data && (data.judul || data.matkul)) cloudData.push({ id: doc.id, ...data });
     });
 
     materiList = cloudData;
@@ -219,105 +464,96 @@ function setupRealtimeListeners() {
       renderMateri();
       renderOverviewRecentMaterials();
       if (window.feather) feather.replace();
-    } catch (e) {
-      console.warn('Gagal merender materi dari cloud:', e);
-    }
+    } catch (e) { console.warn('Gagal merender materi dari cloud:', e); }
   }, (err) => console.error('Error listener materi:', err));
+
+  console.log('👂 Real-time listeners aktif untuk UID:', uid);
 }
 
-/**
- * Unggah data lokal pertama kali jika cloud masih kosong
- */
-async function uploadInitialCollection(collectionName, items) {
-  if (!firestoreDb || !items || items.length === 0) return;
+// ============================================================================
+// UPLOAD INITIAL DATA (per-user)
+// ============================================================================
+async function uploadInitialCollection(collectionName, items, uid) {
+  const targetUid = uid || getCurrentUserUID();
+  if (!firestoreDb || !targetUid || !items || items.length === 0) return;
   try {
     const batch = firestoreDb.batch();
+    const colRef = firestoreDb.collection('users').doc(targetUid).collection(collectionName);
     items.forEach(item => {
-      const docRef = firestoreDb.collection(collectionName).doc(item.id);
+      const docRef = colRef.doc(item.id);
       batch.set(docRef, item, { merge: true });
     });
     await batch.commit();
-    console.log(`Sinkronisasi awal ${collectionName} ke Cloud selesai.`);
+    console.log(`Sinkronisasi awal ${collectionName} ke Cloud selesai untuk uid:`, targetUid);
   } catch (e) {
     console.warn(`Gagal upload data awal ${collectionName}:`, e);
   }
 }
 
 // ============================================================================
-// CLOUD CRUD HELPERS (Dipanggil dari app.js)
+// CLOUD CRUD HELPERS (PER-USER)
 // ============================================================================
 
-/**
- * Sinkronkan 1 Tugas ke Cloud
- */
 async function syncTugasToCloud(task) {
-  if (!isFirebaseConnected || !firestoreDb) return;
+  const uid = getCurrentUserUID();
+  if (!isFirebaseConnected || !firestoreDb || !uid) return;
   try {
-    await firestoreDb.collection('tugas').doc(task.id).set(task, { merge: true });
-  } catch (err) {
-    console.error('Gagal sync tugas ke cloud:', err);
-  }
+    await firestoreDb.collection('users').doc(uid).collection('tugas').doc(task.id).set(task, { merge: true });
+  } catch (err) { console.error('Gagal sync tugas ke cloud:', err); }
 }
 
 async function deleteTugasFromCloud(id) {
-  if (!isFirebaseConnected || !firestoreDb) return;
+  const uid = getCurrentUserUID();
+  if (!isFirebaseConnected || !firestoreDb || !uid) return;
   try {
-    await firestoreDb.collection('tugas').doc(id).delete();
-  } catch (err) {
-    console.error('Gagal hapus tugas dari cloud:', err);
-  }
+    await firestoreDb.collection('users').doc(uid).collection('tugas').doc(id).delete();
+  } catch (err) { console.error('Gagal hapus tugas dari cloud:', err); }
 }
 
-/**
- * Sinkronkan 1 Materi ke Cloud
- */
 async function syncMateriToCloud(materi) {
-  if (!isFirebaseConnected || !firestoreDb) return;
+  const uid = getCurrentUserUID();
+  if (!isFirebaseConnected || !firestoreDb || !uid) return;
   try {
-    await firestoreDb.collection('materi').doc(materi.id).set(materi, { merge: true });
-  } catch (err) {
-    console.error('Gagal sync materi ke cloud:', err);
-  }
+    await firestoreDb.collection('users').doc(uid).collection('materi').doc(materi.id).set(materi, { merge: true });
+  } catch (err) { console.error('Gagal sync materi ke cloud:', err); }
 }
 
 async function deleteMateriFromCloud(id) {
-  if (!isFirebaseConnected || !firestoreDb) return;
+  const uid = getCurrentUserUID();
+  if (!isFirebaseConnected || !firestoreDb || !uid) return;
   try {
-    await firestoreDb.collection('materi').doc(id).delete();
-  } catch (err) {
-    console.error('Gagal hapus materi dari cloud:', err);
-  }
+    await firestoreDb.collection('users').doc(uid).collection('materi').doc(id).delete();
+  } catch (err) { console.error('Gagal hapus materi dari cloud:', err); }
 }
 
-/**
- * Sinkronkan 1 Mata Kuliah ke Cloud
- */
 async function syncMatkulToCloud(matkul) {
-  if (!isFirebaseConnected || !firestoreDb) return;
+  const uid = getCurrentUserUID();
+  if (!isFirebaseConnected || !firestoreDb || !uid) return;
   try {
-    await firestoreDb.collection('matkul').doc(matkul.id).set(matkul, { merge: true });
-  } catch (err) {
-    console.error('Gagal sync matkul ke cloud:', err);
-  }
+    await firestoreDb.collection('users').doc(uid).collection('matkul').doc(matkul.id).set(matkul, { merge: true });
+  } catch (err) { console.error('Gagal sync matkul ke cloud:', err); }
 }
 
 async function deleteMatkulFromCloud(id) {
-  if (!isFirebaseConnected || !firestoreDb) return;
+  const uid = getCurrentUserUID();
+  if (!isFirebaseConnected || !firestoreDb || !uid) return;
   try {
-    await firestoreDb.collection('matkul').doc(id).delete();
-  } catch (err) {
-    console.error('Gagal hapus matkul dari cloud:', err);
-  }
+    await firestoreDb.collection('users').doc(uid).collection('matkul').doc(id).delete();
+  } catch (err) { console.error('Gagal hapus matkul dari cloud:', err); }
 }
 
+// ============================================================================
+// FIREBASE STORAGE (PER-USER PATH)
+// ============================================================================
+
 /**
- * Upload Berkas Fisik ke Firebase Cloud Storage
- * Mengembalikan download URL publik yang bisa dibuka dari laptop & HP manapun!
+ * Upload berkas fisik ke Firebase Storage dengan path per-user
+ * Path: portal-kuliah/{uid}/{fileId}_{fileName}
  */
 async function uploadFileToFirebaseStorage(fileBlobOrDataUrl, fileName, fileId) {
-  if (!isFirebaseConnected || !firebaseStorage) {
-    return null; // Akan disimpan di IndexedDB lokal browser
-  }
+  if (!isFirebaseConnected || !firebaseStorage) return null;
+  const uid = getCurrentUserUID();
+  if (!uid) return null;
 
   try {
     let blob;
@@ -327,67 +563,50 @@ async function uploadFileToFirebaseStorage(fileBlobOrDataUrl, fileName, fileId) 
       blob = fileBlobOrDataUrl;
     }
 
-    const storagePath = `portal-kuliah/${fileId}_${fileName}`;
+    const storagePath = `portal-kuliah/${uid}/${fileId}_${fileName}`;
     const storageRef = firebaseStorage.ref().child(storagePath);
-    
-    // Unggah blob dengan batas waktu 4 detik agar tidak menggantung UI jika Storage belum aktif di Firebase Console
+
     const uploadPromise = storageRef.put(blob);
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Firebase Storage timeout (menggunakan penyimpanan lokal)')), 4000)
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Firebase Storage timeout')), 4000)
     );
     const snapshot = await Promise.race([uploadPromise, timeoutPromise]);
     const downloadUrl = await snapshot.ref.getDownloadURL();
 
     console.log('✅ File berhasil diunggah ke Firebase Storage:', downloadUrl);
-    return {
-      storageType: 'firebase',
-      downloadUrl: downloadUrl,
-      path: storagePath
-    };
+    return { storageType: 'firebase', downloadUrl, path: storagePath };
   } catch (err) {
-    console.warn('Firebase Storage dilewati (file disimpan di IndexedDB lokal browser):', err.message);
+    console.warn('Firebase Storage dilewati (file disimpan di IndexedDB lokal):', err.message);
     return null;
   }
 }
 
-/**
- * Hapus Berkas dari Firebase Cloud Storage
- */
 async function deleteFileFromFirebaseStorage(storagePath) {
   if (!isFirebaseConnected || !firebaseStorage || !storagePath) return;
   try {
-    const storageRef = firebaseStorage.ref().child(storagePath);
-    await storageRef.delete();
+    await firebaseStorage.ref().child(storagePath).delete();
     console.log('Berkas dihapus dari Firebase Storage:', storagePath);
   } catch (err) {
     console.warn('Gagal menghapus file dari Firebase Storage:', err);
   }
 }
 
-/**
- * Migrasi Seluruh Data Lokal ke Cloud (Manual Trigger)
- */
+// ============================================================================
+// SYNC SEMUA DATA LOKAL KE CLOUD (per-user)
+// ============================================================================
 async function syncAllLocalDataToCloud() {
-  if (!isFirebaseConnected || !firestoreDb) {
-    alert('Firebase belum terhubung! Silakan isi konfigurasi terlebih dahulu.');
+  const uid = getCurrentUserUID();
+  if (!isFirebaseConnected || !firestoreDb || !uid) {
+    alert('Firebase belum terhubung atau belum login!');
     return;
   }
 
   try {
     showToast('Memulai sinkronisasi data lokal ke Cloud...', 'info');
 
-    // Sync Matkul
-    for (const m of matkulList) {
-      await syncMatkulToCloud(m);
-    }
-    // Sync Tugas
-    for (const t of tugasList) {
-      await syncTugasToCloud(t);
-    }
-    // Sync Materi
-    for (const mat of materiList) {
-      await syncMateriToCloud(mat);
-    }
+    for (const m of matkulList) await syncMatkulToCloud(m);
+    for (const t of tugasList) await syncTugasToCloud(t);
+    for (const mat of materiList) await syncMateriToCloud(mat);
 
     showToast('Seluruh data berhasil disinkronkan ke Firebase Cloud! ☁️🎉', 'success');
   } catch (err) {
