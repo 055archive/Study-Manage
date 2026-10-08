@@ -2707,8 +2707,13 @@ if (completeNIMForm) {
 
       showToast(`Akun Google & NIM (${nim}) berhasil didaftarkan! Silakan masuk dengan kata sandi Anda 🎓`, 'success');
     } catch (err) {
+      console.error('Lengkapi data error:', err);
       if (completeNIMErrorMsg && completeNIMErrorText) {
-        completeNIMErrorText.textContent = err.message;
+        let msg = err.message || 'Gagal menyimpan data.';
+        if (err.code === 'auth/requires-recent-login' || (err.message && err.message.includes('recent authentication'))) {
+          msg = 'Sesi Google kedaluwarsa. Silakan muat ulang halaman lalu masuk dengan Google kembali.';
+        }
+        completeNIMErrorText.textContent = msg;
         completeNIMErrorMsg.style.display = 'flex';
       }
     } finally {
@@ -2716,6 +2721,33 @@ if (completeNIMForm) {
     }
   });
 }
+
+/**
+ * Batalkan pendaftaran Google jika mahasiswa salah memilih akun Google
+ */
+window.cancelGoogleRegistration = async function() {
+  const modal = document.getElementById('completeNIMModal');
+  const form = document.getElementById('completeNIMForm');
+  const errorMsg = document.getElementById('completeNIMErrorMsg');
+
+  if (modal) modal.close();
+  if (form) form.reset();
+  if (errorMsg) errorMsg.style.display = 'none';
+
+  // Logout sesi Google yang belum lengkap agar tidak menggantung di akun yang salah
+  if (typeof firebaseAuth !== 'undefined' && firebaseAuth) {
+    try {
+      await firebaseAuth.signOut();
+      currentUser = null;
+      console.log('🚪 Sesi Google dibatalkan & di-logout.');
+    } catch (e) {
+      console.warn('Gagal sign out saat batal:', e);
+    }
+  }
+
+  lockPortal();
+  showToast('Pendaftaran dibatalkan. Silakan pilih akun email yang benar.', 'info');
+};
 
 // ----------------------------------------------------------------------------
 // 5. LUPA KATA SANDI VIA NIM HANDLER

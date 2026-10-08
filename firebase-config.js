@@ -207,9 +207,31 @@ async function completeGoogleRegistration(nama, nim, password) {
     throw new Error(`NIM ${trimmedNIM} sudah terdaftar pada akun lain!`);
   }
 
-  // Pasang kata sandi baru ke akun Firebase user
+  // Pasang kata sandi baru ke akun Firebase user (tautkan EmailAuthProvider)
   if (password) {
-    await currentUser.updatePassword(password);
+    try {
+      const emailCred = firebase.auth.EmailAuthProvider.credential(currentUser.email, password);
+      await currentUser.linkWithCredential(emailCred);
+      console.log('✅ Kredensial kata sandi berhasil ditautkan ke akun Google!');
+    } catch (linkErr) {
+      console.warn('Info linkWithCredential:', linkErr.code, linkErr.message);
+      if (linkErr.code === 'auth/provider-already-linked') {
+        try {
+          await currentUser.updatePassword(password);
+        } catch (upErr) {
+          console.warn('Update password pada provider tertaut:', upErr.message);
+        }
+      } else {
+        // Fallback update password jika akun mendukung
+        try {
+          await currentUser.updatePassword(password);
+        } catch (updateErr) {
+          // Jika ditolak oleh Google karena token sensitif kadaluarsa di HP,
+          // JANGAN batalkan pendaftaran! Profil & NIM tetap disimpan agar mahasiswa bisa login.
+          console.warn('Password linking dilewati demi kelancaran registrasi:', updateErr.message);
+        }
+      }
+    }
   }
 
   // Update nama jika perlu

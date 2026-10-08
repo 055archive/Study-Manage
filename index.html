@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyManage - Portal Tugas & Materi Kuliah</title>
-  <link rel="stylesheet" href="style.css?v=3.5">
+  <link rel="stylesheet" href="style.css?v=3.7">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -199,6 +199,9 @@
           <i data-feather="user-check" style="color: var(--primary);"></i>
           <h3 class="dialog-title">Lengkapi Data Mahasiswa</h3>
         </div>
+        <button type="button" class="icon-btn btn-close-dialog" onclick="cancelGoogleRegistration()" title="Batal / Ganti Akun">
+          <i data-feather="x"></i>
+        </button>
       </div>
       <div class="dialog-body" style="padding: 16px 20px 24px 20px;">
         <p class="forgot-modal-desc">
@@ -236,10 +239,14 @@
             <i data-feather="alert-circle"></i>
             <span id="completeNIMErrorText"></span>
           </div>
-          <div class="dialog-footer" style="padding: 0; margin-top: 16px;">
-            <button type="submit" class="btn btn-primary" id="btnSubmitCompleteNIM" style="width: 100%; justify-content: center;">
+          <div class="dialog-footer" style="padding: 0; margin-top: 16px; display: flex; gap: 10px;">
+            <button type="button" class="btn btn-secondary" onclick="cancelGoogleRegistration()" style="flex: 1; justify-content: center;">
+              <i data-feather="arrow-left"></i>
+              <span>Batal / Ganti Akun</span>
+            </button>
+            <button type="submit" class="btn btn-primary" id="btnSubmitCompleteNIM" style="flex: 2; justify-content: center;">
               <i data-feather="check-circle"></i>
-              <span>Simpan & Daftarkan Akun</span>
+              <span>Simpan & Daftarkan</span>
             </button>
           </div>
         </form>
@@ -1166,9 +1173,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=3.5"></script>
+  <script src="firebase-config.js?v=3.7"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=3.5"></script>
+  <script src="app.js?v=3.7"></script>
 </body>
 </html>
