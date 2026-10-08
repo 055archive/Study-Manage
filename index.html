@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyManage - Portal Tugas & Materi Kuliah</title>
-  <link rel="stylesheet" href="style.css?v=4.3">
+  <link rel="stylesheet" href="style.css?v=4.4">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -317,14 +317,10 @@
             <div class="academic-sub">Tahun Akademik 2026/2027</div>
           </div>
         </div>
-        <div class="security-actions-group" style="margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-          <button class="backup-btn" id="btnOpenChangePassword" title="Ubah kata sandi akun">
-            <i data-feather="shield"></i>
-            <span>Ganti Sandi</span>
-          </button>
-          <button class="backup-btn btn-logout-action" id="btnLogout" title="Keluar dari akun">
+        <div class="security-actions-group" style="margin-top: 8px;">
+          <button class="backup-btn btn-logout-action" id="btnLogout" title="Keluar dari akun" style="width: 100%; justify-content: center;">
             <i data-feather="log-out"></i>
-            <span>Keluar</span>
+            <span>Keluar dari Akun</span>
           </button>
         </div>
       </div>
@@ -1239,7 +1235,7 @@
 
         <div class="form-group">
           <label for="adminAccessCode">Kode Akses Pengurus *</label>
-          <input type="password" id="adminAccessCode" class="custom-input" placeholder="Masukkan kode akses (Ad1 - Ad10)" required autocomplete="off">
+          <input type="password" id="adminAccessCode" class="custom-input" placeholder="" required autocomplete="off">
           <small class="form-hint" style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px; display: block;">
             Kode akses disediakan untuk pengurus kelas terdaftar.
           </small>
@@ -1329,9 +1325,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=4.3"></script>
+  <script src="firebase-config.js?v=4.4"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=4.3"></script>
+  <script src="app.js?v=4.4"></script>
 </body>
 </html>
