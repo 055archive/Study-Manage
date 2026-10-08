@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyManage - Portal Tugas & Materi Kuliah</title>
-  <link rel="stylesheet" href="style.css?v=4.0">
+  <link rel="stylesheet" href="style.css?v=4.1">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -393,6 +393,19 @@
                 </div>
                 <button type="button" class="btn-text-sm" id="btnMarkAllNotifsRead">Tandai Dibaca</button>
               </div>
+
+              <!-- Banner Izin Notifikasi Browser di HP / Laptop -->
+              <div class="notif-permission-banner" id="notifPermissionBanner" style="display: none;">
+                <div class="notif-perm-icon">
+                  <i data-feather="bell"></i>
+                </div>
+                <div class="notif-perm-content">
+                  <strong>Aktifkan Notifikasi di HP</strong>
+                  <p>Dapatkan alarm tugas baru & pengingat H-1 deadline.</p>
+                </div>
+                <button type="button" class="btn-enable-notif" id="btnRequestNotifPerm">Aktifkan</button>
+              </div>
+
               <div class="notif-list" id="notifList">
                 <div class="notif-empty">Belum ada notifikasi</div>
               </div>
@@ -1183,19 +1196,36 @@
       <div class="dialog-header">
         <div style="display: flex; align-items: center; gap: 8px;">
           <i data-feather="key" style="color: var(--primary);"></i>
-          <h3 class="dialog-title">Aktivasi Pengurus Kelas</h3>
+          <h3 class="dialog-title">Hak Akses Pengurus Kelas</h3>
         </div>
         <button class="icon-btn btn-close-dialog" onclick="closeClaimAdminModal()">
           <i data-feather="x"></i>
         </button>
       </div>
 
+      <!-- Kotak Status Jika Saat Ini Sedang Aktif Sebagai Pengurus -->
+      <div class="active-admin-box" id="activeAdminStatusBox" style="display: none;">
+        <div class="active-admin-info">
+          <div class="active-admin-icon">
+            <i data-feather="shield"></i>
+          </div>
+          <div>
+            <strong class="active-admin-title">Mode Pengurus Aktif</strong>
+            <p class="active-admin-role" id="activeAdminRoleText">Jabatan: Ketua Kelas</p>
+          </div>
+        </div>
+        <button type="button" class="btn btn-outline-danger btn-exit-admin" id="btnExitAdminMode" onclick="exitAdminMode()">
+          <i data-feather="log-out"></i>
+          <span>Keluar dari Mode Pengurus</span>
+        </button>
+      </div>
+
       <form id="claimAdminForm" class="dialog-form" autocomplete="off">
-        <p class="forgot-modal-desc">
+        <p class="forgot-modal-desc" id="claimAdminModalDesc">
           Khusus untuk <strong>Ketua Kelas, Sekretaris, PJ Mata Kuliah, dan Designer Web</strong>. Pengurus dapat mempublikasikan tugas & materi resmi yang otomatis masuk ke akun seluruh teman sekelas.
         </p>
 
-        <div class="form-group" style="margin-top: 12px;">
+        <div class="form-group" style="margin-top: 10px;">
           <label for="adminRoleSelect">Jabatan / Peran Anda di Kelas *</label>
           <select id="adminRoleSelect" class="custom-select" required>
             <option value="Ketua Kelas">Ketua Kelas</option>
@@ -1215,11 +1245,16 @@
           </small>
         </div>
 
+        <div class="claim-admin-error" id="claimAdminErrorMsg" style="display: none;">
+          <i data-feather="alert-circle"></i>
+          <span id="claimAdminErrorText">Kode akses salah!</span>
+        </div>
+
         <div class="dialog-footer" style="padding: 0; margin-top: 16px;">
-          <button type="button" class="btn btn-secondary" onclick="closeClaimAdminModal()">Batal</button>
+          <button type="button" class="btn btn-secondary" onclick="closeClaimAdminModal()">Tutup</button>
           <button type="submit" class="btn btn-primary" id="btnSubmitClaimAdmin">
             <i data-feather="check-circle"></i>
-            <span>Aktifkan Hak Akses</span>
+            <span id="btnSubmitClaimAdminText">Aktifkan Hak Akses</span>
           </button>
         </div>
       </form>
@@ -1294,9 +1329,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=4.0"></script>
+  <script src="firebase-config.js?v=4.1"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=4.0"></script>
+  <script src="app.js?v=4.1"></script>
 </body>
 </html>

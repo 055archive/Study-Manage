@@ -2572,19 +2572,49 @@ button, input, select, textarea {
   }
 
   .quick-add-group .btn {
-    padding: 6px 9px;
-    font-size: 0.78rem;
+    padding: 7px 11px;
+    font-size: 0.8rem;
     gap: 4px;
   }
 
-  .quick-add-group #btnOpenModalMatkul span,
-  .quick-add-group #btnOpenModalMateri span {
-    display: none;
+  /* Sembunyikan tombol Matkul & Materi cepat dan tombol gembok dari topbar HP */
+  .quick-add-group #btnOpenModalMatkul,
+  .quick-add-group #btnOpenModalMateri,
+  .topbar-right #btnQuickLock {
+    display: none !important;
   }
 
-  .quick-add-group #btnOpenModalMatkul,
-  .quick-add-group #btnOpenModalMateri {
-    padding: 7px 9px;
+  /* Dropdown notifikasi di layar HP melayang di tengah layar, tidak terpotong ke kiri */
+  .notif-dropdown {
+    position: fixed !important;
+    top: 66px !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: 400px !important;
+    margin: 0 auto !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45) !important;
+    z-index: 9999 !important;
+  }
+
+  /* Touch target ramah jari di HP */
+  .btn-claim-admin-topbar,
+  .admin-pill-badge,
+  .notif-bell-btn,
+  .theme-btn {
+    min-height: 38px;
+    touch-action: manipulation;
+    cursor: pointer;
+  }
+
+  .admin-pill-badge {
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+  }
+
+  .admin-pill-badge:active {
+    transform: scale(0.96);
   }
 
   .content-container {
@@ -3291,6 +3321,165 @@ input:-webkit-autofill:active {
 .sidebar-role-pill i {
   width: 14px;
   height: 14px;
+}
+
+/* Banner Izin Notifikasi Browser */
+.notif-permission-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.12) 100%);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.notif-perm-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.notif-perm-icon i {
+  width: 15px;
+  height: 15px;
+}
+
+.notif-perm-content {
+  flex: 1;
+}
+
+.notif-perm-content strong {
+  font-size: 0.8rem;
+  color: var(--text-main);
+  display: block;
+  font-weight: 700;
+}
+
+.notif-perm-content p {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.btn-enable-notif {
+  padding: 6px 12px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition);
+  touch-action: manipulation;
+}
+
+.btn-enable-notif:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+/* Status Kotak Pengurus Aktif & Keluar dari Mode Pengurus */
+.active-admin-box {
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(234, 88, 12, 0.08) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.active-admin-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.active-admin-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #f59e0b;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.active-admin-icon i {
+  width: 18px;
+  height: 18px;
+}
+
+.active-admin-title {
+  font-size: 0.86rem;
+  color: var(--text-main);
+  display: block;
+}
+
+.active-admin-role {
+  font-size: 0.78rem;
+  color: #d97706;
+  font-weight: 700;
+  margin: 0;
+}
+
+[data-theme="dark"] .active-admin-role {
+  color: #fbbf24;
+}
+
+.btn-exit-admin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+  cursor: pointer;
+  transition: all var(--transition);
+  width: 100%;
+  touch-action: manipulation;
+}
+
+.btn-exit-admin:hover, .btn-exit-admin:active {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.claim-admin-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+.claim-admin-error i {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 /* ==========================================================================
