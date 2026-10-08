@@ -2122,6 +2122,28 @@ button, input, select, textarea {
   border-color: var(--rose) !important;
 }
 
+/* Tombol Keluar dari Mode Pengurus di Sidebar Footer */
+.btn-exit-admin-sidebar {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  color: #fbbf24 !important;
+}
+
+.btn-exit-admin-sidebar:hover {
+  background: rgba(239, 68, 68, 0.22) !important;
+  border-color: rgba(239, 68, 68, 0.45) !important;
+  color: #fca5a5 !important;
+}
+
+.btn-exit-admin-sidebar i {
+  color: #fbbf24;
+  transition: color var(--transition);
+}
+
+.btn-exit-admin-sidebar:hover i {
+  color: #fca5a5;
+}
+
 .app-layout.locked {
   display: none !important;
 }

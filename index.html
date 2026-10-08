@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyManage - Portal Tugas & Materi Kuliah</title>
-  <link rel="stylesheet" href="style.css?v=4.4">
+  <link rel="stylesheet" href="style.css?v=4.6">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -317,8 +317,12 @@
             <div class="academic-sub">Tahun Akademik 2026/2027</div>
           </div>
         </div>
-        <div class="security-actions-group" style="margin-top: 8px;">
-          <button class="backup-btn btn-logout-action" id="btnLogout" title="Keluar dari akun" style="width: 100%; justify-content: center;">
+        <div class="security-actions-group" style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
+          <button type="button" class="backup-btn btn-exit-admin-sidebar" id="btnExitAdminSidebar" onclick="exitAdminMode()" title="Keluar dari Mode Pengurus" style="width: 100%; justify-content: center; display: none;">
+            <i data-feather="shield-off"></i>
+            <span>Keluar Mode Pengurus</span>
+          </button>
+          <button type="button" class="backup-btn btn-logout-action" id="btnLogout" title="Keluar dari akun" style="width: 100%; justify-content: center;">
             <i data-feather="log-out"></i>
             <span>Keluar dari Akun</span>
           </button>
@@ -1325,9 +1329,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=4.4"></script>
+  <script src="firebase-config.js?v=4.6"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=4.4"></script>
+  <script src="app.js?v=4.6"></script>
 </body>
 </html>

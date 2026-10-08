@@ -3629,24 +3629,20 @@ function updateAdminUI() {
   const btnClaimSidebar = document.getElementById('btnClaimAdminSidebar');
   const btnCloudModal = document.getElementById('btnOpenCloudModal');
 
+  const btnExitSidebar = document.getElementById('btnExitAdminSidebar');
+
   const role = currentUserProfile ? currentUserProfile.role : null;
   const isPengurus = isCurrentUserAdmin;
 
-  // 1. Topbar
+  // 1. Topbar (hanya tampilkan lencana peran agar tidak menutupi menu di HP)
   if (topbarContainer) {
     if (isPengurus) {
       const activeRole = role || 'Pengurus Kelas';
       topbarContainer.innerHTML = `
-        <div class="topbar-admin-group">
-          <button type="button" class="btn-topbar-admin-badge" onclick="openClaimAdminModal()" title="Hak Akses: ${escapeHtml(activeRole)} (Klik untuk kelola)">
-            <i data-feather="shield"></i>
-            <span>${escapeHtml(activeRole)}</span>
-          </button>
-          <button type="button" class="btn-topbar-exit-admin" onclick="exitAdminMode()" title="Keluar dari Mode Pengurus">
-            <i data-feather="log-out"></i>
-            <span>Keluar</span>
-          </button>
-        </div>
+        <button type="button" class="btn-topbar-admin-badge" onclick="openClaimAdminModal()" title="Hak Akses: ${escapeHtml(activeRole)} (Klik untuk kelola)">
+          <i data-feather="shield"></i>
+          <span>${escapeHtml(activeRole)}</span>
+        </button>
       `;
     } else {
       topbarContainer.innerHTML = `
@@ -3658,7 +3654,11 @@ function updateAdminUI() {
     }
   }
 
-  // 2. Sidebar Footer
+  // 2. Tombol Keluar dari Mode Pengurus di Sidebar (tepat di atas Keluar Akun)
+  if (btnExitSidebar) {
+    btnExitSidebar.style.display = isPengurus ? 'flex' : 'none';
+  }
+
   if (sidebarBadge) {
     sidebarBadge.innerHTML = '';
     sidebarBadge.style.display = 'none';
@@ -3792,10 +3792,10 @@ async function processClaimAdmin() {
 
   if (!isCodeValid) {
     if (errorMsg && errorText) {
-      errorText.textContent = 'Kode akses salah! Gunakan kode resmi (Ad1 - Ad10).';
+      errorText.textContent = 'Kode akses salah!';
       errorMsg.style.display = 'flex';
     }
-    showToast('Kode akses salah! Kode khusus pengurus (Ad1 - Ad10).', 'danger');
+    showToast('Kode akses salah!', 'danger');
     if (codeInput) {
       codeInput.focus();
       codeInput.select();
