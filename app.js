@@ -6,107 +6,121 @@
 // ============================================================================
 // 1. DATA AWAL & LOCAL STORAGE
 // ============================================================================
-const TUGAS_STORAGE_KEY = 'studysync_tugas_v1';
-const MATERI_STORAGE_KEY = 'studysync_materi_v1';
-const MATKUL_STORAGE_KEY = 'studysync_matkul_v1';
+const TUGAS_STORAGE_KEY = 'studysync_tugas_v2';
+const MATERI_STORAGE_KEY = 'studysync_materi_v2';
+const MATKUL_STORAGE_KEY = 'studysync_matkul_v2';
 const THEME_STORAGE_KEY = 'studysync_theme_v1';
 const AUTH_STORAGE_KEY = 'studysync_auth_state_v2';
 const USER_PROFILE_STORAGE_KEY = 'studysync_profile_v2';
 
 // Data Mata Kuliah Default
+// Data Mata Kuliah Asli Semester Ini (10 Mata Kuliah)
 const DEFAULT_MATKUL = [
   {
     id: 'mk-1',
-    nama: 'Pemrograman Web',
-    kode: 'IF2101',
-    sks: 3,
-    dosen: 'Dr. Ir. Budi Santoso, M.Kom.',
-    jadwal: 'Senin, 08:00 - 10:30',
-    ruangan: 'Lab Komputer 3',
+    nama: 'PRAKTIK IBADAH',
+    kode: 'PK',
+    sks: 2,
+    dosen: 'Abdul Qodir',
+    jadwal: 'Senin 13:00 - 14:40',
+    ruangan: 'menyesuaikan',
     warna: '#4f46e5'
   },
   {
     id: 'mk-2',
-    nama: 'Basis Data',
-    kode: 'IF2102',
-    sks: 3,
-    dosen: 'Siti Aminah, S.Kom., M.T.',
-    jadwal: 'Rabu, 13:00 - 15:30',
-    ruangan: 'Ruang Teori 304',
-    warna: '#06b6d4'
+    nama: 'BIOINFORMATIKA',
+    kode: 'BK',
+    sks: 2,
+    dosen: 'Eri Sulistiati',
+    jadwal: 'Senin 08:40 - 10:20',
+    ruangan: 'menyesuaikan',
+    warna: '#6366f1'
   },
   {
     id: 'mk-3',
-    nama: 'Algoritma & Struktur Data',
-    kode: 'IF2103',
-    sks: 4,
-    dosen: 'Prof. Hendra Wijaya',
-    jadwal: 'Kamis, 10:00 - 12:30',
-    ruangan: 'Lab Algoritma 1',
+    nama: 'PEMROGRAMAN BERORIENTASI OBJEK',
+    kode: 'PBO',
+    sks: 3,
+    dosen: 'Maseni',
+    jadwal: '10:00 - 12:30',
+    ruangan: 'LabKom',
+    warna: '#f59e0b'
+  },
+  {
+    id: 'mk-4',
+    nama: 'PEMROGRAMAN WEB',
+    kode: 'PW',
+    sks: 3,
+    dosen: 'Wawan Setiawan',
+    jadwal: 'Senin 14:40 - 17:10',
+    ruangan: 'LabKom',
+    warna: '#ec4899'
+  },
+  {
+    id: 'mk-5',
+    nama: 'REKAYASA PERANGKAT LUNAK',
+    kode: 'RPL',
+    sks: 3,
+    dosen: 'Reza Syafrizal',
+    jadwal: '10:00 - 12:30',
+    ruangan: 'menyesuaikan',
+    warna: '#06b6d4'
+  },
+  {
+    id: 'mk-6',
+    nama: 'MATEMATIKA DISKRIT',
+    kode: 'MD',
+    sks: 2,
+    dosen: 'Ayu Siska Maryoni',
+    jadwal: 'Selasa 08:30 - 10:00',
+    ruangan: 'menyesuaikan',
     warna: '#10b981'
+  },
+  {
+    id: 'mk-7',
+    nama: 'STATISTIKA',
+    kode: 'S',
+    sks: 2,
+    dosen: 'Eko Wahyu Wibowo',
+    jadwal: '10:50 - 12:30',
+    ruangan: 'menyesuaikan',
+    warna: '#8b5cf6'
+  },
+  {
+    id: 'mk-8',
+    nama: 'JARINGAN KOMPUTER',
+    kode: 'JK',
+    sks: 3,
+    dosen: 'Ibnu Mas\'ud',
+    jadwal: 'Selasa 13:00 - 15:30',
+    ruangan: 'LabKom',
+    warna: '#3b82f6'
+  },
+  {
+    id: 'mk-9',
+    nama: 'KEAMANAN DATA DAN INFORMASI',
+    kode: 'KDI',
+    sks: 2,
+    dosen: 'Ibnu Mas\'ud',
+    jadwal: '15:30 - 17:10',
+    ruangan: 'menyesuaikan',
+    warna: '#0284c7'
+  },
+  {
+    id: 'mk-10',
+    nama: 'INTERAKSI MANUSIA DAN KOMPUTER',
+    kode: 'IMK',
+    sks: 2,
+    dosen: 'Reza Syafrizal',
+    jadwal: '14:40 - 16:20',
+    ruangan: 'menyesuaikan',
+    warna: '#f43f5e'
   }
 ];
 
-// Contoh data default jika pengguna baru pertama kali membuka website
-const DEFAULT_TUGAS = [
-  {
-    id: 'tgs-1',
-    judul: 'Tugas 1: Membuat Layout Dashboard dengan HTML & CSS',
-    matkul: 'Pemrograman Web',
-    deadline: '2026-10-08T23:59',
-    prioritas: 'Tinggi',
-    deskripsi: 'Gunakan CSS Grid atau Flexbox, pastikan tampilan responsif di layar HP dan laptop.',
-    completed: false
-  },
-  {
-    id: 'tgs-2',
-    judul: 'Praktikum: Perancangan Skema Database Rumah Sakit',
-    matkul: 'Basis Data',
-    deadline: '2026-10-12T17:00',
-    prioritas: 'Sedang',
-    deskripsi: 'Buat diagram ERD, lakukan normalisasi hingga bentuk 3NF, dan kumpulkan dalam format PDF.',
-    completed: false
-  },
-  {
-    id: 'tgs-3',
-    judul: 'Latihan Soal: Analisis Kompleksitas Waktu Big-O',
-    matkul: 'Algoritma & Struktur Data',
-    deadline: '2026-10-02T20:00',
-    prioritas: 'Rendah',
-    deskripsi: 'Analisis kompleksitas algoritma sorting (Merge Sort vs Quick Sort).',
-    completed: true
-  }
-];
-
-const DEFAULT_MATERI = [
-  {
-    id: 'mat-1',
-    judul: 'Pengantar HTML5 Semantik, Form Modern, dan Box Model',
-    matkul: 'Pemrograman Web',
-    pertemuan: 1,
-    tanggal: '2026-09-22',
-    link: 'https://drive.google.com',
-    catatan: 'Membahas pentingnya tag semantik (<header>, <nav>, <main>, <aside>, <section>) untuk aksesibilitas dan SEO.'
-  },
-  {
-    id: 'mat-2',
-    judul: 'Konsep Dasar ERD (Entity-Relationship Diagram) dan Kardinalitas',
-    matkul: 'Basis Data',
-    pertemuan: 2,
-    tanggal: '2026-09-28',
-    link: 'https://drive.google.com',
-    catatan: 'Aturan kardinalitas: 1-to-1, 1-to-Many, dan Many-to-Many. Primary Key dan Foreign Key wajib ditentukan.'
-  },
-  {
-    id: 'mat-3',
-    judul: 'Struktur Data Pohon (Binary Search Tree) dan Graf',
-    matkul: 'Algoritma & Struktur Data',
-    pertemuan: 3,
-    tanggal: '2026-10-01',
-    link: '',
-    catatan: 'Operasi traversal pohon: In-Order, Pre-Order, dan Post-Order. Penerapan BST untuk pencarian data efisien O(log n).'
-  }
-];
+// Daftar tugas dan materi dimulai dari 0 (bersih) agar mahasiswa bebas mengunggah tugas & materinya sendiri
+const DEFAULT_TUGAS = [];
+const DEFAULT_MATERI = [];
 
 let matkulList = loadFromStorage(MATKUL_STORAGE_KEY, DEFAULT_MATKUL);
 let tugasList = loadFromStorage(TUGAS_STORAGE_KEY, DEFAULT_TUGAS);
@@ -2160,9 +2174,13 @@ const completeNIMModal = document.getElementById('completeNIMModal');
 const completeNIMForm = document.getElementById('completeNIMForm');
 const googleNamaInput = document.getElementById('googleNamaInput');
 const googleNimInput = document.getElementById('googleNimInput');
+const googlePasswordInput = document.getElementById('googlePasswordInput');
+const googleConfirmPasswordInput = document.getElementById('googleConfirmPasswordInput');
 const completeNIMErrorMsg = document.getElementById('completeNIMErrorMsg');
 const completeNIMErrorText = document.getElementById('completeNIMErrorText');
 const btnSubmitCompleteNIM = document.getElementById('btnSubmitCompleteNIM');
+const btnToggleGooglePwd = document.getElementById('btnToggleGooglePwd');
+const btnToggleGoogleConfirmPwd = document.getElementById('btnToggleGoogleConfirmPwd');
 
 const changePasswordModal = document.getElementById('changePasswordModal');
 const changePasswordForm = document.getElementById('changePasswordForm');
@@ -2282,6 +2300,12 @@ if (btnToggleRegPwd) {
 if (btnToggleRegConfirmPwd) {
   btnToggleRegConfirmPwd.addEventListener('click', () => togglePasswordInput('regConfirmPasswordInput', btnToggleRegConfirmPwd));
 }
+if (btnToggleGooglePwd) {
+  btnToggleGooglePwd.addEventListener('click', () => togglePasswordInput('googlePasswordInput', btnToggleGooglePwd));
+}
+if (btnToggleGoogleConfirmPwd) {
+  btnToggleGoogleConfirmPwd.addEventListener('click', () => togglePasswordInput('googleConfirmPasswordInput', btnToggleGoogleConfirmPwd));
+}
 
 /**
  * Auth State Listener (Observer Firebase Auth)
@@ -2400,9 +2424,17 @@ if (registerForm) {
 
     try {
       await registerWithEmailPassword(email, pwd, nama, nim);
-      showToast(`Akun berhasil dibuat untuk ${nama}! 🎉`, 'success');
       registerForm.reset();
-      // onAuthStateChanged akan menangani profil dan membuka portal
+
+      // Pindahkan pengguna ke tab Masuk, isi otomatis NIM, dan arahkan ke kolom password
+      switchAuthTab('masuk');
+      if (loginNimInput) loginNimInput.value = nim;
+      if (loginPasswordInput) {
+        loginPasswordInput.value = '';
+        setTimeout(() => loginPasswordInput.focus(), 250);
+      }
+
+      showToast(`Akun berhasil dibuat untuk ${nama}! Silakan masuk menggunakan NIM dan kata sandi Anda 🎓`, 'success');
     } catch (err) {
       console.error('Register error:', err);
       if (registerErrorMsg && registerErrorText) {
@@ -2437,7 +2469,7 @@ async function handleGoogleLoginAction() {
   try {
     const res = await loginWithGoogle();
     if (res.isNewUser) {
-      showToast('Akun Google terhubung! Silakan lengkapi NIM Anda.', 'info');
+      showToast('Akun Google terhubung! Silakan lengkapi NIM & buat kata sandi Anda.', 'info');
     } else {
       showToast('Login dengan Google berhasil! 🎓', 'success');
     }
@@ -2453,40 +2485,52 @@ if (btnGoogleSignIn) btnGoogleSignIn.addEventListener('click', handleGoogleLogin
 if (btnGoogleSignInRegister) btnGoogleSignInRegister.addEventListener('click', handleGoogleLoginAction);
 
 // ----------------------------------------------------------------------------
-// 4. LENGKAPI NIM MODAL HANDLER (untuk User Google)
+// 4. LENGKAPI NIM & KATA SANDI MODAL HANDLER (untuk User Google)
 // ----------------------------------------------------------------------------
 if (completeNIMForm) {
   completeNIMForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const nama = googleNamaInput ? googleNamaInput.value.trim() : '';
     const nim = googleNimInput ? googleNimInput.value.trim() : '';
+    const pwd = googlePasswordInput ? googlePasswordInput.value : '';
+    const confirmPwd = googleConfirmPasswordInput ? googleConfirmPasswordInput.value : '';
 
     if (!currentUser) return;
+
+    if (pwd !== confirmPwd) {
+      if (completeNIMErrorMsg && completeNIMErrorText) {
+        completeNIMErrorText.textContent = 'Konfirmasi kata sandi tidak cocok!';
+        completeNIMErrorMsg.style.display = 'flex';
+      }
+      return;
+    }
+
+    if (pwd.length < 6) {
+      if (completeNIMErrorMsg && completeNIMErrorText) {
+        completeNIMErrorText.textContent = 'Kata sandi minimal 6 karakter!';
+        completeNIMErrorMsg.style.display = 'flex';
+      }
+      return;
+    }
+
     if (completeNIMErrorMsg) completeNIMErrorMsg.style.display = 'none';
     if (btnSubmitCompleteNIM) btnSubmitCompleteNIM.disabled = true;
 
     try {
-      // Cek apakah NIM sudah dipakai akun lain
-      const existingEmail = await lookupEmailByNIM(nim);
-      if (existingEmail && existingEmail !== currentUser.email) {
-        throw new Error(`NIM ${nim} sudah terdaftar di akun lain!`);
-      }
-
-      const profileData = {
-        nama: nama || currentUser.displayName || 'Mahasiswa',
-        nim: nim,
-        email: currentUser.email,
-        createdAt: new Date().toISOString()
-      };
-
-      await saveUserProfile(currentUser.uid, profileData);
-      await registerNIMIndex(nim, currentUser.uid, currentUser.email);
+      await completeGoogleRegistration(nama, nim, pwd);
 
       if (completeNIMModal) completeNIMModal.close();
-      updateStudentProfileUI(profileData);
-      unlockPortal(true);
-      setupRealtimeListeners(currentUser.uid);
-      showToast('Data tersimpan! Selamat datang di StudySync 🎓', 'success');
+      completeNIMForm.reset();
+
+      // Arahkan ke tab Masuk dan isi otomatis NIM-nya
+      switchAuthTab('masuk');
+      if (loginNimInput) loginNimInput.value = nim;
+      if (loginPasswordInput) {
+        loginPasswordInput.value = '';
+        setTimeout(() => loginPasswordInput.focus(), 250);
+      }
+
+      showToast(`Akun Google & NIM (${nim}) berhasil didaftarkan! Silakan masuk dengan kata sandi Anda 🎓`, 'success');
     } catch (err) {
       if (completeNIMErrorMsg && completeNIMErrorText) {
         completeNIMErrorText.textContent = err.message;

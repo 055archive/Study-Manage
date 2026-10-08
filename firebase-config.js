@@ -123,6 +123,13 @@ function initFirebase() {
     firebaseAuth = firebase.auth();
     firebaseAuth.languageCode = 'id'; // Email reset dalam Bahasa Indonesia
 
+    // Pastikan sesi akun disimpan permanen (Auto-login / Ingat Akun untuk penggunaan harian)
+    if (firebase.auth.Auth && firebase.auth.Auth.Persistence) {
+      firebaseAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => {
+        console.warn('Gagal set auth persistence LOCAL:', err);
+      });
+    }
+
     isFirebaseConnected = true;
     updateCloudStatusUI(true, 'Tersambung (Real-time)');
     console.log('✅ Firebase berhasil terhubung ke project:', config.projectId);
@@ -142,7 +149,8 @@ function initFirebase() {
 
 /**
  * DAFTAR AKUN BARU dengan Email + Password
- * Setelah daftar, simpan profil (nama, NIM) dan index NIM → email
+ * Setelah daftar, simpan profil (nama, NIM) dan index NIM → email.
+ * Kemudian logout sementara agar mahasiswa membiasakan diri login dengan NIM + Sandi.
  */
 async function registerWithEmailPassword(email, password, nama, nim) {
   if (!firebaseAuth) throw new Error('Firebase Auth belum diinisialisasi.');
@@ -174,8 +182,59 @@ async function registerWithEmailPassword(email, password, nama, nim) {
   // Simpan NIM index untuk lookup saat login
   await registerNIMIndex(trimmedNIM, user.uid, trimmedEmail);
 
+  // Sign out sementara agar pengguna diarahkan login mandiri
+  await firebaseAuth.signOut();
+  currentUser = null;
+
   console.log('✅ Akun berhasil dibuat untuk:', nama, '| NIM:', trimmedNIM);
-  return user;
+  return { nama: nama.trim(), nim: trimmedNIM, email: trimmedEmail };
+}
+
+/**
+ * LENGKAPI DATA PENDAFTARAN GOOGLE DENGAN NIM & BUAT KATA SANDI
+ * Mengikat kata sandi ke akun Google dan menyimpan NIM ke Firestore,
+ * kemudian logout sementara agar pengguna diarahkan login mandiri.
+ */
+async function completeGoogleRegistration(nama, nim, password) {
+  if (!firebaseAuth || !currentUser) throw new Error('Sesi Google belum aktif.');
+
+  const trimmedNIM = nim.trim();
+  const trimmedNama = nama.trim();
+
+  // Cek apakah NIM sudah terdaftar di akun lain
+  const existingEmail = await lookupEmailByNIM(trimmedNIM);
+  if (existingEmail && existingEmail !== currentUser.email) {
+    throw new Error(`NIM ${trimmedNIM} sudah terdaftar pada akun lain!`);
+  }
+
+  // Pasang kata sandi baru ke akun Firebase user
+  if (password) {
+    await currentUser.updatePassword(password);
+  }
+
+  // Update nama jika perlu
+  if (trimmedNama && currentUser.displayName !== trimmedNama) {
+    await currentUser.updateProfile({ displayName: trimmedNama });
+  }
+
+  // Simpan profil lengkap ke Firestore
+  const profileData = {
+    nama: trimmedNama || currentUser.displayName || 'Mahasiswa',
+    nim: trimmedNIM,
+    email: currentUser.email,
+    createdAt: new Date().toISOString()
+  };
+  await saveUserProfile(currentUser.uid, profileData);
+
+  // Daftarkan NIM index
+  await registerNIMIndex(trimmedNIM, currentUser.uid, currentUser.email);
+
+  // Sign out sementara agar pengguna login mandiri dengan NIM dan kata sandinya
+  await firebaseAuth.signOut();
+  currentUser = null;
+
+  console.log('✅ Pendaftaran Google + NIM & Password berhasil disimpan!');
+  return { nama: trimmedNama, nim: trimmedNIM };
 }
 
 /**
@@ -394,10 +453,13 @@ function setupRealtimeListeners(uid) {
 
   const userRef = firestoreDb.collection('users').doc(uid);
 
-  // 1. Listener Mata Kuliah
+  // 1. Listener Mata Kuliah (Otomatis tanam 10 data matkul resmi jika akun baru)
   unsubscribeMatkul = userRef.collection('matkul').onSnapshot((snapshot) => {
     if (snapshot.empty && isInitialSyncMatkul) {
-      uploadInitialCollection('matkul', matkulList, uid);
+      const initialMatkul = (typeof DEFAULT_MATKUL !== 'undefined' && Array.isArray(DEFAULT_MATKUL) && DEFAULT_MATKUL.length > 0)
+        ? DEFAULT_MATKUL
+        : matkulList;
+      uploadInitialCollection('matkul', initialMatkul, uid);
       isInitialSyncMatkul = false;
       return;
     }
@@ -418,12 +480,14 @@ function setupRealtimeListeners(uid) {
     } catch (e) { console.warn('Gagal merender matkul dari cloud:', e); }
   }, (err) => console.error('Error listener matkul:', err));
 
-  // 2. Listener Tugas Kuliah
+  // 2. Listener Tugas Kuliah (Mulai dari 0 tugas untuk pengguna baru)
   unsubscribeTugas = userRef.collection('tugas').onSnapshot((snapshot) => {
     if (snapshot.empty && isInitialSyncTugas) {
-      uploadInitialCollection('tugas', tugasList, uid);
       isInitialSyncTugas = false;
-      return;
+      if (tugasList && tugasList.length > 0) {
+        uploadInitialCollection('tugas', tugasList, uid);
+        return;
+      }
     }
     isInitialSyncTugas = false;
 
@@ -443,12 +507,14 @@ function setupRealtimeListeners(uid) {
     } catch (e) { console.warn('Gagal merender tugas dari cloud:', e); }
   }, (err) => console.error('Error listener tugas:', err));
 
-  // 3. Listener Materi Kuliah
+  // 3. Listener Materi Kuliah (Mulai dari 0 materi untuk pengguna baru)
   unsubscribeMateri = userRef.collection('materi').onSnapshot((snapshot) => {
     if (snapshot.empty && isInitialSyncMateri) {
-      uploadInitialCollection('materi', materiList, uid);
       isInitialSyncMateri = false;
-      return;
+      if (materiList && materiList.length > 0) {
+        uploadInitialCollection('materi', materiList, uid);
+        return;
+      }
     }
     isInitialSyncMateri = false;
 

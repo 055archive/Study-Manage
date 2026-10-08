@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyManage - Portal Tugas & Materi Kuliah</title>
-  <link rel="stylesheet" href="style.css?v=3.0">
+  <link rel="stylesheet" href="style.css?v=3.3">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -191,7 +191,7 @@
     </div>
   </dialog>
 
-  <!-- ===== MODAL: LENGKAPI NIM (Untuk Pengguna Login Google Pertama Kali) ===== -->
+  <!-- ===== MODAL: LENGKAPI DATA & KATA SANDI (Untuk Pengguna Daftar Google Baru) ===== -->
   <dialog id="completeNIMModal" class="app-dialog auth-dialog">
     <div class="dialog-box">
       <div class="dialog-header">
@@ -202,7 +202,7 @@
       </div>
       <div class="dialog-body" style="padding: 16px 20px 24px 20px;">
         <p class="forgot-modal-desc">
-          Selamat datang! Karena kamu masuk dengan Google, mohon masukkan <strong>NIM</strong> dan pastikan nama lengkapmu agar data perkuliahan tersinkronisasi.
+          Selamat datang! Lengkapi <strong>NIM</strong> dan <strong>buat kata sandi</strong> agar Anda bisa login sehari-hari menggunakan NIM.
         </p>
         <form id="completeNIMForm" class="dialog-form" style="margin-top: 14px;">
           <div class="form-group">
@@ -213,6 +213,25 @@
             <label for="googleNimInput">NIM Mahasiswa *</label>
             <input type="text" id="googleNimInput" class="custom-input" placeholder="Contoh: 231011400123" required>
           </div>
+          <div class="form-group">
+            <label for="googlePasswordInput">Buat Kata Sandi Akun *</label>
+            <div class="password-input-wrapper">
+              <input type="password" id="googlePasswordInput" class="custom-input password-field" placeholder="Minimal 6 karakter..." required minlength="6">
+              <button type="button" class="btn-toggle-pwd" id="btnToggleGooglePwd" title="Lihat Sandi">
+                <i data-feather="eye" id="googleEyeIcon"></i>
+              </button>
+            </div>
+            <small class="auth-input-hint">Kata sandi ini digunakan untuk login harian memakai NIM Anda.</small>
+          </div>
+          <div class="form-group">
+            <label for="googleConfirmPasswordInput">Konfirmasi Kata Sandi *</label>
+            <div class="password-input-wrapper">
+              <input type="password" id="googleConfirmPasswordInput" class="custom-input password-field" placeholder="Ulangi kata sandi..." required minlength="6">
+              <button type="button" class="btn-toggle-pwd" id="btnToggleGoogleConfirmPwd" title="Lihat Sandi">
+                <i data-feather="eye" id="googleConfirmEyeIcon"></i>
+              </button>
+            </div>
+          </div>
           <div class="login-error-msg" id="completeNIMErrorMsg" style="display: none; margin-bottom: 12px;">
             <i data-feather="alert-circle"></i>
             <span id="completeNIMErrorText"></span>
@@ -220,7 +239,7 @@
           <div class="dialog-footer" style="padding: 0; margin-top: 16px;">
             <button type="submit" class="btn btn-primary" id="btnSubmitCompleteNIM" style="width: 100%; justify-content: center;">
               <i data-feather="check-circle"></i>
-              <span>Simpan & Masuk ke Portal</span>
+              <span>Simpan & Daftarkan Akun</span>
             </button>
           </div>
         </form>
@@ -1043,9 +1062,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=3.1"></script>
+  <script src="firebase-config.js?v=3.3"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=3.1"></script>
+  <script src="app.js?v=3.3"></script>
 </body>
 </html>
