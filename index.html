@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyManage - Portal Tugas & Materi Kuliah</title>
-  <link rel="stylesheet" href="style.css?v=3.3">
+  <link rel="stylesheet" href="style.css?v=3.4">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -56,7 +56,7 @@
         <div class="form-group">
           <label for="loginPasswordInput">Kata Sandi</label>
           <div class="password-input-wrapper">
-            <input type="password" id="loginPasswordInput" class="custom-input password-field" placeholder="Kata sandi kamu..." required autofocus>
+            <input type="password" id="loginPasswordInput" class="custom-input password-field" placeholder="Kata sandi kamu..." required autofocus autocomplete="current-password">
             <button type="button" class="btn-toggle-pwd" id="btnToggleLoginPwd" title="Lihat Sandi">
               <i data-feather="eye" id="loginEyeIcon"></i>
             </button>
@@ -116,7 +116,7 @@
         <div class="form-group">
           <label for="regPasswordInput">Buat Kata Sandi</label>
           <div class="password-input-wrapper">
-            <input type="password" id="regPasswordInput" class="custom-input password-field" placeholder="Minimal 6 karakter..." required minlength="6">
+            <input type="password" id="regPasswordInput" class="custom-input password-field" placeholder="Minimal 6 karakter..." required minlength="6" autocomplete="new-password">
             <button type="button" class="btn-toggle-pwd" id="btnToggleRegPwd" title="Lihat Sandi">
               <i data-feather="eye" id="regEyeIcon"></i>
             </button>
@@ -126,7 +126,7 @@
         <div class="form-group">
           <label for="regConfirmPasswordInput">Konfirmasi Kata Sandi</label>
           <div class="password-input-wrapper">
-            <input type="password" id="regConfirmPasswordInput" class="custom-input password-field" placeholder="Ulangi kata sandi..." required minlength="6">
+            <input type="password" id="regConfirmPasswordInput" class="custom-input password-field" placeholder="Ulangi kata sandi..." required minlength="6" autocomplete="new-password">
             <button type="button" class="btn-toggle-pwd" id="btnToggleRegConfirmPwd" title="Lihat Sandi">
               <i data-feather="eye" id="regConfirmEyeIcon"></i>
             </button>
@@ -216,7 +216,7 @@
           <div class="form-group">
             <label for="googlePasswordInput">Buat Kata Sandi Akun *</label>
             <div class="password-input-wrapper">
-              <input type="password" id="googlePasswordInput" class="custom-input password-field" placeholder="Minimal 6 karakter..." required minlength="6">
+              <input type="password" id="googlePasswordInput" class="custom-input password-field" placeholder="Minimal 6 karakter..." required minlength="6" autocomplete="new-password">
               <button type="button" class="btn-toggle-pwd" id="btnToggleGooglePwd" title="Lihat Sandi">
                 <i data-feather="eye" id="googleEyeIcon"></i>
               </button>
@@ -226,7 +226,7 @@
           <div class="form-group">
             <label for="googleConfirmPasswordInput">Konfirmasi Kata Sandi *</label>
             <div class="password-input-wrapper">
-              <input type="password" id="googleConfirmPasswordInput" class="custom-input password-field" placeholder="Ulangi kata sandi..." required minlength="6">
+              <input type="password" id="googleConfirmPasswordInput" class="custom-input password-field" placeholder="Ulangi kata sandi..." required minlength="6" autocomplete="new-password">
               <button type="button" class="btn-toggle-pwd" id="btnToggleGoogleConfirmPwd" title="Lihat Sandi">
                 <i data-feather="eye" id="googleConfirmEyeIcon"></i>
               </button>
@@ -1017,7 +1017,7 @@
         <div class="form-group">
           <label for="oldPasswordInput">Kata Sandi Saat Ini *</label>
           <div class="password-input-wrapper">
-            <input type="password" id="oldPasswordInput" class="custom-input password-field" placeholder="Masukkan sandi saat ini..." required>
+            <input type="password" id="oldPasswordInput" class="custom-input password-field" placeholder="Masukkan sandi saat ini..." required autocomplete="current-password">
             <button type="button" class="btn-toggle-pwd" onclick="togglePasswordInput('oldPasswordInput', this)" title="Lihat Sandi">
               <i data-feather="eye"></i>
             </button>
@@ -1027,7 +1027,7 @@
         <div class="form-group">
           <label for="newPasswordInput">Kata Sandi Baru *</label>
           <div class="password-input-wrapper">
-            <input type="password" id="newPasswordInput" class="custom-input password-field" placeholder="Minimal 6 karakter..." required minlength="6">
+            <input type="password" id="newPasswordInput" class="custom-input password-field" placeholder="Minimal 6 karakter..." required minlength="6" autocomplete="new-password">
             <button type="button" class="btn-toggle-pwd" onclick="togglePasswordInput('newPasswordInput', this)" title="Lihat Sandi">
               <i data-feather="eye"></i>
             </button>
@@ -1037,7 +1037,7 @@
         <div class="form-group">
           <label for="confirmNewPasswordInput">Konfirmasi Kata Sandi Baru *</label>
           <div class="password-input-wrapper">
-            <input type="password" id="confirmNewPasswordInput" class="custom-input password-field" placeholder="Ketik ulang sandi baru..." required minlength="6">
+            <input type="password" id="confirmNewPasswordInput" class="custom-input password-field" placeholder="Ketik ulang sandi baru..." required minlength="6" autocomplete="new-password">
             <button type="button" class="btn-toggle-pwd" onclick="togglePasswordInput('confirmNewPasswordInput', this)" title="Lihat Sandi">
               <i data-feather="eye"></i>
             </button>
@@ -1062,9 +1062,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=3.3"></script>
+  <script src="firebase-config.js?v=3.4"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=3.3"></script>
+  <script src="app.js?v=3.4"></script>
 </body>
 </html>

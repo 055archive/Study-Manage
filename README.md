@@ -51,13 +51,12 @@ portal-kuliah/
 * **Cadangkan Lengkap (Full Backup)**: Mengunduh data tugas, materi, mata kuliah, **beserta seluruh berkas lampiran fisiknya** ke dalam 1 file `.json`.
 * **Pulihkan Lengkap (Restore)**: Memulihkan kembali seluruh data dan file lampiran ke browser / komputer manapun hanya dengan 1 kali klik.
 
-### 6. Layar Kunci & Keamanan Sandi (Portal Lock & Password)
-* **Gerbang Sandi Tanpa Username**: Saat pertama kali membuka link website, layar kunci akan muncul menghalangi akses sebelum sandi yang benar dimasukkan.
-* **Kata Sandi Default**: `@Mikasa262728`
-* **Keamanan Kriptografi (SHA-256)**: Sandi tidak disimpan dalam bentuk teks biasa, melainkan di-hash dengan algoritma kriptografi SHA-256 browser.
-* **Fitur Ganti Sandi**: Pemilik portal dapat mengganti kata sandi kapan saja lewat tombol **"Ganti Sandi"** di menu samping.
-* **Kunci Cepat**: Tombol **"Kunci Portal"** di sidebar atau bar atas memungkinkan Anda langsung mengunci aplikasi saat meninggalkan laptop/HP.
-* **Opsi Ingat Saya**: Centang *"Ingat saya di perangkat ini"* agar Anda tidak perlu mengetik sandi berulang kali di perangkat pribadi.
+### 6. Sistem Autentikasi Mahasiswa (NIM & Google Sign-In)
+* **Pendaftaran Mandiri Mahasiswa**: Mahasiswa mendaftar menggunakan Nama Lengkap, NIM, Email, dan membuat kata sandi pribadi (atau Sign-in with Google).
+* **Login Harian Tanpa Ribet**: Login sehari-hari cukup menggunakan **NIM + Kata Sandi** atau 1-klik akun Google.
+* **Fitur Ingat Saya**: Sesi disimpan secara aman di perangkat lokal sehingga tidak perlu login berulang kali setiap membuka website.
+* **Lupa Kata Sandi**: Mahasiswa dapat mereset sandi menggunakan NIM; tautan verifikasi akan otomatis dikirim ke email terdaftar via Firebase Auth.
+* **Isolasi Data**: Data tugas dan materi tersimpan privat per akun mahasiswa di cloud Firebase Firestore.
 
 ---
 

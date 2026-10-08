@@ -2209,10 +2209,23 @@ function switchAuthTab(tab) {
     if (tabBtnDaftar) tabBtnDaftar.classList.add('active');
     if (loginForm) loginForm.style.display = 'none';
     if (registerForm) registerForm.style.display = 'flex';
+    // Pastikan kolom buat kata sandi selalu kosong (bersih dari autofill sandi tersimpan browser)
+    if (regPasswordInput) regPasswordInput.value = '';
+    if (regConfirmPasswordInput) regConfirmPasswordInput.value = '';
+    setTimeout(() => {
+      if (regPasswordInput) regPasswordInput.value = '';
+      if (regConfirmPasswordInput) regConfirmPasswordInput.value = '';
+    }, 50);
   }
   if (window.feather) feather.replace();
 }
 window.switchAuthTab = switchAuthTab;
+
+// Bersihkan kolom password pendaftaran saat pertama kali halaman dimuat
+document.addEventListener('DOMContentLoaded', () => {
+  if (regPasswordInput) regPasswordInput.value = '';
+  if (regConfirmPasswordInput) regConfirmPasswordInput.value = '';
+});
 
 if (btnSwitchToLogin) {
   btnSwitchToLogin.addEventListener('click', () => switchAuthTab('masuk'));
