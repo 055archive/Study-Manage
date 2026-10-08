@@ -3471,6 +3471,11 @@ function renderNotificationsUI() {
     }
   }
 
+  // Perbarui tampilan status izin notifikasi browser
+  try {
+    updateNotifPermissionUI();
+  } catch (e) {}
+
   if (notifs.length === 0) {
     listEl.innerHTML = `<div class="notif-empty"><i data-feather="bell-off"></i><span>Belum ada notifikasi baru</span></div>`;
     if (window.feather) feather.replace();
@@ -3609,12 +3614,19 @@ function updateAdminUI() {
 
   // 1. Topbar
   if (topbarContainer) {
-    if (isPengurus && role) {
+    if (isPengurus) {
+      const activeRole = role || 'Pengurus Kelas';
       topbarContainer.innerHTML = `
-        <span class="admin-pill-badge" title="Status: ${escapeHtml(role)}">
-          <i data-feather="shield"></i>
-          <span>${escapeHtml(role)}</span>
-        </span>
+        <div class="topbar-admin-group">
+          <button type="button" class="btn-topbar-admin-badge" onclick="openClaimAdminModal()" title="Hak Akses: ${escapeHtml(activeRole)} (Klik untuk kelola)">
+            <i data-feather="shield"></i>
+            <span>${escapeHtml(activeRole)}</span>
+          </button>
+          <button type="button" class="btn-topbar-exit-admin" onclick="exitAdminMode()" title="Keluar dari Mode Pengurus">
+            <i data-feather="log-out"></i>
+            <span>Keluar</span>
+          </button>
+        </div>
       `;
     } else {
       topbarContainer.innerHTML = `
@@ -3628,33 +3640,18 @@ function updateAdminUI() {
 
   // 2. Sidebar Footer
   if (sidebarBadge) {
-    if (isPengurus && role) {
-      sidebarBadge.innerHTML = `
-        <span class="sidebar-role-pill">
-          <i data-feather="award"></i>
-          <span>${escapeHtml(role)}</span>
-        </span>
-      `;
-      sidebarBadge.style.display = 'block';
-    } else {
-      sidebarBadge.innerHTML = '';
-      sidebarBadge.style.display = 'none';
-    }
+    sidebarBadge.innerHTML = '';
+    sidebarBadge.style.display = 'none';
   }
 
   if (btnClaimSidebar) {
-    if (isPengurus) {
-      btnClaimSidebar.innerHTML = `<i data-feather="check-circle"></i><span>Pengurus Aktif</span>`;
-      btnClaimSidebar.onclick = () => openClaimAdminModal();
-    } else {
-      btnClaimSidebar.innerHTML = `<i data-feather="key"></i><span>Aktivasi Pengurus</span>`;
-      btnClaimSidebar.onclick = () => openClaimAdminModal();
-    }
+    btnClaimSidebar.innerHTML = '';
+    btnClaimSidebar.style.display = 'none';
   }
 
-  // 3. Tombol Cloud Modal (hanya untuk pengurus / admin)
+  // 3. Tombol Cloud Modal (disembunyikan dari topbar/tampilan biasa, hanya diakses via pintu rahasia admin)
   if (btnCloudModal) {
-    btnCloudModal.style.display = isPengurus ? 'inline-flex' : 'none';
+    btnCloudModal.style.display = 'none';
   }
 
   if (window.feather) feather.replace();
@@ -3665,12 +3662,31 @@ function openClaimAdminModal() {
   const form = document.getElementById('claimAdminForm');
   const roleSelect = document.getElementById('adminRoleSelect');
   const codeInput = document.getElementById('adminAccessCode');
+  const activeBox = document.getElementById('activeAdminStatusBox');
+  const activeRoleText = document.getElementById('activeAdminRoleText');
+  const errorMsg = document.getElementById('claimAdminErrorMsg');
+  const submitText = document.getElementById('btnSubmitClaimAdminText');
+  const modalDesc = document.getElementById('claimAdminModalDesc');
 
   if (form) form.reset();
   if (codeInput) codeInput.value = '';
-  if (roleSelect && currentUserProfile && currentUserProfile.role && currentUserProfile.role !== 'Mahasiswa') {
-    roleSelect.value = currentUserProfile.role;
+  if (errorMsg) errorMsg.style.display = 'none';
+
+  if (isCurrentUserAdmin) {
+    const activeRole = (currentUserProfile && currentUserProfile.role && currentUserProfile.role !== 'Mahasiswa')
+      ? currentUserProfile.role
+      : 'Pengurus Kelas';
+    if (activeBox) activeBox.style.display = 'flex';
+    if (activeRoleText) activeRoleText.textContent = `Jabatan: ${activeRole}`;
+    if (roleSelect) roleSelect.value = activeRole;
+    if (submitText) submitText.textContent = 'Perbarui Jabatan / Kode';
+    if (modalDesc) modalDesc.textContent = 'Anda saat ini memegang akses pengurus. Anda dapat mengganti jabatan di bawah atau keluar dari mode pengurus.';
+  } else {
+    if (activeBox) activeBox.style.display = 'none';
+    if (submitText) submitText.textContent = 'Aktifkan Hak Akses';
+    if (modalDesc) modalDesc.textContent = 'Khusus untuk Ketua Kelas, Sekretaris, PJ Mata Kuliah, dan Designer Web. Pengurus dapat mempublikasikan tugas & materi resmi yang otomatis masuk ke akun seluruh teman sekelas.';
   }
+
   if (modal) modal.showModal();
 }
 
@@ -3682,64 +3698,366 @@ function closeClaimAdminModal() {
 window.openClaimAdminModal = openClaimAdminModal;
 window.closeClaimAdminModal = closeClaimAdminModal;
 
-// Handler Form Klaim Hak Akses Pengurus
-const claimAdminForm = document.getElementById('claimAdminForm');
-if (claimAdminForm) {
-  claimAdminForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const roleSelect = document.getElementById('adminRoleSelect');
-    const codeInput = document.getElementById('adminAccessCode');
-    const selectedRole = roleSelect ? roleSelect.value : 'Pengurus Kelas';
-    const enteredCode = codeInput ? codeInput.value.trim() : '';
+/**
+ * Keluar dari Mode Pengurus (Kembali ke Mahasiswa Biasa)
+ */
+window.exitAdminMode = async function() {
+  if (!confirm('Apakah Anda yakin ingin keluar dari mode Pengurus dan kembali sebagai Mahasiswa biasa?')) {
+    return;
+  }
 
-    const validCodes = ['AD1', 'AD2', 'AD3', 'AD4', 'AD5', 'AD6', 'AD7', 'AD8', 'AD9', 'AD10', 'AD1-AD10'];
-    const isCodeValid = (typeof isValidAdminCode === 'function')
-      ? isValidAdminCode(enteredCode)
-      : validCodes.includes(enteredCode.toUpperCase());
+  try {
+    const updatedProfile = {
+      ...(currentUserProfile || {}),
+      role: 'Mahasiswa',
+      isAdmin: false
+    };
 
-    if (!isCodeValid) {
-      showToast('Kode akses salah! Kode akses khusus untuk pengurus (Ad1 - Ad10).', 'danger');
-      if (codeInput) {
-        codeInput.focus();
-        codeInput.select();
-      }
-      return;
-    }
+    currentUserProfile = updatedProfile;
+    isCurrentUserAdmin = false;
 
     try {
-      // Perbarui profil user
-      const updatedProfile = {
-        ...(currentUserProfile || {}),
-        role: selectedRole,
-        isAdmin: true
-      };
+      localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(updatedProfile));
+    } catch (e) {}
 
-      currentUserProfile = updatedProfile;
-      isCurrentUserAdmin = true;
-
-      // Simpan di LocalStorage
-      try {
-        localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(updatedProfile));
-      } catch (e) {}
-
-      // Simpan di Firestore jika user sedang login
-      if (typeof updateUserProfile === 'function' && typeof getCurrentUserUID === 'function') {
-        const uid = getCurrentUserUID();
-        if (uid) {
-          await updateUserProfile(uid, { role: selectedRole, isAdmin: true });
-        }
+    if (typeof updateUserProfile === 'function' && typeof getCurrentUserUID === 'function') {
+      const uid = getCurrentUserUID();
+      if (uid) {
+        await updateUserProfile(uid, { role: 'Mahasiswa', isAdmin: false });
       }
-
-      updateAdminUI();
-      rebuildTugasList();
-      rebuildMateriList();
-      closeClaimAdminModal();
-
-      showToast(`Selamat! Hak akses ${selectedRole} berhasil diaktifkan. Anda kini dapat mempublikasikan tugas & materi resmi kelas! 🎉`, 'success');
-    } catch (err) {
-      console.error('Gagal aktivasi pengurus:', err);
-      showToast('Terjadi kesalahan: ' + err.message, 'danger');
     }
+
+    updateAdminUI();
+    rebuildTugasList();
+    rebuildMateriList();
+    closeClaimAdminModal();
+
+    showToast('Anda telah keluar dari mode Pengurus dan kembali sebagai Mahasiswa biasa. 👋', 'info');
+  } catch (err) {
+    console.error('Gagal keluar mode pengurus:', err);
+    showToast('Terjadi kesalahan: ' + err.message, 'danger');
+  }
+};
+
+/**
+ * Proses Verifikasi dan Aktivasi Hak Akses Pengurus
+ */
+async function processClaimAdmin() {
+  const roleSelect = document.getElementById('adminRoleSelect');
+  const codeInput = document.getElementById('adminAccessCode');
+  const errorMsg = document.getElementById('claimAdminErrorMsg');
+  const errorText = document.getElementById('claimAdminErrorText');
+  const submitBtn = document.getElementById('btnSubmitClaimAdmin');
+  const submitText = document.getElementById('btnSubmitClaimAdminText');
+
+  const selectedRole = roleSelect ? roleSelect.value : 'Pengurus Kelas';
+  const enteredCode = codeInput ? codeInput.value.trim() : '';
+
+  if (errorMsg) errorMsg.style.display = 'none';
+
+  if (!enteredCode) {
+    if (errorMsg && errorText) {
+      errorText.textContent = 'Mohon masukkan kode akses pengurus!';
+      errorMsg.style.display = 'flex';
+    }
+    showToast('Mohon masukkan kode akses pengurus!', 'warning');
+    if (codeInput) codeInput.focus();
+    return;
+  }
+
+  const validCodes = ['AD1', 'AD2', 'AD3', 'AD4', 'AD5', 'AD6', 'AD7', 'AD8', 'AD9', 'AD10', 'AD1-AD10'];
+  const isCodeValid = (typeof isValidAdminCode === 'function')
+    ? isValidAdminCode(enteredCode)
+    : validCodes.includes(enteredCode.toUpperCase());
+
+  if (!isCodeValid) {
+    if (errorMsg && errorText) {
+      errorText.textContent = 'Kode akses salah! Gunakan kode resmi (Ad1 - Ad10).';
+      errorMsg.style.display = 'flex';
+    }
+    showToast('Kode akses salah! Kode khusus pengurus (Ad1 - Ad10).', 'danger');
+    if (codeInput) {
+      codeInput.focus();
+      codeInput.select();
+    }
+    return;
+  }
+
+  // Tampilkan loading feedback di tombol
+  const originalText = submitText ? submitText.textContent : 'Aktifkan Hak Akses';
+  if (submitBtn) submitBtn.disabled = true;
+  if (submitText) submitText.textContent = 'Memverifikasi... ⏳';
+
+  try {
+    // Perbarui profil user
+    const updatedProfile = {
+      ...(currentUserProfile || {}),
+      role: selectedRole,
+      isAdmin: true
+    };
+
+    currentUserProfile = updatedProfile;
+    isCurrentUserAdmin = true;
+
+    // Simpan di LocalStorage
+    try {
+      localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(updatedProfile));
+    } catch (e) {}
+
+    // Simpan di Firestore jika user sedang login
+    if (typeof updateUserProfile === 'function' && typeof getCurrentUserUID === 'function') {
+      const uid = getCurrentUserUID();
+      if (uid) {
+        await updateUserProfile(uid, { role: selectedRole, isAdmin: true });
+      }
+    }
+
+    updateAdminUI();
+    rebuildTugasList();
+    rebuildMateriList();
+    closeClaimAdminModal();
+
+    showToast(`Selamat! Hak akses ${selectedRole} berhasil diaktifkan. Anda kini dapat mempublikasikan tugas & materi resmi kelas! 🎉`, 'success');
+  } catch (err) {
+    console.error('Gagal aktivasi pengurus:', err);
+    showToast('Terjadi kesalahan: ' + err.message, 'danger');
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+    if (submitText) submitText.textContent = originalText;
+  }
+}
+
+// Handler Form Klaim Hak Akses Pengurus (Mendukung submit form & klik tombol langsung di HP)
+const claimAdminForm = document.getElementById('claimAdminForm');
+if (claimAdminForm) {
+  claimAdminForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    processClaimAdmin();
+  });
+}
+
+const btnSubmitClaimAdmin = document.getElementById('btnSubmitClaimAdmin');
+if (btnSubmitClaimAdmin) {
+  btnSubmitClaimAdmin.addEventListener('click', (e) => {
+    e.preventDefault();
+    processClaimAdmin();
+  });
+}
+
+// ============================================================================
+// SISTEM NOTIFIKASI BROWSER (HP ANDROID, IPHONE, LAPTOP)
+// ============================================================================
+
+window.showIOSNotifGuide = function() {
+  alert(
+    '📱 Panduan Notifikasi di iPhone / iPad:\n\n' +
+    '1. Buka website ini di Safari.\n' +
+    '2. Ketuk ikon Bagikan (kotak dengan panah atas di bar bawah Safari).\n' +
+    '3. Pilih "Tambahkan ke Layar Utama" (Add to Home Screen).\n' +
+    '4. Buka aplikasi StudyManage dari Layar Utama HP Anda, lalu izinkan notifikasi saat diminta!'
+  );
+};
+
+window.showDeniedNotifHelp = function() {
+  alert(
+    '⚠️ Notifikasi Saat Ini Diblokir di Browser HP:\n\n' +
+    'Cara Mengaktifkannya kembali:\n' +
+    '1. Ketuk ikon gembok / setelan di bilah alamat browser HP (di sebelah kiri tautan website).\n' +
+    '2. Pilih "Izin Situs" atau "Setelan Situs" (Site Settings).\n' +
+    '3. Ubah "Notifikasi" menjadi "Izinkan" (Allow).\n' +
+    '4. Muat ulang (refresh) halaman ini.'
+  );
+};
+
+window.requestNotificationPermission = async function() {
+  if (!('Notification' in window)) {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIOS) {
+      showIOSNotifGuide();
+    } else {
+      showToast('Browser ini belum mendukung Web Notification API.', 'warning');
+    }
+    return;
+  }
+
+  try {
+    let permission;
+    if (window.Notification && Notification.requestPermission) {
+      permission = await new Promise((resolve) => {
+        const p = Notification.requestPermission(resolve);
+        if (p && typeof p.then === 'function') {
+          p.then(resolve);
+        }
+      });
+    }
+
+    if (permission === 'granted') {
+      showToast('Notifikasi browser aktif! Anda akan menerima alarm pengingat tugas 🔔🎉', 'success');
+      testBrowserNotification('StudyManage Aktif! 🔔', 'Pengingat deadline H-1 & tugas baru berhasil diaktifkan di perangkat ini.');
+    } else if (permission === 'denied') {
+      showToast('Izin notifikasi diblokir di browser HP Anda.', 'warning');
+    } else {
+      showToast('Izin notifikasi belum diizinkan.', 'info');
+    }
+    updateNotifPermissionUI();
+  } catch (err) {
+    console.warn('Gagal meminta izin notifikasi:', err);
+    showToast('Terjadi kendala saat meminta izin notifikasi.', 'danger');
+  }
+};
+
+window.testBrowserNotification = function(title = 'Uji Notifikasi StudyManage 🔔', body = 'Pengingat deadline H-1 & tugas baru aktif di HP Anda!') {
+  if (!('Notification' in window)) {
+    showToast('Browser ini tidak mendukung notifikasi sistem.', 'warning');
+    return;
+  }
+  if (Notification.permission !== 'granted') {
+    showToast('Notifikasi belum diizinkan. Silakan klik "Izinkan Notifikasi" terlebih dahulu.', 'warning');
+    return;
+  }
+  try {
+    const notif = new Notification(title, {
+      body: body,
+      icon: 'icons/icon-192.png',
+      badge: 'icons/icon-192.png',
+      tag: 'studymanage-test-' + Date.now(),
+      renotify: true
+    });
+    if ('vibrate' in navigator) {
+      try { navigator.vibrate([200, 100, 200]); } catch (e) {}
+    }
+    showToast('Notifikasi uji coba terkirim! Periksa bar notifikasi HP Anda 📲', 'success');
+  } catch (err) {
+    console.warn('Gagal memunculkan notifikasi:', err);
+    showToast('Notifikasi: ' + body, 'info');
+  }
+};
+
+function updateNotifPermissionUI() {
+  const globalBanner = document.getElementById('globalNotifBanner');
+  const permBanner = document.getElementById('notifPermissionBanner');
+  const permIcon = document.getElementById('notifPermIcon');
+  const permTitle = document.getElementById('notifPermTitle');
+  const permDesc = document.getElementById('notifPermDesc');
+  const permActionWrapper = document.getElementById('notifPermActionWrapper');
+
+  const hasNotifSupport = ('Notification' in window);
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const currentPermission = hasNotifSupport ? Notification.permission : 'unsupported';
+  const isDismissed = sessionStorage.getItem('studymanage_notif_banner_dismissed') === 'true';
+
+  // 1. Perbarui Banner di Layar Utama / Dashboard
+  if (globalBanner) {
+    if (!hasNotifSupport) {
+      if (isIOS && !isDismissed) {
+        globalBanner.style.display = 'flex';
+        const gTitle = document.getElementById('globalNotifTitle');
+        const gDesc = document.getElementById('globalNotifDesc');
+        const gBtn = document.getElementById('btnEnableNotifGlobal');
+        if (gTitle) gTitle.textContent = 'Aktifkan Notifikasi di iPhone 📱';
+        if (gDesc) gDesc.textContent = 'Ketuk Bagikan lalu "Tambahkan ke Layar Utama" (Add to Home Screen) agar notifikasi berdering.';
+        if (gBtn) {
+          gBtn.innerHTML = `<i data-feather="info"></i><span>Panduan iPhone</span>`;
+          gBtn.onclick = () => showIOSNotifGuide();
+        }
+      } else {
+        globalBanner.style.display = 'none';
+      }
+    } else if (currentPermission === 'granted') {
+      globalBanner.style.display = 'none';
+    } else if (currentPermission === 'denied') {
+      if (!isDismissed) {
+        globalBanner.style.display = 'flex';
+        const gTitle = document.getElementById('globalNotifTitle');
+        const gDesc = document.getElementById('globalNotifDesc');
+        const gBtn = document.getElementById('btnEnableNotifGlobal');
+        if (gTitle) gTitle.textContent = 'Notifikasi Diblokir di Browser ⚠️';
+        if (gDesc) gDesc.textContent = 'Browser Anda memblokir notifikasi. Buka Setelan Situs browser untuk mengizinkan alarm tugas.';
+        if (gBtn) {
+          gBtn.innerHTML = `<i data-feather="settings"></i><span>Bantuan Buka Blokir</span>`;
+          gBtn.onclick = () => showDeniedNotifHelp();
+        }
+      } else {
+        globalBanner.style.display = 'none';
+      }
+    } else {
+      if (!isDismissed) {
+        globalBanner.style.display = 'flex';
+        const gTitle = document.getElementById('globalNotifTitle');
+        const gDesc = document.getElementById('globalNotifDesc');
+        const gBtn = document.getElementById('btnEnableNotifGlobal');
+        if (gTitle) gTitle.textContent = 'Aktifkan Notifikasi Tugas di HP Anda 🔔';
+        if (gDesc) gDesc.textContent = 'Dapatkan alarm pengingat H-1 deadline & pemberitahuan tugas baru otomatis.';
+        if (gBtn) {
+          gBtn.innerHTML = `<i data-feather="bell"></i><span>Izinkan Notifikasi</span>`;
+          gBtn.onclick = () => requestNotificationPermission();
+        }
+      } else {
+        globalBanner.style.display = 'none';
+      }
+    }
+  }
+
+  // 2. Perbarui Banner di Menu Dropdown Lonceng
+  if (permBanner && permActionWrapper) {
+    permBanner.style.display = 'flex';
+
+    if (!hasNotifSupport) {
+      if (permIcon) permIcon.style.background = 'var(--text-muted)';
+      if (permTitle) permTitle.textContent = isIOS ? 'Notifikasi iPhone' : 'Notifikasi Web';
+      if (permDesc) permDesc.textContent = isIOS ? 'Tambahkan ke Layar Utama (Add to Home Screen) untuk aktifkan.' : 'Browser ini belum mendukung notifikasi sistem.';
+      permActionWrapper.innerHTML = `
+        <button type="button" class="btn-enable-notif" onclick="showIOSNotifGuide()">Info</button>
+      `;
+    } else if (currentPermission === 'granted') {
+      if (permIcon) permIcon.style.background = 'var(--emerald)';
+      if (permIcon) permIcon.innerHTML = '<i data-feather="check"></i>';
+      if (permTitle) permTitle.textContent = 'Notifikasi HP Aktif ✅';
+      if (permDesc) permDesc.textContent = 'Pengingat deadline H-1 & tugas baru aktif di HP Anda.';
+      permActionWrapper.innerHTML = `
+        <button type="button" class="btn-enable-notif btn-test-notif" id="btnTestNotif" onclick="testBrowserNotification()" title="Uji notifikasi berdering di HP">
+          <i data-feather="bell"></i>
+          <span>Tes Bunyi</span>
+        </button>
+      `;
+    } else if (currentPermission === 'denied') {
+      if (permIcon) permIcon.style.background = '#f59e0b';
+      if (permIcon) permIcon.innerHTML = '<i data-feather="alert-triangle"></i>';
+      if (permTitle) permTitle.textContent = 'Notifikasi Diblokir ⚠️';
+      if (permDesc) permDesc.textContent = 'Izin diblokir. Buka Setelan Browser ➔ Izin Situs ➔ Notifikasi.';
+      permActionWrapper.innerHTML = `
+        <button type="button" class="btn-enable-notif" style="background: #f59e0b;" onclick="showDeniedNotifHelp()">Bantuan</button>
+      `;
+    } else {
+      if (permIcon) permIcon.style.background = 'var(--primary)';
+      if (permIcon) permIcon.innerHTML = '<i data-feather="bell"></i>';
+      if (permTitle) permTitle.textContent = 'Aktifkan Notifikasi di HP 🔔';
+      if (permDesc) permDesc.textContent = 'Dapatkan alarm tugas baru & pengingat H-1 deadline.';
+      permActionWrapper.innerHTML = `
+        <button type="button" class="btn-enable-notif" id="btnRequestNotifPerm" onclick="requestNotificationPermission()">Izinkan</button>
+      `;
+    }
+  }
+
+  if (window.feather) feather.replace();
+}
+window.updateNotifPermissionUI = updateNotifPermissionUI;
+
+// Event Listener Tombol Tutup Banner di Halaman Utama
+const btnDismissNotifBanner = document.getElementById('btnDismissNotifBanner');
+if (btnDismissNotifBanner) {
+  btnDismissNotifBanner.addEventListener('click', () => {
+    sessionStorage.setItem('studymanage_notif_banner_dismissed', 'true');
+    const globalBanner = document.getElementById('globalNotifBanner');
+    if (globalBanner) globalBanner.style.display = 'none';
+  });
+}
+
+// Event Listener Tombol Izinkan Global
+const btnEnableNotifGlobal = document.getElementById('btnEnableNotifGlobal');
+if (btnEnableNotifGlobal) {
+  btnEnableNotifGlobal.addEventListener('click', () => {
+    requestNotificationPermission();
   });
 }
 
@@ -3840,6 +4158,7 @@ document.addEventListener('DOMContentLoaded', () => {
   try { renderTugas(); } catch (e) { console.warn('Init renderTugas error:', e); }
   try { renderMateri(); } catch (e) { console.warn('Init renderMateri error:', e); }
   try { renderNotificationsUI(); } catch (e) { console.warn('Init renderNotificationsUI error:', e); }
+  try { updateNotifPermissionUI(); } catch (e) { console.warn('Init updateNotifPermissionUI error:', e); }
   try { checkDeadlinesAndNotify(); } catch (e) { console.warn('Init checkDeadlinesAndNotify error:', e); }
 
   // Inisialisasi Firebase & Auth State Listener

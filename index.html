@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyManage - Portal Tugas & Materi Kuliah</title>
-  <link rel="stylesheet" href="style.css?v=4.1">
+  <link rel="stylesheet" href="style.css?v=4.3">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -310,36 +310,12 @@
           </div>
         </div>
 
-        <!-- Badge & Tombol Klaim Akses Pengurus di Sidebar -->
-        <div id="sidebarAdminBadge" style="display: none; margin-bottom: 8px;"></div>
-        <button type="button" class="backup-btn" id="btnClaimAdminSidebar" onclick="openClaimAdminModal()" style="margin-bottom: 8px;" title="Klaim Hak Akses Pengurus Kelas (Ketua Kelas/Sekretaris/PJ MK/Designer)">
-          <i data-feather="key"></i>
-          <span>Akses Pengurus Kelas</span>
-        </button>
-
         <div class="academic-badge">
           <i data-feather="award"></i>
           <div>
             <div class="academic-title">Semester 3</div>
             <div class="academic-sub">Tahun Akademik 2026/2027</div>
           </div>
-        </div>
-        <div class="backup-actions">
-          <button class="backup-btn" id="btnExportBackup" title="Simpan file cadangan semua tugas & materi">
-            <i data-feather="download"></i>
-            <span>Cadangkan (Backup)</span>
-          </button>
-          <label class="backup-btn" title="Pulihkan data dari file cadangan JSON">
-            <i data-feather="upload"></i>
-            <span>Pulihkan (Restore)</span>
-            <input type="file" id="importBackupInput" accept=".json" style="display: none;">
-          </label>
-        </div>
-        <div style="margin-top: 8px; display: none;">
-          <button class="backup-btn cloud-sidebar-btn" id="btnOpenCloudModalSidebar" title="Pengaturan Cloud Sync Firebase" style="display: none;">
-            <i data-feather="cloud-lightning"></i>
-            <span>Cloud Sync (Firebase)</span>
-          </button>
         </div>
         <div class="security-actions-group" style="margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
           <button class="backup-btn" id="btnOpenChangePassword" title="Ubah kata sandi akun">
@@ -395,15 +371,17 @@
               </div>
 
               <!-- Banner Izin Notifikasi Browser di HP / Laptop -->
-              <div class="notif-permission-banner" id="notifPermissionBanner" style="display: none;">
-                <div class="notif-perm-icon">
+              <div class="notif-permission-banner" id="notifPermissionBanner">
+                <div class="notif-perm-icon" id="notifPermIcon">
                   <i data-feather="bell"></i>
                 </div>
                 <div class="notif-perm-content">
-                  <strong>Aktifkan Notifikasi di HP</strong>
-                  <p>Dapatkan alarm tugas baru & pengingat H-1 deadline.</p>
+                  <strong id="notifPermTitle">Notifikasi di HP</strong>
+                  <p id="notifPermDesc">Dapatkan alarm tugas baru & pengingat H-1 deadline.</p>
                 </div>
-                <button type="button" class="btn-enable-notif" id="btnRequestNotifPerm">Aktifkan</button>
+                <div id="notifPermActionWrapper">
+                  <button type="button" class="btn-enable-notif" id="btnRequestNotifPerm">Izinkan</button>
+                </div>
               </div>
 
               <div class="notif-list" id="notifList">
@@ -445,6 +423,28 @@
 
       <!-- Main Body Container -->
       <main class="content-container">
+
+        <!-- Banner Izin Notifikasi Browser di Layar Utama / Dashboard -->
+        <div id="globalNotifBanner" class="global-notif-banner" style="display: none;">
+          <div class="global-notif-left">
+            <div class="global-notif-icon">
+              <i data-feather="bell"></i>
+            </div>
+            <div class="global-notif-text">
+              <strong id="globalNotifTitle">Aktifkan Notifikasi Tugas di HP Anda 🔔</strong>
+              <p id="globalNotifDesc">Dapatkan alarm pengingat H-1 deadline & pemberitahuan tugas baru otomatis langsung ke HP.</p>
+            </div>
+          </div>
+          <div class="global-notif-actions">
+            <button type="button" class="btn-enable-notif" id="btnEnableNotifGlobal">
+              <i data-feather="bell"></i>
+              <span id="btnEnableNotifGlobalText">Izinkan Notifikasi</span>
+            </button>
+            <button type="button" class="btn-dismiss-banner" id="btnDismissNotifBanner" title="Tutup Banner" aria-label="Tutup Banner">
+              <i data-feather="x"></i>
+            </button>
+          </div>
+        </div>
 
         <!-- Banner Peringatan H-1 Deadline -->
         <div id="urgentDeadlinesBanner" class="deadline-alert-banner" style="display: none;">
@@ -1329,9 +1329,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=4.1"></script>
+  <script src="firebase-config.js?v=4.3"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=4.1"></script>
+  <script src="app.js?v=4.3"></script>
 </body>
 </html>
