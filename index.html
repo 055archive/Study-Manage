@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyManage - Portal Tugas & Materi Kuliah</title>
-  <link rel="stylesheet" href="style.css?v=3.7">
+  <link rel="stylesheet" href="style.css?v=3.8">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -670,10 +670,9 @@
         <div class="form-row">
           <div class="form-group">
             <label for="tugasMatkul">Mata Kuliah *</label>
-            <input type="text" id="tugasMatkul" list="mataKuliahSuggestions" class="custom-input" placeholder="Contoh: Pemrograman Web" required>
-            <datalist id="mataKuliahSuggestions">
-              <!-- Diisi otomatis oleh JS -->
-            </datalist>
+            <select id="tugasMatkul" class="custom-select" required>
+              <option value="" disabled selected>-- Pilih Mata Kuliah --</option>
+            </select>
           </div>
 
           <div class="form-group">
@@ -771,7 +770,9 @@
         <div class="form-row">
           <div class="form-group">
             <label for="materiMatkul">Mata Kuliah *</label>
-            <input type="text" id="materiMatkul" list="mataKuliahSuggestions" class="custom-input" placeholder="Contoh: Basis Data Lanjut" required>
+            <select id="materiMatkul" class="custom-select" required>
+              <option value="" disabled selected>-- Pilih Mata Kuliah --</option>
+            </select>
           </div>
 
           <div class="form-group">
@@ -1173,9 +1174,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=3.7"></script>
+  <script src="firebase-config.js?v=3.8"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=3.7"></script>
+  <script src="app.js?v=3.8"></script>
 </body>
 </html>

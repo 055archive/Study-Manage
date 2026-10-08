@@ -562,7 +562,18 @@ button, input, select, textarea {
   background-color: var(--bg-surface);
   color: var(--text-main);
   outline: none;
+  font-family: inherit;
+  font-size: 0.95rem;
   transition: all var(--transition);
+}
+
+.custom-select {
+  cursor: pointer;
+}
+
+.custom-select option {
+  background-color: var(--bg-surface);
+  color: var(--text-main);
 }
 
 .custom-input:focus, .custom-select:focus, .custom-textarea:focus {

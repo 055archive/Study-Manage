@@ -828,28 +828,30 @@ function renderCourseFilters() {
   const courses = getAllMataKuliahList();
 
   // 1. Sidebar Course Pills
-  sidebarCourseFilters.innerHTML = `
-    <button class="course-filter-btn ${activeMatkulFilter === 'ALL' ? 'active' : ''}" onclick="setMatkulFilter('ALL')">
-      <span class="course-dot" style="background-color: #6366f1;"></span>
-      <span>Semua Mata Kuliah</span>
-    </button>
-  `;
-
-  courses.forEach((course) => {
-    const color = getCourseColor(course);
-    const isAct = activeMatkulFilter === course ? 'active' : '';
-    const btn = document.createElement('button');
-    btn.className = `course-filter-btn ${isAct}`;
-    btn.innerHTML = `
-      <span class="course-dot" style="background-color: ${color};"></span>
-      <span>${escapeHtml(course)}</span>
+  if (sidebarCourseFilters) {
+    sidebarCourseFilters.innerHTML = `
+      <button class="course-filter-btn ${activeMatkulFilter === 'ALL' ? 'active' : ''}" onclick="setMatkulFilter('ALL')">
+        <span class="course-dot" style="background-color: #6366f1;"></span>
+        <span>Semua Mata Kuliah</span>
+      </button>
     `;
-    btn.onclick = () => setMatkulFilter(course);
-    sidebarCourseFilters.appendChild(btn);
-  });
 
-  // 2. Select Option Dropdowns
-  const generateOptions = () => {
+    courses.forEach((course) => {
+      const color = getCourseColor(course);
+      const isAct = activeMatkulFilter === course ? 'active' : '';
+      const btn = document.createElement('button');
+      btn.className = `course-filter-btn ${isAct}`;
+      btn.innerHTML = `
+        <span class="course-dot" style="background-color: ${color};"></span>
+        <span>${escapeHtml(course)}</span>
+      `;
+      btn.onclick = () => setMatkulFilter(course);
+      sidebarCourseFilters.appendChild(btn);
+    });
+  }
+
+  // 2. Select Option Dropdowns (Filter Bar)
+  const generateFilterOptions = () => {
     let html = '<option value="ALL">Semua Mata Kuliah</option>';
     courses.forEach(c => {
       html += `<option value="${escapeHtml(c)}" ${activeMatkulFilter === c ? 'selected' : ''}>${escapeHtml(c)}</option>`;
@@ -857,16 +859,36 @@ function renderCourseFilters() {
     return html;
   };
 
-  filterTugasMatkul.innerHTML = generateOptions();
-  filterMateriMatkul.innerHTML = generateOptions();
+  if (filterTugasMatkul) filterTugasMatkul.innerHTML = generateFilterOptions();
+  if (filterMateriMatkul) filterMateriMatkul.innerHTML = generateFilterOptions();
 
-  // 3. Datalist Suggestions untuk Form Input
-  mataKuliahSuggestions.innerHTML = '';
-  courses.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c;
-    mataKuliahSuggestions.appendChild(opt);
-  });
+  // 3. Dropdown Select untuk Modal Tambah/Edit Tugas & Materi (Sinkron Real-Time)
+  const populateModalCourseSelect = (selectId) => {
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    const currentVal = sel.value;
+    let html = '<option value="" disabled selected>-- Pilih Mata Kuliah --</option>';
+    courses.forEach(c => {
+      html += `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`;
+    });
+    sel.innerHTML = html;
+    if (currentVal && courses.includes(currentVal)) {
+      sel.value = currentVal;
+    }
+  };
+
+  populateModalCourseSelect('tugasMatkul');
+  populateModalCourseSelect('materiMatkul');
+
+  // 4. Fallback jika elemen datalist masih ada
+  if (mataKuliahSuggestions) {
+    mataKuliahSuggestions.innerHTML = '';
+    courses.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c;
+      mataKuliahSuggestions.appendChild(opt);
+    });
+  }
 }
 
 window.setMatkulFilter = function(courseName, autoSwitch = true) {
@@ -1311,9 +1333,17 @@ function openAddTugasModal() {
   if (tugasFileInput) tugasFileInput.value = '';
   tugasUploader.renderPreviewUI(null);
 
+  // Pastikan daftar pilihan mata kuliah selalu terupdate dari page mata kuliah
+  renderCourseFilters();
+
   // Jika sedang filter mata kuliah tertentu, isi otomatis
-  if (activeMatkulFilter !== 'ALL') {
-    document.getElementById('tugasMatkul').value = activeMatkulFilter;
+  const formTugasMatkul = document.getElementById('tugasMatkul');
+  if (formTugasMatkul) {
+    if (activeMatkulFilter !== 'ALL') {
+      formTugasMatkul.value = activeMatkulFilter;
+    } else {
+      formTugasMatkul.value = '';
+    }
   }
 
   // Set default deadline besok jam 23:59
@@ -1332,8 +1362,22 @@ function openEditTugasModal(id) {
   if (tugasModalTitle) tugasModalTitle.textContent = 'Edit Tugas Kuliah';
   if (btnSubmitTugas) btnSubmitTugas.textContent = 'Perbarui Tugas';
 
+  // Pastikan daftar pilihan mata kuliah selalu terupdate dari page mata kuliah
+  renderCourseFilters();
+
   document.getElementById('tugasJudul').value = task.judul;
-  document.getElementById('tugasMatkul').value = task.matkul;
+
+  const formTugasMatkul = document.getElementById('tugasMatkul');
+  if (formTugasMatkul) {
+    if (task.matkul && !Array.from(formTugasMatkul.options).some(o => o.value === task.matkul)) {
+      const opt = document.createElement('option');
+      opt.value = task.matkul;
+      opt.textContent = task.matkul;
+      formTugasMatkul.appendChild(opt);
+    }
+    formTugasMatkul.value = task.matkul || '';
+  }
+
   document.getElementById('tugasPrioritas').value = task.prioritas;
 
   if (task.deadline) {
@@ -1377,8 +1421,16 @@ function openAddMateriModal() {
   materiUploader.renderPreviewUI(null);
   if (materiLinkToggle) materiLinkToggle.open = false;
 
-  if (activeMatkulFilter !== 'ALL') {
-    document.getElementById('materiMatkul').value = activeMatkulFilter;
+  // Pastikan daftar pilihan mata kuliah selalu terupdate dari page mata kuliah
+  renderCourseFilters();
+
+  const formMateriMatkul = document.getElementById('materiMatkul');
+  if (formMateriMatkul) {
+    if (activeMatkulFilter !== 'ALL') {
+      formMateriMatkul.value = activeMatkulFilter;
+    } else {
+      formMateriMatkul.value = '';
+    }
   }
 
   const today = new Date().toISOString().split('T')[0];
@@ -1395,8 +1447,21 @@ function openEditMateriModal(id) {
   if (materiModalTitle) materiModalTitle.textContent = 'Edit Materi Kuliah';
   if (btnSubmitMateri) btnSubmitMateri.textContent = 'Perbarui Materi';
 
+  // Pastikan daftar pilihan mata kuliah selalu terupdate dari page mata kuliah
+  renderCourseFilters();
+
   document.getElementById('materiJudul').value = m.judul;
-  document.getElementById('materiMatkul').value = m.matkul;
+
+  const formMateriMatkul = document.getElementById('materiMatkul');
+  if (formMateriMatkul) {
+    if (m.matkul && !Array.from(formMateriMatkul.options).some(o => o.value === m.matkul)) {
+      const opt = document.createElement('option');
+      opt.value = m.matkul;
+      opt.textContent = m.matkul;
+      formMateriMatkul.appendChild(opt);
+    }
+    formMateriMatkul.value = m.matkul || '';
+  }
   document.getElementById('materiPertemuan').value = m.pertemuan;
   document.getElementById('materiTanggal').value = m.tanggal;
   document.getElementById('materiLink').value = m.link || '';
@@ -1501,7 +1566,7 @@ tugasForm.addEventListener('submit', async (e) => {
   const editId = editTugasId ? editTugasId.value : '';
 
   if (!matkul) {
-    showToast('Mohon pilih atau isi nama Mata Kuliah!', 'danger');
+    showToast('Mohon pilih Mata Kuliah!', 'danger');
     document.getElementById('tugasMatkul').focus();
     return;
   }
@@ -1634,7 +1699,7 @@ materiForm.addEventListener('submit', async (e) => {
   const editId = editMateriId ? editMateriId.value : '';
 
   if (!matkul) {
-    showToast('Mohon pilih atau isi nama Mata Kuliah!', 'danger');
+    showToast('Mohon pilih Mata Kuliah!', 'danger');
     document.getElementById('materiMatkul').focus();
     return;
   }
