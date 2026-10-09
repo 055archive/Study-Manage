@@ -540,15 +540,37 @@ window.openFileViewer = async function(fileId, fileName, downloadUrl = '') {
       else if (nameLower.match(/\.(png|jpg|jpeg|gif|webp)$/)) fileType = 'image/jpeg';
       else fileType = 'application/octet-stream';
     } else {
-      // Jika dari IndexedDB lokal
-      const record = await getUploadedFile(fileId);
+      // 1. Cek dari IndexedDB lokal
+      let record = await getUploadedFile(fileId);
+
+      // 2. Jika tidak ada di IndexedDB lokal (misal dibuka di laptop atau HP lain), cari data file yang disinkron dari Cloud Firestore
+      if (!record || !record.data) {
+        const allTasks = [...(classTugas || []), ...(personalTugas || [])];
+        const allMateri = [...(classMateri || []), ...(personalMateri || [])];
+        const matchTask = allTasks.find(t => t.file && (t.file.id === fileId || t.file.name === fileName) && t.file.data);
+        const matchMateri = allMateri.find(m => m.file && (m.file.id === fileId || m.file.name === fileName) && m.file.data);
+        const cloudFile = matchTask ? matchTask.file : (matchMateri ? matchMateri.file : null);
+
+        if (cloudFile && cloudFile.data) {
+          record = {
+            id: fileId,
+            name: cloudFile.name || fileName,
+            size: cloudFile.size || 0,
+            type: cloudFile.type || '',
+            data: cloudFile.data
+          };
+          // Simpan ke IndexedDB lokal perangkat ini agar saat dibuka lagi tidak perlu unduh ulang
+          try { await saveUploadedFile(record); } catch (e) {}
+        }
+      }
+
       if (!record || !record.data) {
         viewerLoading.style.display = 'none';
         viewerFallback.style.display = 'flex';
-        viewerFallbackTitle.textContent = 'Berkas Tidak Ditemukan';
-        viewerFallbackDesc.textContent = 'Berkas fisik tersimpan di perangkat yang berbeda atau telah dihapus.';
+        viewerFallbackTitle.textContent = 'Berkas Belum Tersedia di Cloud';
+        viewerFallbackDesc.textContent = 'Berkas ini tersimpan di perangkat lokal pengunggah aslinya. Buka web sekali di HP pengunggah asli agar berkas otomatis terunggah ke Cloud, atau hubungi pengunggah untuk melampirkan link Drive.';
         if (btnFallbackDownload) btnFallbackDownload.style.display = 'none';
-        showToast('Berkas fisik tidak ditemukan di perangkat ini.', 'danger');
+        showToast('Berkas fisik tidak ditemukan di cloud maupun perangkat ini.', 'danger');
         return;
       }
       fileType = record.type || '';
@@ -624,6 +646,46 @@ window.closeFileViewer = function() {
   if (viewerModal) viewerModal.close();
 };
 
+/**
+ * Kompresi gambar/foto (dari kamera HP / galeri) secara otomatis menggunakan HTML5 Canvas
+ * Mengubah foto 3MB+ menjadi ~150-250KB JPEG dengan resolusi tajam agar bisa disimpan di cloud
+ */
+function compressImageIfNeeded(file, maxDimension = 1440, quality = 0.8) {
+  return new Promise((resolve) => {
+    if (!file || !file.type || !file.type.startsWith('image/') || file.type === 'image/svg+xml') {
+      return resolve(null);
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedDataUrl);
+      };
+      img.onerror = () => resolve(null);
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
+
 function setupFileUploader({
   fileInput,
   dropzone,
@@ -683,10 +745,10 @@ function setupFileUploader({
     fileInput.value = '';
   });
 
-  function processSelectedFile(file) {
-    const maxBytes = 6 * 1024 * 1024;
+  async function processSelectedFile(file) {
+    const maxBytes = 10 * 1024 * 1024;
     if (file.size > maxBytes) {
-      showToast('Ukuran berkas melebihi batas maksimal 6MB! Gunakan file lebih kecil atau lampirkan link Google Drive.', 'danger');
+      showToast('Ukuran berkas melebihi batas maksimal 10MB! Gunakan file lebih kecil atau lampirkan link Google Drive.', 'danger');
       return;
     }
 
@@ -701,6 +763,33 @@ function setupFileUploader({
       if (tugasJudulInp && !tugasJudulInp.value.trim()) {
         tugasJudulInp.value = cleanName;
       }
+    }
+
+    // Kompresi otomatis jika berkas adalah gambar/foto kamera HP
+    let compressedData = null;
+    if (file.type && file.type.startsWith('image/') && file.type !== 'image/svg+xml') {
+      try {
+        compressedData = await compressImageIfNeeded(file);
+      } catch (err) {
+        console.warn('Kompresi gambar dilewati:', err);
+      }
+    }
+
+    if (compressedData) {
+      const approxSize = Math.round((compressedData.length - 22) * 3 / 4);
+      const fileData = {
+        isNew: true,
+        id: 'file-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+        name: file.name,
+        size: approxSize,
+        type: 'image/jpeg',
+        data: compressedData,
+        uploadedAt: new Date().toISOString()
+      };
+      setStagedFile(fileData);
+      renderPreviewUI(fileData);
+      showToast(`Berkas "${file.name}" siap disimpan (${formatFileSize(approxSize)})! 📎`, 'info');
+      return;
     }
 
     const reader = new FileReader();
@@ -1877,13 +1966,16 @@ tugasForm.addEventListener('submit', async (e) => {
           cloudFile = await uploadFileToFirebaseStorage(stagedTugasFile.data, stagedTugasFile.name, stagedTugasFile.id);
         }
 
+        // Simpan data base64 jika ukurannya aman (< 750KB) agar bisa dibuka di semua perangkat (HP, laptop, teman sekelas)
+        const canEmbed = stagedTugasFile.data && stagedTugasFile.data.length < 800000;
         fileMeta = {
           id: stagedTugasFile.id,
           name: stagedTugasFile.name,
           size: stagedTugasFile.size,
           type: stagedTugasFile.type,
           downloadUrl: cloudFile ? cloudFile.downloadUrl : '',
-          storagePath: cloudFile ? cloudFile.path : ''
+          storagePath: cloudFile ? cloudFile.path : '',
+          data: canEmbed ? stagedTugasFile.data : ''
         };
       } else if (stagedTugasFile.isExisting) {
         fileMeta = {
@@ -1892,7 +1984,8 @@ tugasForm.addEventListener('submit', async (e) => {
           size: stagedTugasFile.size,
           type: stagedTugasFile.type,
           downloadUrl: stagedTugasFile.downloadUrl || '',
-          storagePath: stagedTugasFile.storagePath || ''
+          storagePath: stagedTugasFile.storagePath || '',
+          data: stagedTugasFile.data || ''
         };
       }
     }
@@ -2061,13 +2154,16 @@ materiForm.addEventListener('submit', async (e) => {
           cloudFile = await uploadFileToFirebaseStorage(stagedMateriFile.data, stagedMateriFile.name, stagedMateriFile.id);
         }
 
+        // Simpan data base64 jika ukurannya aman (< 750KB) agar bisa dibuka di semua perangkat (HP, laptop, teman sekelas)
+        const canEmbed = stagedMateriFile.data && stagedMateriFile.data.length < 800000;
         fileMeta = {
           id: stagedMateriFile.id,
           name: stagedMateriFile.name,
           size: stagedMateriFile.size,
           type: stagedMateriFile.type,
           downloadUrl: cloudFile ? cloudFile.downloadUrl : '',
-          storagePath: cloudFile ? cloudFile.path : ''
+          storagePath: cloudFile ? cloudFile.path : '',
+          data: canEmbed ? stagedMateriFile.data : ''
         };
       } else if (stagedMateriFile.isExisting) {
         fileMeta = {
@@ -2076,7 +2172,8 @@ materiForm.addEventListener('submit', async (e) => {
           size: stagedMateriFile.size,
           type: stagedMateriFile.type,
           downloadUrl: stagedMateriFile.downloadUrl || '',
-          storagePath: stagedMateriFile.storagePath || ''
+          storagePath: stagedMateriFile.storagePath || '',
+          data: stagedMateriFile.data || ''
         };
       }
     }
@@ -4176,6 +4273,7 @@ window.handleCloudKelasTugas = function(cloudData) {
 
   classTugas = incoming;
   rebuildTugasList();
+  setTimeout(autoSyncLocalFilesToCloud, 1000);
 };
 
 window.handleCloudTugasStatus = function(statusMap) {
@@ -4224,7 +4322,48 @@ window.handleCloudKelasMateri = function(cloudData) {
 
   classMateri = incoming;
   rebuildMateriList();
+  setTimeout(autoSyncLocalFilesToCloud, 1000);
 };
+
+/**
+ * Auto-Heal: Sinkronkan data file fisik lokal ke Firestore secara otomatis
+ * Jika suatu tugas/materi belum punya link/data di cloud tetapi perangkat ini memiliki file fisiknya di IndexedDB
+ */
+async function autoSyncLocalFilesToCloud() {
+  if (typeof isFirebaseConnected === 'undefined' || !isFirebaseConnected || typeof firestoreDb === 'undefined' || !firestoreDb) return;
+  try {
+    for (const task of (classTugas || [])) {
+      if (task.file && task.file.id && !task.file.downloadUrl && !task.file.data) {
+        const local = await getUploadedFile(task.file.id);
+        if (local && local.data && local.data.length < 800000) {
+          task.file.data = local.data;
+          try {
+            await firestoreDb.collection('kelas_tugas').doc(task.id).update({
+              'file.data': local.data
+            });
+            console.log('✅ Berkas tugas otomatis dipulihkan ke cloud:', task.file.name);
+          } catch (e) {}
+        }
+      }
+    }
+    for (const mat of (classMateri || [])) {
+      if (mat.file && mat.file.id && !mat.file.downloadUrl && !mat.file.data) {
+        const local = await getUploadedFile(mat.file.id);
+        if (local && local.data && local.data.length < 800000) {
+          mat.file.data = local.data;
+          try {
+            await firestoreDb.collection('kelas_materi').doc(mat.id).update({
+              'file.data': local.data
+            });
+            console.log('✅ Berkas materi otomatis dipulihkan ke cloud:', mat.file.name);
+          } catch (e) {}
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Auto-heal error:', err);
+  }
+}
 
 /**
  * 6. NOTIFICATION BELL TOGGLE & EVENT LISTENERS
