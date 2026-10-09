@@ -4582,6 +4582,9 @@ const SUPER_ADMIN_SESSION_KEY = 'studymanage_super_admin_verified';
 
 let cachedAllStudents = [];
 let cachedStudentsTaskStatus = {};
+let pendingDeleteStudentTarget = null;
+let academicBadgeClicks = 0;
+let academicBadgeTimer = null;
 
 /**
  * Handle tombol "Data Mahasiswa" di sidebar
@@ -4751,12 +4754,18 @@ function renderStudentsListUI(students) {
   const tasksList = classTugas || [];
   const totalTasks = tasksList.length;
 
+  const myUid = (typeof getCurrentUserUID === 'function' ? getCurrentUserUID() : '') || '';
+  const myNim = (currentUserProfile && currentUserProfile.nim) ? String(currentUserProfile.nim).trim() : '';
+
   let html = '';
   students.forEach(s => {
     const initial = (s.nama || 'M').trim().charAt(0).toUpperCase();
     const isPengurus = s.isAdmin || (s.role && s.role !== 'Mahasiswa');
     const roleLabel = s.role || (isPengurus ? 'Pengurus Kelas' : 'Mahasiswa');
     const rolePillClass = isPengurus ? 'admin' : 'member';
+
+    // Cek apakah ini akun pengguna yang sedang login saat ini
+    const isSelf = (myUid && s.uid === myUid) || (myNim && s.nim && String(s.nim).trim() === myNim);
 
     // Hitung status tugas kelas mahasiswa ini
     const statusMap = cachedStudentsTaskStatus[s.uid] || {};
@@ -4792,10 +4801,19 @@ function renderStudentsListUI(students) {
           <div class="student-progress-bar-wrap">
             <div class="progress-bar-fill-track" style="width: ${pct}%;"></div>
           </div>
-          <button type="button" class="btn-detail-progress" onclick="openStudentProgressDetail('${s.uid}')" title="Lihat rincian tugas mahasiswa">
-            <i data-feather="list"></i>
-            <span>Rincian Tugas</span>
-          </button>
+          <div class="student-card-buttons-row">
+            <button type="button" class="btn-detail-progress" onclick="openStudentProgressDetail('${s.uid}')" title="Lihat rincian tugas mahasiswa">
+              <i data-feather="list"></i>
+              <span>Rincian Tugas</span>
+            </button>
+            ${isSelf
+              ? `<span class="current-user-tag" title="Akun Anda yang sedang aktif"><i data-feather="check"></i> Akun Anda</span>`
+              : `<button type="button" class="btn-delete-student" onclick="promptDeleteStudent('${s.uid}')" title="Hapus akun mahasiswa dari sistem portal">
+                  <i data-feather="trash-2"></i>
+                  <span>Hapus</span>
+                </button>`
+            }
+          </div>
         </div>
       </div>
     `;
@@ -4966,6 +4984,109 @@ if (btnToggleSuperAdminPwd && superAdminSecretInput) {
   });
 }
 
+/**
+ * Buka modal konfirmasi hapus akun mahasiswa
+ */
+window.promptDeleteStudent = function(uid) {
+  const student = cachedAllStudents.find(s => s.uid === uid);
+  if (!student) return;
+
+  pendingDeleteStudentTarget = student;
+
+  const elName = document.getElementById('deleteTargetStudentName');
+  const elNim = document.getElementById('deleteTargetStudentNim');
+  const elEmail = document.getElementById('deleteTargetStudentEmail');
+  const modal = document.getElementById('confirmDeleteStudentModal');
+
+  if (elName) elName.textContent = student.nama || 'Mahasiswa';
+  if (elNim) elNim.textContent = 'NIM: ' + (student.nim || '-');
+  if (elEmail) elEmail.textContent = 'Email: ' + (student.email || '-');
+
+  if (modal) modal.showModal();
+  if (window.feather) feather.replace();
+};
+
+window.closeConfirmDeleteStudentModal = function() {
+  pendingDeleteStudentTarget = null;
+  const modal = document.getElementById('confirmDeleteStudentModal');
+  if (modal) modal.close();
+};
+
+/**
+ * Eksekusi penghapusan akun mahasiswa dari Cloud Firestore & nim_index
+ */
+window.executeDeleteStudent = async function() {
+  if (!pendingDeleteStudentTarget) return;
+
+  const target = pendingDeleteStudentTarget;
+  const btn = document.getElementById('btnExecuteDeleteStudent');
+  const btnText = document.getElementById('btnExecuteDeleteStudentText');
+
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.textContent = 'Menghapus... ⏳';
+
+  try {
+    if (typeof window.deleteStudentAccount === 'function') {
+      await window.deleteStudentAccount(target.uid, target.nim);
+    } else {
+      throw new Error('Fungsi deleteStudentAccount tidak tersedia.');
+    }
+
+    // Hapus dari memori lokal
+    cachedAllStudents = cachedAllStudents.filter(s => s.uid !== target.uid);
+    delete cachedStudentsTaskStatus[target.uid];
+
+    // Perbarui angka statistik dashboard
+    const totalCount = cachedAllStudents.length;
+    const pengurusCount = cachedAllStudents.filter(s => s.isAdmin || (s.role && s.role !== 'Mahasiswa')).length;
+    const elTotal = document.getElementById('statTotalStudents');
+    const elPengurus = document.getElementById('statTotalPengurus');
+    if (elTotal) elTotal.textContent = totalCount;
+    if (elPengurus) elPengurus.textContent = pengurusCount;
+
+    // Render ulang tampilan daftar mahasiswa
+    filterStudentsListUI();
+
+    closeConfirmDeleteStudentModal();
+    showToast(`Akun "${target.nama}" berhasil dihapus permanen dari sistem! 🗑️`, 'success');
+  } catch (err) {
+    console.error('Gagal menghapus akun mahasiswa:', err);
+    showToast('Gagal menghapus akun: ' + err.message, 'danger');
+  } finally {
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.textContent = 'Hapus Permanen';
+  }
+};
+
+/**
+ * Aksi Rahasia: Klik Badge Semester 3 sebanyak 5x untuk memicu Master Admin
+ */
+function setupAcademicBadgeSecretTrigger() {
+  const badge = document.getElementById('academicBadge') || document.querySelector('.academic-badge');
+  if (!badge) return;
+
+  badge.style.cursor = 'pointer';
+  badge.addEventListener('click', () => {
+    academicBadgeClicks++;
+    clearTimeout(academicBadgeTimer);
+
+    // Reset hitungan jika jeda antar-klik > 2.5 detik
+    academicBadgeTimer = setTimeout(() => {
+      academicBadgeClicks = 0;
+    }, 2500);
+
+    if (academicBadgeClicks >= 5) {
+      academicBadgeClicks = 0;
+      clearTimeout(academicBadgeTimer);
+      // Buka modal sandi atau dashboard langsung jika sudah diverifikasi
+      handleOpenStudentsData();
+    }
+  });
+}
+
+// Inisialisasi listener rahasia
+setupAcademicBadgeSecretTrigger();
+
 // ============================================================================
 // 11. INITIALIZATION
 // ============================================================================
@@ -5015,6 +5136,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  try { setupAcademicBadgeSecretTrigger(); } catch (e) { console.warn('Init setupAcademicBadgeSecretTrigger error:', e); }
   try { feather.replace(); } catch (e) { console.warn('feather.replace error:', e); }
 
   // Registrasi Service Worker untuk PWA (Dapat diinstal di Android & Desktop)

@@ -4228,6 +4228,69 @@ input:-webkit-autofill:active {
   height: 13px;
 }
 
+.student-card-buttons-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.btn-delete-student {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 9px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius-md);
+  color: #ef4444;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btn-delete-student:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.btn-delete-student i {
+  width: 13px;
+  height: 13px;
+}
+
+.current-user-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary-subtle);
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* Feedback interaktif badge semester 3 saat diklik */
+.academic-badge {
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.academic-badge:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.academic-badge:active {
+  transform: scale(0.97);
+  background: rgba(255, 255, 255, 0.12);
+}
+
 /* Detail Modal Inner Styles */
 .student-progress-summary-box {
   background: var(--bg-surface-secondary);

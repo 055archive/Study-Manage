@@ -939,6 +939,54 @@ async function fetchStudentTaskStatus(uid) {
   }
 }
 
+async function deleteStudentAccount(uid, nim) {
+  if (!isFirebaseConnected || !firestoreDb) {
+    throw new Error('Firebase belum terhubung ke Cloud Database.');
+  }
+  if (!uid) {
+    throw new Error('UID mahasiswa tidak valid.');
+  }
+
+  try {
+    const batch = firestoreDb.batch();
+
+    // 1. Hapus dokumen profil di users/{uid}
+    const userDocRef = firestoreDb.collection('users').doc(uid);
+    batch.delete(userDocRef);
+
+    // 2. Hapus dokumen index NIM di nim_index/{nim} agar tidak bisa login lagi
+    if (nim && nim !== '-') {
+      const nimDocRef = firestoreDb.collection('nim_index').doc(String(nim).trim());
+      batch.delete(nimDocRef);
+    }
+
+    await batch.commit();
+
+    // 3. Bersihkan subkoleksi (tugas_status, matkul, tugas, materi) secara asinkron
+    const subcollections = ['tugas_status', 'matkul', 'tugas', 'materi'];
+    for (const sub of subcollections) {
+      try {
+        const subSnap = await userDocRef.collection(sub).get();
+        if (!subSnap.empty) {
+          const subBatch = firestoreDb.batch();
+          subSnap.forEach(doc => subBatch.delete(doc.ref));
+          await subBatch.commit();
+        }
+      } catch (subErr) {
+        console.warn(`Gagal membersihkan subkoleksi ${sub} untuk ${uid}:`, subErr);
+      }
+    }
+
+    console.log(`✅ Data akun mahasiswa UID ${uid} (NIM: ${nim}) berhasil dihapus dari cloud.`);
+    return true;
+  } catch (err) {
+    console.error('Error saat menghapus akun mahasiswa:', err);
+    throw err;
+  }
+}
+
 window.fetchAllStudentsData = fetchAllStudentsData;
 window.fetchStudentTaskStatus = fetchStudentTaskStatus;
+window.deleteStudentAccount = deleteStudentAccount;
+
 
