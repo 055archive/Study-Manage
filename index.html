@@ -16,7 +16,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="apple-touch-icon" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=5.2">
+  <link rel="stylesheet" href="style.css?v=5.4">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -358,6 +358,10 @@
           </div>
         </div>
         <div class="security-actions-group" style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
+          <button type="button" class="backup-btn btn-students-data" id="btnOpenStudentsData" onclick="handleOpenStudentsData()" title="Akses Master Admin: Pantau Data Seluruh Mahasiswa" style="width: 100%; justify-content: center; background: rgba(79, 70, 229, 0.08); border-color: rgba(99, 102, 241, 0.35); color: var(--primary);">
+            <i data-feather="users"></i>
+            <span>Data Mahasiswa</span>
+          </button>
           <button type="button" class="backup-btn btn-exit-admin-sidebar" id="btnExitAdminSidebar" onclick="exitAdminMode()" title="Keluar dari Mode Pengurus" style="width: 100%; justify-content: center; display: none;">
             <i data-feather="shield-off"></i>
             <span>Keluar Mode Pengurus</span>
@@ -1367,6 +1371,203 @@
     </div>
   </dialog>
 
+  <!-- ========================================================
+       MODAL 9: VERIFIKASI MASTER ADMIN (SANDI: 00000000)
+       ======================================================== -->
+  <dialog class="app-dialog" id="superAdminAuthModal">
+    <div class="dialog-box" style="max-width: 440px;">
+      <div class="dialog-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(99, 102, 241, 0.15); color: var(--primary); display: flex; align-items: center; justify-content: center;">
+            <i data-feather="shield"></i>
+          </div>
+          <h3 class="dialog-title">Akses Master Admin</h3>
+        </div>
+        <button class="icon-btn btn-close-dialog" onclick="closeSuperAdminAuthModal()">
+          <i data-feather="x"></i>
+        </button>
+      </div>
+
+      <form id="superAdminAuthForm" class="dialog-form" style="padding: 22px;">
+        <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px;">
+          Masukkan kata sandi khusus Master Admin untuk membuka dashboard seluruh data mahasiswa dan rekapitulasi progres tugas kelas.
+        </p>
+
+        <div class="form-group">
+          <label for="superAdminSecretInput">Kata Sandi Master Admin *</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="superAdminSecretInput" class="custom-input" placeholder="Masukkan 8-digit sandi..." autocomplete="off" required>
+            <button type="button" class="toggle-password-btn" id="btnToggleSuperAdminPwd" aria-label="Lihat kata sandi">
+              <i data-feather="eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="superAdminAuthErrorMsg" class="auth-error-banner" style="display: none; margin-top: 10px;">
+          <i data-feather="alert-circle"></i>
+          <span>Kata sandi salah! Akses ditolak.</span>
+        </div>
+
+        <div class="dialog-footer" style="margin-top: 18px;">
+          <button type="button" class="btn btn-secondary" onclick="closeSuperAdminAuthModal()">Batal</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitSuperAdminAuth">
+            <i data-feather="unlock"></i>
+            <span>Buka Data Mahasiswa</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- ========================================================
+       MODAL 10: DASHBOARD DATA MAHASISWA & PROGRES TUGAS
+       ======================================================== -->
+  <dialog class="app-dialog students-dashboard-dialog" id="studentsDashboardModal">
+    <div class="dialog-box students-dashboard-box">
+      <!-- Header -->
+      <div class="dialog-header students-dashboard-header">
+        <div class="students-header-meta">
+          <div class="students-header-icon">
+            <i data-feather="users"></i>
+          </div>
+          <div>
+            <h3 class="dialog-title">Data Mahasiswa & Progres Kelas</h3>
+            <span class="students-header-sub">Master Admin Dashboard • Terhubung ke Cloud</span>
+          </div>
+        </div>
+        <div class="students-header-actions">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="reloadStudentsDashboard()" title="Muat ulang data dari cloud">
+            <i data-feather="refresh-cw"></i>
+            <span>Segarkan</span>
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="exportStudentsToCSV()" title="Unduh rekap data mahasiswa ke CSV">
+            <i data-feather="download"></i>
+            <span>Ekspor CSV</span>
+          </button>
+          <button type="button" class="icon-btn btn-close-dialog" onclick="closeStudentsDashboardModal()" title="Tutup">
+            <i data-feather="x"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="students-dashboard-body">
+        <!-- Quick Stats Cards -->
+        <div class="students-stats-grid">
+          <div class="student-stat-card">
+            <div class="stat-icon-wrap primary">
+              <i data-feather="users"></i>
+            </div>
+            <div class="stat-meta">
+              <span class="stat-num" id="statTotalStudents">0</span>
+              <span class="stat-label">Total Mahasiswa</span>
+            </div>
+          </div>
+          <div class="student-stat-card">
+            <div class="stat-icon-wrap purple">
+              <i data-feather="shield"></i>
+            </div>
+            <div class="stat-meta">
+              <span class="stat-num" id="statTotalPengurus">0</span>
+              <span class="stat-label">Pengurus Kelas</span>
+            </div>
+          </div>
+          <div class="student-stat-card">
+            <div class="stat-icon-wrap emerald">
+              <i data-feather="check-circle"></i>
+            </div>
+            <div class="stat-meta">
+              <span class="stat-num" id="statTotalClassTasks">0</span>
+              <span class="stat-label">Tugas Resmi Kelas</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="students-toolbar">
+          <div class="students-search-box">
+            <i data-feather="search"></i>
+            <input type="text" id="studentsSearchInput" placeholder="Cari nama atau NIM mahasiswa..." oninput="filterStudentsListUI()">
+          </div>
+          <div class="students-filter-group">
+            <select id="studentsRoleFilter" class="custom-select" onchange="filterStudentsListUI()">
+              <option value="ALL">Semua Jabatan</option>
+              <option value="MAHASISWA">Hanya Mahasiswa</option>
+              <option value="PENGURUS">Hanya Pengurus Kelas</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="studentsLoadingState" class="students-loading-box" style="display: flex;">
+          <div class="viewer-spinner"></div>
+          <span>Mengambil data seluruh mahasiswa dari cloud...</span>
+        </div>
+
+        <!-- Students List / Table Container -->
+        <div id="studentsListWrapper" style="display: none;">
+          <div class="students-list-container" id="studentsListContainer">
+            <!-- Diisi otomatis oleh JavaScript -->
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-footer students-dashboard-footer">
+        <span class="students-footer-note">
+          <i data-feather="lock"></i>
+          <span>Akses Terenkripsi • Data diperbarui real-time dari Firestore</span>
+        </span>
+        <button type="button" class="btn btn-secondary" onclick="closeStudentsDashboardModal()">Tutup</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ========================================================
+       MODAL 11: DETAIL PROGRES TUGAS PER MAHASISWA
+       ======================================================== -->
+  <dialog class="app-dialog" id="studentProgressDetailModal">
+    <div class="dialog-box" style="max-width: 580px;">
+      <div class="dialog-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="student-avatar-sm" id="detailStudentAvatar">M</div>
+          <div>
+            <h3 class="dialog-title" id="detailStudentName">Nama Mahasiswa</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);" id="detailStudentMeta">NIM: -</span>
+          </div>
+        </div>
+        <button class="icon-btn btn-close-dialog" onclick="closeStudentProgressDetailModal()">
+          <i data-feather="x"></i>
+        </button>
+      </div>
+
+      <div class="dialog-form" style="padding: 20px;">
+        <!-- Overall Progress Bar -->
+        <div class="student-progress-summary-box">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 0.86rem; font-weight: 700; color: var(--text-main);">Progres Tugas Kelas</span>
+            <span style="font-size: 0.86rem; font-weight: 700; color: var(--primary);" id="detailProgressRatio">0 / 0 Selesai (0%)</span>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="detailProgressBarFill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Task List Break Down -->
+        <div style="margin-top: 14px;">
+          <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+            Daftar Tugas Resmi Kelas:
+          </h4>
+          <div id="detailTasksList" class="detail-tasks-list">
+            <!-- Diisi otomatis oleh JavaScript -->
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeStudentProgressDetailModal()">Tutup</button>
+      </div>
+    </div>
+  </dialog>
+
   <!-- Container Notifikasi Toast -->
   <div class="toast-wrapper" id="toastWrapper"></div>
 
@@ -1377,9 +1578,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=5.2"></script>
+  <script src="firebase-config.js?v=5.4"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=5.2"></script>
+  <script src="app.js?v=5.4"></script>
 </body>
 </html>

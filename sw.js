@@ -1,4 +1,4 @@
-const CACHE_NAME = 'studymanage-v5.2';
+const CACHE_NAME = 'studymanage-v5.4';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

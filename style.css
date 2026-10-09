@@ -3893,3 +3893,449 @@ input:-webkit-autofill:active {
   color: var(--text-muted);
   margin-top: 2px;
 }
+
+/* ==========================================================================
+   MASTER ADMIN: DASHBOARD DATA MAHASISWA & PROGRES TUGAS (SANDI: 00000000)
+   ========================================================================== */
+.students-dashboard-dialog {
+  max-width: 960px;
+  width: 95%;
+}
+
+.students-dashboard-box {
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.students-dashboard-header {
+  padding: 16px 22px;
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.students-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.students-header-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  background: var(--primary-subtle);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.students-header-sub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.students-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.students-dashboard-body {
+  padding: 18px 22px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Stats Cards */
+.students-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.student-stat-card {
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stat-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-icon-wrap.primary { background: var(--primary-subtle); color: var(--primary); }
+.stat-icon-wrap.purple { background: var(--purple-subtle); color: var(--purple); }
+.stat-icon-wrap.emerald { background: var(--emerald-subtle); color: var(--emerald); }
+
+.stat-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-num {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Toolbar (Search & Filter) */
+.students-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.students-search-box {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+}
+
+.students-search-box i {
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.students-search-box input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: inherit;
+  font-size: 0.88rem;
+  color: var(--text-main);
+  width: 100%;
+}
+
+.students-filter-group {
+  min-width: 170px;
+}
+
+.students-loading-box {
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Students List Items */
+.students-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.student-card-row {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  transition: all var(--transition);
+}
+
+.student-card-row:hover {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.student-card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.student-avatar-md {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--primary), var(--purple));
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.student-avatar-sm {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--primary), var(--purple));
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.88rem;
+  flex-shrink: 0;
+}
+
+.student-info-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.student-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.student-name-text {
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.student-meta-text {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.student-role-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.student-role-pill.admin {
+  background: var(--purple-subtle);
+  color: var(--purple);
+}
+
+.student-role-pill.member {
+  background: var(--primary-subtle);
+  color: var(--primary);
+}
+
+/* Progress Column on Card */
+.student-progress-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+  min-width: 170px;
+}
+
+.student-progress-info {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.student-progress-bar-wrap {
+  width: 100%;
+  height: 7px;
+  background: var(--border-light);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-bar-fill-track {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--primary), var(--emerald));
+  transition: width 0.3s ease;
+}
+
+.btn-detail-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  color: var(--primary);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btn-detail-progress:hover {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.btn-detail-progress i {
+  width: 13px;
+  height: 13px;
+}
+
+/* Detail Modal Inner Styles */
+.student-progress-summary-box {
+  background: var(--bg-surface-secondary);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  border: 1px solid var(--border-light);
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 10px;
+  background: var(--border-light);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--emerald));
+  border-radius: var(--radius-full);
+  transition: width 0.35s ease;
+}
+
+.detail-tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.detail-task-card {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.detail-task-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.detail-task-sub {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.detail-task-badge {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.detail-task-badge.done {
+  background: var(--emerald-subtle);
+  color: var(--emerald);
+}
+
+.detail-task-badge.pending {
+  background: var(--amber-subtle);
+  color: var(--amber);
+}
+
+.students-dashboard-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 22px;
+}
+
+.students-footer-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.students-footer-note i {
+  width: 13px;
+  height: 13px;
+}
+
+@media (max-width: 768px) {
+  .students-stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .student-card-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .student-progress-col {
+    align-items: flex-start;
+    width: 100%;
+  }
+  .students-dashboard-footer {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+  .students-footer-note {
+    justify-content: center;
+  }
+}

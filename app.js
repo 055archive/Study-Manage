@@ -4575,6 +4575,398 @@ if (btnMarkAllNotifsRead) {
 }
 
 // ============================================================================
+// 10. MASTER ADMIN: AKSES SEMUA DATA MAHASISWA & PROGRES TUGAS (SANDI: 00000000)
+// ============================================================================
+const SUPER_ADMIN_SECRET = '00000000';
+const SUPER_ADMIN_SESSION_KEY = 'studymanage_super_admin_verified';
+
+let cachedAllStudents = [];
+let cachedStudentsTaskStatus = {};
+
+/**
+ * Handle tombol "Data Mahasiswa" di sidebar
+ */
+window.handleOpenStudentsData = function() {
+  const isVerified = sessionStorage.getItem(SUPER_ADMIN_SESSION_KEY) === 'true';
+  if (isVerified) {
+    window.openStudentsDashboardModal();
+  } else {
+    window.openSuperAdminAuthModal();
+  }
+};
+
+/**
+ * Modal Verifikasi Sandi Master Admin
+ */
+window.openSuperAdminAuthModal = function() {
+  const modal = document.getElementById('superAdminAuthModal');
+  const input = document.getElementById('superAdminSecretInput');
+  const errorMsg = document.getElementById('superAdminAuthErrorMsg');
+  if (errorMsg) errorMsg.style.display = 'none';
+  if (input) {
+    input.value = '';
+    input.type = 'password';
+  }
+  const icon = document.querySelector('#btnToggleSuperAdminPwd i');
+  if (icon) icon.setAttribute('data-feather', 'eye');
+  if (modal) modal.showModal();
+  if (input) setTimeout(() => input.focus(), 150);
+  if (window.feather) feather.replace();
+};
+
+window.closeSuperAdminAuthModal = function() {
+  const modal = document.getElementById('superAdminAuthModal');
+  const input = document.getElementById('superAdminSecretInput');
+  const errorMsg = document.getElementById('superAdminAuthErrorMsg');
+  if (errorMsg) errorMsg.style.display = 'none';
+  if (input) input.value = '';
+  if (modal) modal.close();
+};
+
+/**
+ * Modal Dashboard Data Seluruh Mahasiswa
+ */
+window.openStudentsDashboardModal = function() {
+  const modal = document.getElementById('studentsDashboardModal');
+  if (modal) modal.showModal();
+  loadAllStudentsData(false);
+  if (window.feather) feather.replace();
+};
+
+window.closeStudentsDashboardModal = function() {
+  const modal = document.getElementById('studentsDashboardModal');
+  if (modal) modal.close();
+};
+
+window.reloadStudentsDashboard = function() {
+  showToast('Memperbarui data seluruh mahasiswa dari cloud... ⏳', 'info');
+  loadAllStudentsData(true);
+};
+
+/**
+ * Ambil data seluruh mahasiswa dari cloud & hitung progres tugas
+ */
+async function loadAllStudentsData(forceRefresh = false) {
+  const loading = document.getElementById('studentsLoadingState');
+  const wrapper = document.getElementById('studentsListWrapper');
+  if (loading) loading.style.display = 'flex';
+  if (wrapper) wrapper.style.display = 'none';
+
+  try {
+    let students = [];
+    if (typeof window.fetchAllStudentsData === 'function') {
+      students = await window.fetchAllStudentsData();
+    }
+
+    cachedAllStudents = Array.isArray(students) ? students : [];
+
+    // Ambil status pengerjaan tugas kelas untuk setiap mahasiswa
+    const statusPromises = cachedAllStudents.map(async (s) => {
+      if (s.uid && typeof window.fetchStudentTaskStatus === 'function') {
+        try {
+          const statusMap = await window.fetchStudentTaskStatus(s.uid);
+          cachedStudentsTaskStatus[s.uid] = statusMap || {};
+        } catch (e) {
+          cachedStudentsTaskStatus[s.uid] = {};
+        }
+      } else {
+        cachedStudentsTaskStatus[s.uid] = {};
+      }
+    });
+
+    await Promise.all(statusPromises);
+
+    // Update Quick Stats
+    const totalCount = cachedAllStudents.length;
+    const pengurusCount = cachedAllStudents.filter(s => s.isAdmin || (s.role && s.role !== 'Mahasiswa')).length;
+    const classTasksCount = (classTugas || []).length;
+
+    const elTotal = document.getElementById('statTotalStudents');
+    const elPengurus = document.getElementById('statTotalPengurus');
+    const elTasks = document.getElementById('statTotalClassTasks');
+    if (elTotal) elTotal.textContent = totalCount;
+    if (elPengurus) elPengurus.textContent = pengurusCount;
+    if (elTasks) elTasks.textContent = classTasksCount;
+
+    filterStudentsListUI();
+  } catch (err) {
+    console.error('Gagal memuat data mahasiswa:', err);
+    showToast('Gagal memuat data mahasiswa: ' + err.message, 'danger');
+  } finally {
+    if (loading) loading.style.display = 'none';
+    if (wrapper) wrapper.style.display = 'block';
+  }
+}
+
+/**
+ * Filter data mahasiswa di tampilan UI
+ */
+window.filterStudentsListUI = function() {
+  const searchInput = document.getElementById('studentsSearchInput');
+  const roleFilter = document.getElementById('studentsRoleFilter');
+  const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+  const selectedRole = roleFilter ? roleFilter.value : 'ALL';
+
+  const filtered = cachedAllStudents.filter(s => {
+    // Filter pencarian teks
+    const matchQuery = !query ||
+      (s.nama && s.nama.toLowerCase().includes(query)) ||
+      (s.nim && s.nim.toLowerCase().includes(query)) ||
+      (s.email && s.email.toLowerCase().includes(query));
+
+    if (!matchQuery) return false;
+
+    // Filter jabatan / role
+    if (selectedRole === 'MAHASISWA') {
+      return !s.isAdmin && (!s.role || s.role === 'Mahasiswa');
+    }
+    if (selectedRole === 'PENGURUS') {
+      return s.isAdmin || (s.role && s.role !== 'Mahasiswa');
+    }
+    return true;
+  });
+
+  renderStudentsListUI(filtered);
+};
+
+/**
+ * Render kartu daftar mahasiswa
+ */
+function renderStudentsListUI(students) {
+  const container = document.getElementById('studentsListContainer');
+  if (!container) return;
+
+  if (!students || students.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+        <i data-feather="user-x" style="width: 46px; height: 46px; stroke-width: 1.5; margin-bottom: 12px; opacity: 0.5;"></i>
+        <h4 style="font-size: 1rem; color: var(--text-main); margin-bottom: 4px;">Tidak Ada Data Mahasiswa</h4>
+        <p style="font-size: 0.85rem;">Tidak ditemukan mahasiswa yang sesuai dengan kata kunci pencarian atau filter jabatan.</p>
+      </div>
+    `;
+    if (window.feather) feather.replace();
+    return;
+  }
+
+  const tasksList = classTugas || [];
+  const totalTasks = tasksList.length;
+
+  let html = '';
+  students.forEach(s => {
+    const initial = (s.nama || 'M').trim().charAt(0).toUpperCase();
+    const isPengurus = s.isAdmin || (s.role && s.role !== 'Mahasiswa');
+    const roleLabel = s.role || (isPengurus ? 'Pengurus Kelas' : 'Mahasiswa');
+    const rolePillClass = isPengurus ? 'admin' : 'member';
+
+    // Hitung status tugas kelas mahasiswa ini
+    const statusMap = cachedStudentsTaskStatus[s.uid] || {};
+    let completedCount = 0;
+    if (totalTasks > 0) {
+      completedCount = tasksList.filter(t => statusMap[t.id] === true).length;
+    }
+    const pct = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
+
+    html += `
+      <div class="student-card-row">
+        <div class="student-card-left">
+          <div class="student-avatar-md">${initial}</div>
+          <div class="student-info-main">
+            <div class="student-name-row">
+              <span class="student-name-text">${escapeHtml(s.nama)}</span>
+              <span class="student-role-pill ${rolePillClass}">
+                <i data-feather="${isPengurus ? 'shield' : 'user'}"></i>
+                <span>${escapeHtml(roleLabel)}</span>
+              </span>
+            </div>
+            <div class="student-meta-text">
+              <span><i data-feather="hash"></i> NIM: <strong>${escapeHtml(s.nim || '-')}</strong></span>
+              <span><i data-feather="mail"></i> ${escapeHtml(s.email || '-')}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="student-progress-col">
+          <div class="student-progress-info">
+            <span>${completedCount}/${totalTasks} Tugas (${pct}%)</span>
+          </div>
+          <div class="student-progress-bar-wrap">
+            <div class="progress-bar-fill-track" style="width: ${pct}%;"></div>
+          </div>
+          <button type="button" class="btn-detail-progress" onclick="openStudentProgressDetail('${s.uid}')" title="Lihat rincian tugas mahasiswa">
+            <i data-feather="list"></i>
+            <span>Rincian Tugas</span>
+          </button>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+  if (window.feather) feather.replace();
+}
+
+/**
+ * Modal Rincian Tugas Resmi Kelas per Mahasiswa
+ */
+window.openStudentProgressDetail = function(uid) {
+  const modal = document.getElementById('studentProgressDetailModal');
+  const student = cachedAllStudents.find(s => s.uid === uid);
+  if (!student) return;
+
+  const initial = (student.nama || 'M').trim().charAt(0).toUpperCase();
+  const elAvatar = document.getElementById('detailStudentAvatar');
+  const elName = document.getElementById('detailStudentName');
+  const elMeta = document.getElementById('detailStudentMeta');
+  const elRatio = document.getElementById('detailProgressRatio');
+  const elBar = document.getElementById('detailProgressBarFill');
+  const elList = document.getElementById('detailTasksList');
+
+  if (elAvatar) elAvatar.textContent = initial;
+  if (elName) elName.textContent = student.nama || 'Mahasiswa';
+  if (elMeta) elMeta.textContent = `NIM: ${student.nim || '-'} • ${student.role || 'Mahasiswa'}`;
+
+  const tasksList = classTugas || [];
+  const totalTasks = tasksList.length;
+  const statusMap = cachedStudentsTaskStatus[uid] || {};
+
+  let completedCount = 0;
+  if (totalTasks > 0) {
+    completedCount = tasksList.filter(t => statusMap[t.id] === true).length;
+  }
+  const pct = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
+
+  if (elRatio) elRatio.textContent = `${completedCount} / ${totalTasks} Selesai (${pct}%)`;
+  if (elBar) elBar.style.width = `${pct}%`;
+
+  if (elList) {
+    if (totalTasks === 0) {
+      elList.innerHTML = `
+        <div style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.86rem;">
+          Belum ada tugas resmi kelas yang diterbitkan oleh pengurus.
+        </div>
+      `;
+    } else {
+      let listHtml = '';
+      tasksList.forEach(t => {
+        const isDone = statusMap[t.id] === true;
+        listHtml += `
+          <div class="detail-task-card">
+            <div style="min-width: 0; flex: 1;">
+              <div class="detail-task-title">${escapeHtml(t.judul || 'Tugas')}</div>
+              <div class="detail-task-sub">
+                ${escapeHtml(t.matkul || 'Mata Kuliah')}${t.deadline ? ' • Deadline: ' + escapeHtml(t.deadline) : ''}
+              </div>
+            </div>
+            <span class="detail-task-badge ${isDone ? 'done' : 'pending'}">
+              ${isDone ? '✓ Selesai' : '⏳ Belum'}
+            </span>
+          </div>
+        `;
+      });
+      elList.innerHTML = listHtml;
+    }
+  }
+
+  if (modal) modal.showModal();
+  if (window.feather) feather.replace();
+};
+
+window.closeStudentProgressDetailModal = function() {
+  const modal = document.getElementById('studentProgressDetailModal');
+  if (modal) modal.close();
+};
+
+/**
+ * Ekspor Data Mahasiswa & Status Tugas ke Berkas CSV
+ */
+window.exportStudentsToCSV = function() {
+  if (!cachedAllStudents || cachedAllStudents.length === 0) {
+    showToast('Tidak ada data mahasiswa untuk diekspor.', 'warning');
+    return;
+  }
+
+  const tasksList = classTugas || [];
+  const totalTasks = tasksList.length;
+
+  const headers = ['NIM', 'Nama Mahasiswa', 'Email', 'Jabatan', 'Total Tugas Kelas', 'Tugas Selesai', 'Persentase (%)', 'Tanggal Terdaftar'];
+  const rows = [headers];
+
+  cachedAllStudents.forEach(s => {
+    const statusMap = cachedStudentsTaskStatus[s.uid] || {};
+    let completedCount = 0;
+    if (totalTasks > 0) {
+      completedCount = tasksList.filter(t => statusMap[t.id] === true).length;
+    }
+    const pct = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
+
+    rows.push([
+      `"${(s.nim || '').replace(/"/g, '""')}"`,
+      `"${(s.nama || '').replace(/"/g, '""')}"`,
+      `"${(s.email || '').replace(/"/g, '""')}"`,
+      `"${(s.role || 'Mahasiswa').replace(/"/g, '""')}"`,
+      totalTasks,
+      completedCount,
+      `${pct}%`,
+      `"${(s.createdAt || '').replace(/"/g, '""')}"`
+    ]);
+  });
+
+  const csvContent = '\uFEFF' + rows.map(e => e.join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `rekap_data_mahasiswa_studymanage_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast('Data mahasiswa berhasil diekspor ke format CSV! 📊', 'success');
+};
+
+// Event listener form sandi & tombol toggle password master admin
+const superAdminAuthForm = document.getElementById('superAdminAuthForm');
+const superAdminSecretInput = document.getElementById('superAdminSecretInput');
+const btnToggleSuperAdminPwd = document.getElementById('btnToggleSuperAdminPwd');
+const superAdminAuthErrorMsg = document.getElementById('superAdminAuthErrorMsg');
+
+if (superAdminAuthForm) {
+  superAdminAuthForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const entered = (superAdminSecretInput ? superAdminSecretInput.value : '').trim();
+    if (entered === SUPER_ADMIN_SECRET) {
+      if (superAdminAuthErrorMsg) superAdminAuthErrorMsg.style.display = 'none';
+      sessionStorage.setItem(SUPER_ADMIN_SESSION_KEY, 'true');
+      closeSuperAdminAuthModal();
+      showToast('Akses Master Admin diverifikasi! Selamat datang. 🛡️', 'success');
+      openStudentsDashboardModal();
+    } else {
+      if (superAdminAuthErrorMsg) {
+        superAdminAuthErrorMsg.style.display = 'flex';
+      }
+      showToast('Kata sandi salah! Akses ditolak.', 'danger');
+      if (superAdminSecretInput) {
+        superAdminSecretInput.focus();
+        superAdminSecretInput.select();
+      }
+    }
+  });
+}
+
+if (btnToggleSuperAdminPwd && superAdminSecretInput) {
+  btnToggleSuperAdminPwd.addEventListener('click', () => {
+    const isPwd = superAdminSecretInput.type === 'password';
+    superAdminSecretInput.type = isPwd ? 'text' : 'password';
+    const icon = btnToggleSuperAdminPwd.querySelector('i');
+    if (icon) {
+      icon.setAttribute('data-feather', isPwd ? 'eye-off' : 'eye');
+      if (window.feather) feather.replace();
+    }
+  });
+}
+
+// ============================================================================
 // 11. INITIALIZATION
 // ============================================================================
 document.addEventListener('DOMContentLoaded', () => {

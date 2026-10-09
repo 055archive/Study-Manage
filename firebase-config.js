@@ -854,3 +854,91 @@ async function syncAllLocalDataToCloud() {
     showToast('Gagal sinkronisasi: ' + err.message, 'danger');
   }
 }
+
+// ============================================================================
+// MASTER ADMIN: AMBIL DATA SELURUH MAHASISWA & PROGRES TUGAS KELAS (SANDI: 00000000)
+// ============================================================================
+async function fetchAllStudentsData() {
+  if (!isFirebaseConnected || !firestoreDb) {
+    console.warn('Firebase belum terhubung, menggunakan profil pengguna lokal.');
+    if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+      return [{
+        uid: (typeof getCurrentUserUID === 'function' ? getCurrentUserUID() : 'local-user') || 'local-user',
+        nama: currentUserProfile.nama || 'Mahasiswa',
+        nim: currentUserProfile.nim || '-',
+        email: currentUserProfile.email || '-',
+        role: currentUserProfile.role || 'Mahasiswa',
+        isAdmin: !!currentUserProfile.isAdmin,
+        createdAt: currentUserProfile.createdAt || new Date().toISOString()
+      }];
+    }
+    return [];
+  }
+
+  try {
+    const snapshot = await firestoreDb.collection('users').get();
+    const students = [];
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data && data.profile) {
+        students.push({
+          uid: doc.id,
+          nama: data.profile.nama || 'Tanpa Nama',
+          nim: data.profile.nim || '-',
+          email: data.profile.email || '-',
+          role: data.profile.role || 'Mahasiswa',
+          isAdmin: !!data.profile.isAdmin,
+          createdAt: data.profile.createdAt || ''
+        });
+      }
+    });
+
+    // Fallback: Jika koleksi users kosong, baca dari nim_index
+    if (students.length === 0) {
+      const nimSnap = await firestoreDb.collection('nim_index').get();
+      nimSnap.forEach(doc => {
+        const data = doc.data();
+        if (data) {
+          students.push({
+            uid: data.uid || doc.id,
+            nama: data.nama || `Mahasiswa (${doc.id})`,
+            nim: doc.id,
+            email: data.email || '-',
+            role: 'Mahasiswa',
+            isAdmin: false,
+            createdAt: data.createdAt || ''
+          });
+        }
+      });
+    }
+
+    students.sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
+    return students;
+  } catch (err) {
+    console.error('Gagal mengambil data seluruh mahasiswa:', err);
+    throw err;
+  }
+}
+
+async function fetchStudentTaskStatus(uid) {
+  if (!isFirebaseConnected || !firestoreDb || !uid) return {};
+  try {
+    const snapshot = await firestoreDb.collection('users').doc(uid).collection('tugas_status').get();
+    const statusMap = {};
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data) {
+        statusMap[doc.id] = !!data.completed;
+      }
+    });
+    return statusMap;
+  } catch (err) {
+    console.warn(`Gagal mengambil status tugas untuk UID ${uid}:`, err);
+    return {};
+  }
+}
+
+window.fetchAllStudentsData = fetchAllStudentsData;
+window.fetchStudentTaskStatus = fetchStudentTaskStatus;
+
