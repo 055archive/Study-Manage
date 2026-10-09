@@ -4587,13 +4587,33 @@ let academicBadgeClicks = 0;
 let academicBadgeTimer = null;
 
 /**
- * Handle tombol "Data Mahasiswa" di sidebar
+ * Handle tombol / trigger rahasia "Data Mahasiswa"
+ * SELALU meminta kata sandi Master Admin (00000000) setiap kali dipanggil!
  */
 window.handleOpenStudentsData = function() {
-  const isVerified = sessionStorage.getItem(SUPER_ADMIN_SESSION_KEY) === 'true';
-  if (isVerified) {
-    window.openStudentsDashboardModal();
-  } else {
+  window.openSuperAdminAuthModal();
+};
+
+/**
+ * Handle aksi ketuk 5x pada Badge Semester 3
+ */
+window.handleAcademicBadgeClick = function(e) {
+  if (e && e.stopPropagation) e.stopPropagation();
+  academicBadgeClicks++;
+  clearTimeout(academicBadgeTimer);
+
+  // Waktu toleransi 4 detik untuk 5 ketukan
+  academicBadgeTimer = setTimeout(() => {
+    academicBadgeClicks = 0;
+  }, 4000);
+
+  if (academicBadgeClicks >= 5) {
+    academicBadgeClicks = 0;
+    clearTimeout(academicBadgeTimer);
+    // Hapus sesi lama agar SELALU meminta sandi 00000000!
+    try {
+      sessionStorage.removeItem(SUPER_ADMIN_SESSION_KEY);
+    } catch (err) {}
     window.openSuperAdminAuthModal();
   }
 };
@@ -4639,6 +4659,9 @@ window.openStudentsDashboardModal = function() {
 window.closeStudentsDashboardModal = function() {
   const modal = document.getElementById('studentsDashboardModal');
   if (modal) modal.close();
+  try {
+    sessionStorage.removeItem(SUPER_ADMIN_SESSION_KEY);
+  } catch (err) {}
 };
 
 window.reloadStudentsDashboard = function() {
@@ -5066,22 +5089,7 @@ function setupAcademicBadgeSecretTrigger() {
   if (!badge) return;
 
   badge.style.cursor = 'pointer';
-  badge.addEventListener('click', () => {
-    academicBadgeClicks++;
-    clearTimeout(academicBadgeTimer);
-
-    // Reset hitungan jika jeda antar-klik > 2.5 detik
-    academicBadgeTimer = setTimeout(() => {
-      academicBadgeClicks = 0;
-    }, 2500);
-
-    if (academicBadgeClicks >= 5) {
-      academicBadgeClicks = 0;
-      clearTimeout(academicBadgeTimer);
-      // Buka modal sandi atau dashboard langsung jika sudah diverifikasi
-      handleOpenStudentsData();
-    }
-  });
+  badge.onclick = window.handleAcademicBadgeClick;
 }
 
 // Inisialisasi listener rahasia
