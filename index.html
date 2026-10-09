@@ -7,7 +7,16 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <link rel="stylesheet" href="style.css?v=5.1">
+  <!-- PWA & Mobile App Settings (Android & iOS) -->
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="StudyManage">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="style.css?v=5.2">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -842,6 +851,10 @@
         </div>
 
         <div class="dialog-footer">
+          <button type="button" class="btn btn-danger-subtle btn-modal-delete" id="btnModalDeleteTugas" style="display: none; margin-right: auto;" title="Hapus Tugas Ini">
+            <i data-feather="trash-2"></i>
+            <span>Hapus Tugas</span>
+          </button>
           <button type="button" class="btn btn-secondary" onclick="closeTugasModal()">Batal</button>
           <button type="submit" class="btn btn-primary" id="btnSubmitTugas">Simpan Tugas</button>
         </div>
@@ -954,6 +967,10 @@
         </div>
 
         <div class="dialog-footer">
+          <button type="button" class="btn btn-danger-subtle btn-modal-delete" id="btnModalDeleteMateri" style="display: none; margin-right: auto;" title="Hapus Materi Ini">
+            <i data-feather="trash-2"></i>
+            <span>Hapus Materi</span>
+          </button>
           <button type="button" class="btn btn-secondary" onclick="closeMateriModal()">Batal</button>
           <button type="submit" class="btn btn-primary" id="btnSubmitMateri">Simpan Materi</button>
         </div>
@@ -1360,9 +1377,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=5.1"></script>
+  <script src="firebase-config.js?v=5.2"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=5.1"></script>
+  <script src="app.js?v=5.2"></script>
 </body>
 </html>

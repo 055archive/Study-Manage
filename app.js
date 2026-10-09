@@ -144,6 +144,21 @@ let activeMatkulFilter = 'ALL';
 let currentUserProfile = null;
 let isCurrentUserAdmin = false;
 
+function canUserEditOrDelete(item) {
+  if (!item) return false;
+  // Jika tugas/materi pribadi, selalu boleh diedit & dihapus
+  if (!item.isKelas) return true;
+  // Jika pengguna adalah pengurus/admin aktif, boleh menghapus tugas & materi kelas
+  if (isCurrentUserAdmin) return true;
+  // Jika pengguna adalah pembuat/pengunggah item tersebut
+  if (currentUserProfile) {
+    if (item.authorUid && currentUserProfile.uid && item.authorUid === currentUserProfile.uid) return true;
+    if (item.authorNama && currentUserProfile.nama && item.authorNama.toLowerCase().trim() === currentUserProfile.nama.toLowerCase().trim()) return true;
+  }
+  return false;
+}
+window.canUserEditOrDelete = canUserEditOrDelete;
+
 function loadFromStorage(key, defaultData) {
   const saved = localStorage.getItem(key);
   if (saved) {
@@ -490,6 +505,79 @@ let currentViewerBlobUrl = null;
 
 window.handleOpenFile = async function(fileId, fileName, downloadUrl = '') {
   await openFileViewer(fileId, fileName, downloadUrl);
+};
+
+/**
+ * Unduh berkas tugas / materi langsung ke perangkat (HP Android, iPhone, Laptop)
+ * Mendukung berkas cloud, Blob URL, dan berkas base64 tersinkron
+ */
+window.downloadAttachment = async function(fileId, fileName, downloadUrl = '', e) {
+  if (e) {
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+  }
+
+  try {
+    let directUrl = downloadUrl;
+    let fileBlob = null;
+    let cleanupUrl = false;
+
+    if (!directUrl) {
+      // 1. Cek dari IndexedDB lokal
+      let record = await getUploadedFile(fileId);
+
+      // 2. Jika tidak ada di IndexedDB lokal (misal dibuka di HP teman atau laptop), cari dari data Firestore yang tersinkron di memori
+      if (!record || !record.data) {
+        const allTasks = [...(classTugas || []), ...(personalTugas || [])];
+        const allMateri = [...(classMateri || []), ...(personalMateri || [])];
+        const matchTask = allTasks.find(t => t && t.file && (t.file.id === fileId || t.file.name === fileName) && t.file.data);
+        const matchMateri = allMateri.find(m => m && m.file && (m.file.id === fileId || m.file.name === fileName) && m.file.data);
+        const cloudFile = matchTask ? matchTask.file : (matchMateri ? matchMateri.file : null);
+
+        if (cloudFile && cloudFile.data) {
+          record = {
+            id: fileId,
+            name: cloudFile.name || fileName,
+            size: cloudFile.size || 0,
+            type: cloudFile.type || '',
+            data: cloudFile.data
+          };
+          // Simpan ke IndexedDB lokal perangkat ini agar instan saat diakses berikutnya
+          try { await saveUploadedFile(record); } catch (e) {}
+        }
+      }
+
+      if (record && record.data) {
+        fileBlob = dataUrlToBlob(record.data);
+        directUrl = URL.createObjectURL(fileBlob);
+        cleanupUrl = true;
+      }
+    }
+
+    if (!directUrl) {
+      showToast('Berkas fisik belum tersinkron di perangkat ini. Pastikan pengunggah telah membuka aplikasi di HP-nya sebentar.', 'danger');
+      return;
+    }
+
+    showToast(`Mengunduh "${fileName || 'berkas'}"... 📥`, 'info');
+
+    const a = document.createElement('a');
+    a.href = directUrl;
+    a.download = fileName || 'berkas_unduhan';
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    if (cleanupUrl) {
+      setTimeout(() => {
+        try { URL.revokeObjectURL(directUrl); } catch (e) {}
+      }, 60000);
+    }
+  } catch (err) {
+    console.error('Error saat download berkas:', err);
+    showToast('Gagal mengunduh berkas: ' + err.message, 'danger');
+  }
 };
 
 window.openFileViewer = async function(fileId, fileName, downloadUrl = '') {
@@ -1180,7 +1268,7 @@ function renderTugas() {
         return diffHours > 0 && diffHours <= 24;
       })();
 
-      const canEditDelete = !task.isKelas || isCurrentUserAdmin;
+      const canEditDelete = canUserEditOrDelete(task);
       const card = document.createElement('div');
       card.className = `task-card ${task.completed ? 'completed' : ''}`;
 
@@ -1219,11 +1307,15 @@ function renderTugas() {
 
         ${task.file ? `
           <div class="card-attachment-area">
-            <button type="button" class="file-attachment-chip" onclick="handleOpenFile('${task.file.id}', '${escapeHtml(task.file.name)}', '${escapeHtml(task.file.downloadUrl || '')}')" title="Buka / Unduh: ${escapeHtml(task.file.name)}">
+            <button type="button" class="file-attachment-chip" onclick="handleOpenFile('${task.file.id}', '${escapeHtml(task.file.name)}', '${escapeHtml(task.file.downloadUrl || '')}')" title="Lihat Pratinjau Berkas: ${escapeHtml(task.file.name)}">
               <i data-feather="${getFileIconName(task.file.name, task.file.type)}"></i>
               <span class="chip-filename">${escapeHtml(task.file.name)}</span>
               <span class="chip-filesize">(${formatFileSize(task.file.size)})</span>
-              <i data-feather="download" class="chip-action-icon"></i>
+              <i data-feather="eye" class="chip-action-icon"></i>
+            </button>
+            <button type="button" class="btn-download-direct" onclick="downloadAttachment('${task.file.id}', '${escapeHtml(task.file.name)}', '${escapeHtml(task.file.downloadUrl || '')}', event)" title="Unduh Berkas Tugas Langsung">
+              <i data-feather="download"></i>
+              <span>Unduh</span>
             </button>
           </div>
         ` : ''}
@@ -1295,7 +1387,7 @@ window.deleteTugas = async function(id) {
   const task = tugasList.find(t => t.id === id);
   if (!task) return;
 
-  if (task.isKelas && !isCurrentUserAdmin) {
+  if (!canUserEditOrDelete(task)) {
     showToast('Hanya Pengurus Kelas yang dapat menghapus tugas resmi kelas.', 'warning');
     return;
   }
@@ -1307,20 +1399,23 @@ window.deleteTugas = async function(id) {
   if (confirm(confirmMsg)) {
     if (task.file && task.file.id) {
       await deleteUploadedFile(task.file.id);
+      if (task.file.storagePath && typeof deleteFileFromFirebaseStorage === 'function') {
+        try { await deleteFileFromFirebaseStorage(task.file.storagePath); } catch (e) {}
+      }
     }
     if (task.isKelas) {
       classTugas = classTugas.filter(t => t.id !== id);
       if (typeof deleteKelasTugasFromCloud === 'function') {
-        deleteKelasTugasFromCloud(id);
+        await deleteKelasTugasFromCloud(id);
       }
     } else {
       personalTugas = personalTugas.filter(t => t.id !== id);
       if (typeof deleteTugasFromCloud === 'function') {
-        deleteTugasFromCloud(id);
+        await deleteTugasFromCloud(id);
       }
     }
     rebuildTugasList();
-    showToast('Tugas berhasil dihapus', 'danger');
+    showToast('Tugas berhasil dihapus 🗑️', 'danger');
   }
 };
 
@@ -1360,7 +1455,7 @@ function renderMateri() {
     emptyMateriState.style.display = 'none';
 
     filtered.forEach(m => {
-      const canEditDelete = !m.isKelas || isCurrentUserAdmin;
+      const canEditDelete = canUserEditOrDelete(m);
       const card = document.createElement('div');
       card.className = 'materi-card';
 
@@ -1399,11 +1494,15 @@ function renderMateri() {
         <div class="materi-card-footer">
           <div class="card-attachment-area">
             ${m.file ? `
-              <button type="button" class="file-attachment-chip" onclick="handleOpenFile('${m.file.id}', '${escapeHtml(m.file.name)}', '${escapeHtml(m.file.downloadUrl || '')}')" title="Buka / Unduh: ${escapeHtml(m.file.name)}">
+              <button type="button" class="file-attachment-chip" onclick="handleOpenFile('${m.file.id}', '${escapeHtml(m.file.name)}', '${escapeHtml(m.file.downloadUrl || '')}')" title="Lihat Pratinjau Berkas: ${escapeHtml(m.file.name)}">
                 <i data-feather="${getFileIconName(m.file.name, m.file.type)}"></i>
                 <span class="chip-filename">${escapeHtml(m.file.name)}</span>
                 <span class="chip-filesize">(${formatFileSize(m.file.size)})</span>
-                <i data-feather="download" class="chip-action-icon"></i>
+                <i data-feather="eye" class="chip-action-icon"></i>
+              </button>
+              <button type="button" class="btn-download-direct" onclick="downloadAttachment('${m.file.id}', '${escapeHtml(m.file.name)}', '${escapeHtml(m.file.downloadUrl || '')}', event)" title="Unduh Berkas Materi Langsung">
+                <i data-feather="download"></i>
+                <span>Unduh</span>
               </button>
             ` : ''}
 
@@ -1440,7 +1539,7 @@ window.deleteMateri = async function(id) {
   const materi = materiList.find(m => m.id === id);
   if (!materi) return;
 
-  if (materi.isKelas && !isCurrentUserAdmin) {
+  if (!canUserEditOrDelete(materi)) {
     showToast('Hanya Pengurus Kelas yang dapat menghapus materi resmi kelas.', 'warning');
     return;
   }
@@ -1452,20 +1551,23 @@ window.deleteMateri = async function(id) {
   if (confirm(confirmMsg)) {
     if (materi && materi.file && materi.file.id) {
       await deleteUploadedFile(materi.file.id);
+      if (materi.file.storagePath && typeof deleteFileFromFirebaseStorage === 'function') {
+        try { await deleteFileFromFirebaseStorage(materi.file.storagePath); } catch (e) {}
+      }
     }
     if (materi.isKelas) {
       classMateri = classMateri.filter(item => item.id !== id);
       if (typeof deleteKelasMateriFromCloud === 'function') {
-        deleteKelasMateriFromCloud(id);
+        await deleteKelasMateriFromCloud(id);
       }
     } else {
       personalMateri = personalMateri.filter(item => item.id !== id);
       if (typeof deleteMateriFromCloud === 'function') {
-        deleteMateriFromCloud(id);
+        await deleteMateriFromCloud(id);
       }
     }
     rebuildMateriList();
-    showToast('Materi berhasil dihapus', 'danger');
+    showToast('Materi berhasil dihapus 🗑️', 'danger');
   }
 };
 
@@ -1518,12 +1620,13 @@ function renderOverviewUrgent() {
     if (!task) return;
     const deadlineInfo = calculateDeadlineInfo(task.deadline);
     const prioritas = task.prioritas || 'Sedang';
+    const canEditDelete = canUserEditOrDelete(task);
     const card = document.createElement('div');
     card.className = 'task-card';
 
     card.innerHTML = `
       <div class="task-card-top">
-        <span class="matkul-pill">
+        <span class="matkul-pill" style="border-left: 3px solid ${getCourseColor(task.matkul || '')};">
           <i data-feather="book"></i>
           ${escapeHtml(task.matkul || '-')}
         </span>
@@ -1538,11 +1641,16 @@ function renderOverviewUrgent() {
       </div>
 
       ${task.file ? `
-        <div style="margin: 8px 0;">
-          <button type="button" class="file-attachment-chip" onclick="handleOpenFile('${task.file.id}', '${escapeHtml(task.file.name)}', '${escapeHtml(task.file.downloadUrl || '')}')" title="Buka / Unduh: ${escapeHtml(task.file.name)}">
+        <div class="card-attachment-area" style="margin: 8px 0;">
+          <button type="button" class="file-attachment-chip" onclick="handleOpenFile('${task.file.id}', '${escapeHtml(task.file.name)}', '${escapeHtml(task.file.downloadUrl || '')}')" title="Lihat Pratinjau Berkas: ${escapeHtml(task.file.name)}">
             <i data-feather="${getFileIconName(task.file.name, task.file.type)}"></i>
             <span class="chip-filename">${escapeHtml(task.file.name)}</span>
             <span class="chip-filesize">(${formatFileSize(task.file.size)})</span>
+            <i data-feather="eye" class="chip-action-icon"></i>
+          </button>
+          <button type="button" class="btn-download-direct" onclick="downloadAttachment('${task.file.id}', '${escapeHtml(task.file.name)}', '${escapeHtml(task.file.downloadUrl || '')}', event)" title="Unduh Berkas Tugas Langsung">
+            <i data-feather="download"></i>
+            <span>Unduh</span>
           </button>
         </div>
       ` : ''}
@@ -1552,6 +1660,21 @@ function renderOverviewUrgent() {
           <input type="checkbox" onchange="toggleTugasComplete('${task.id}')">
           <span>Selesaikan Sekarang</span>
         </label>
+
+        <div class="card-actions-group">
+          <button type="button" class="btn-wa-share" onclick="shareTugasToWA('${task.id}')" title="Kirim Pengingat Tugas ke WhatsApp">
+            <i data-feather="share-2"></i>
+            <span>Share WA</span>
+          </button>
+          ${canEditDelete ? `
+            <button class="btn-edit-item" onclick="openEditTugasModal('${task.id}')" title="Edit Tugas">
+              <i data-feather="edit-2"></i>
+            </button>
+            <button class="btn-delete-item" onclick="deleteTugas('${task.id}')" title="Hapus Tugas">
+              <i data-feather="trash-2"></i>
+            </button>
+          ` : ''}
+        </div>
       </div>
     `;
 
@@ -1577,6 +1700,7 @@ function renderOverviewRecentMaterials() {
 
   recent.forEach(m => {
     if (!m) return;
+    const canEditDelete = canUserEditOrDelete(m);
     const card = document.createElement('div');
     card.className = 'materi-card';
 
@@ -1586,23 +1710,40 @@ function renderOverviewRecentMaterials() {
         <span class="materi-date">${formatIndoDate(m.tanggal)}</span>
       </div>
       <h3 class="materi-title">${escapeHtml(m.judul || 'Tanpa Judul')}</h3>
-      <span class="materi-matkul-tag">📚 ${escapeHtml(m.matkul || '-')}</span>
+      <span class="materi-matkul-tag" style="color: ${getCourseColor(m.matkul || '')};">📚 ${escapeHtml(m.matkul || '-')}</span>
 
-      <div class="card-attachment-area">
-        ${m.file ? `
-          <button type="button" class="file-attachment-chip" onclick="handleOpenFile('${m.file.id}', '${escapeHtml(m.file.name)}', '${escapeHtml(m.file.downloadUrl || '')}')" title="Buka / Unduh: ${escapeHtml(m.file.name)}">
-            <i data-feather="${getFileIconName(m.file.name, m.file.type)}"></i>
-            <span class="chip-filename">${escapeHtml(m.file.name)}</span>
-            <span class="chip-filesize">(${formatFileSize(m.file.size)})</span>
-            <i data-feather="download" class="chip-action-icon"></i>
-          </button>
-        ` : ''}
+      <div class="materi-card-footer" style="border-top: none; padding-top: 6px;">
+        <div class="card-attachment-area">
+          ${m.file ? `
+            <button type="button" class="file-attachment-chip" onclick="handleOpenFile('${m.file.id}', '${escapeHtml(m.file.name)}', '${escapeHtml(m.file.downloadUrl || '')}')" title="Lihat Pratinjau Berkas: ${escapeHtml(m.file.name)}">
+              <i data-feather="${getFileIconName(m.file.name, m.file.type)}"></i>
+              <span class="chip-filename">${escapeHtml(m.file.name)}</span>
+              <span class="chip-filesize">(${formatFileSize(m.file.size)})</span>
+              <i data-feather="eye" class="chip-action-icon"></i>
+            </button>
+            <button type="button" class="btn-download-direct" onclick="downloadAttachment('${m.file.id}', '${escapeHtml(m.file.name)}', '${escapeHtml(m.file.downloadUrl || '')}', event)" title="Unduh Berkas Materi Langsung">
+              <i data-feather="download"></i>
+              <span>Unduh</span>
+            </button>
+          ` : ''}
 
-        ${m.link ? `
-          <a href="${escapeHtml(m.link)}" target="_blank" rel="noopener noreferrer" class="materi-link-btn" title="Buka Tautan Eksternal">
-            <i data-feather="external-link"></i>
-            <span>Tautan Web</span>
-          </a>
+          ${m.link ? `
+            <a href="${escapeHtml(m.link)}" target="_blank" rel="noopener noreferrer" class="materi-link-btn" title="Buka Tautan Eksternal">
+              <i data-feather="external-link"></i>
+              <span>Tautan Web</span>
+            </a>
+          ` : (!m.file ? `<span class="no-attachment-text">Tanpa lampiran berkas</span>` : '')}
+        </div>
+
+        ${canEditDelete ? `
+          <div class="card-actions-group">
+            <button class="btn-edit-item" onclick="openEditMateriModal('${m.id}')" title="Edit Materi">
+              <i data-feather="edit-2"></i>
+            </button>
+            <button class="btn-delete-item" onclick="deleteMateri('${m.id}')" title="Hapus Materi">
+              <i data-feather="trash-2"></i>
+            </button>
+          </div>
         ` : ''}
       </div>
     `;
@@ -1623,6 +1764,13 @@ function openAddTugasModal() {
   if (editTugasId) editTugasId.value = '';
   if (tugasModalTitle) tugasModalTitle.textContent = 'Tambah Tugas Kuliah';
   if (btnSubmitTugas) btnSubmitTugas.textContent = 'Simpan Tugas';
+
+  // Sembunyikan tombol hapus saat tambah tugas baru
+  const btnModalDeleteTugas = document.getElementById('btnModalDeleteTugas');
+  if (btnModalDeleteTugas) {
+    btnModalDeleteTugas.style.display = 'none';
+    btnModalDeleteTugas.onclick = null;
+  }
 
   // Toggle Opsi Publikasi Resmi Kelas (khusus pengurus / admin)
   const tugasIsKelasGroup = document.getElementById('tugasIsKelasGroup');
@@ -1667,14 +1815,25 @@ function openEditTugasModal(id) {
   const task = tugasList.find(t => t.id === id);
   if (!task) return;
 
-  if (task.isKelas && !isCurrentUserAdmin) {
-    showToast('Hanya Pengurus Kelas yang dapat mengedit tugas resmi kelas.', 'warning');
+  const canEditDelete = canUserEditOrDelete(task);
+  if (!canEditDelete) {
+    showToast('Hanya Pengurus Kelas yang dapat mengedit atau menghapus tugas resmi kelas.', 'warning');
     return;
   }
 
   if (editTugasId) editTugasId.value = task.id;
   if (tugasModalTitle) tugasModalTitle.textContent = 'Edit Tugas Kuliah';
   if (btnSubmitTugas) btnSubmitTugas.textContent = 'Perbarui Tugas';
+
+  // Tombol Hapus Tugas di Modal
+  const btnModalDeleteTugas = document.getElementById('btnModalDeleteTugas');
+  if (btnModalDeleteTugas) {
+    btnModalDeleteTugas.style.display = canEditDelete ? 'inline-flex' : 'none';
+    btnModalDeleteTugas.onclick = () => {
+      closeTugasModal();
+      deleteTugas(task.id);
+    };
+  }
 
   // Opsi Publikasi Resmi Kelas
   const tugasIsKelasGroup = document.getElementById('tugasIsKelasGroup');
@@ -1742,6 +1901,13 @@ function openAddMateriModal() {
   if (materiModalTitle) materiModalTitle.textContent = 'Tambah Materi Kuliah';
   if (btnSubmitMateri) btnSubmitMateri.textContent = 'Simpan Materi';
 
+  // Sembunyikan tombol hapus saat tambah materi baru
+  const btnModalDeleteMateri = document.getElementById('btnModalDeleteMateri');
+  if (btnModalDeleteMateri) {
+    btnModalDeleteMateri.style.display = 'none';
+    btnModalDeleteMateri.onclick = null;
+  }
+
   // Toggle Opsi Publikasi Resmi Kelas (khusus pengurus / admin)
   const materiIsKelasGroup = document.getElementById('materiIsKelasGroup');
   const materiIsKelasCheckbox = document.getElementById('materiIsKelasCheckbox');
@@ -1783,14 +1949,25 @@ function openEditMateriModal(id) {
   const m = materiList.find(item => item.id === id);
   if (!m) return;
 
-  if (m.isKelas && !isCurrentUserAdmin) {
-    showToast('Hanya Pengurus Kelas yang dapat mengedit materi resmi kelas.', 'warning');
+  const canEditDelete = canUserEditOrDelete(m);
+  if (!canEditDelete) {
+    showToast('Hanya Pengurus Kelas yang dapat mengedit atau menghapus materi resmi kelas.', 'warning');
     return;
   }
 
   if (editMateriId) editMateriId.value = m.id;
   if (materiModalTitle) materiModalTitle.textContent = 'Edit Materi Kuliah';
   if (btnSubmitMateri) btnSubmitMateri.textContent = 'Perbarui Materi';
+
+  // Tombol Hapus Materi di Modal
+  const btnModalDeleteMateri = document.getElementById('btnModalDeleteMateri');
+  if (btnModalDeleteMateri) {
+    btnModalDeleteMateri.style.display = canEditDelete ? 'inline-flex' : 'none';
+    btnModalDeleteMateri.onclick = () => {
+      closeMateriModal();
+      deleteMateri(m.id);
+    };
+  }
 
   // Opsi Publikasi Resmi Kelas
   const materiIsKelasGroup = document.getElementById('materiIsKelasGroup');
@@ -4447,5 +4624,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   try { feather.replace(); } catch (e) { console.warn('feather.replace error:', e); }
+
+  // Registrasi Service Worker untuk PWA (Dapat diinstal di Android & Desktop)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').then((reg) => {
+      console.log('📱 Service Worker PWA aktif:', reg.scope);
+    }).catch((err) => {
+      console.warn('PWA SW registration skipped:', err);
+    });
+  }
 });
 
