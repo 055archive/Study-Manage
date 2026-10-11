@@ -471,6 +471,7 @@ let isInitialSyncMatkul = true;
 
 let unsubscribeKelasTugas = null;
 let unsubscribeKelasMateri = null;
+let unsubscribeKelasInfo = null;
 let unsubscribeTugasStatus = null;
 
 /**
@@ -482,6 +483,7 @@ function stopRealtimeListeners() {
   if (unsubscribeMatkul) { unsubscribeMatkul(); unsubscribeMatkul = null; }
   if (unsubscribeKelasTugas) { unsubscribeKelasTugas(); unsubscribeKelasTugas = null; }
   if (unsubscribeKelasMateri) { unsubscribeKelasMateri(); unsubscribeKelasMateri = null; }
+  if (unsubscribeKelasInfo) { unsubscribeKelasInfo(); unsubscribeKelasInfo = null; }
   if (unsubscribeTugasStatus) { unsubscribeTugasStatus(); unsubscribeTugasStatus = null; }
   console.log('🔌 Seluruh real-time listeners dihentikan.');
 }
@@ -518,6 +520,20 @@ function setupClassListeners() {
         handleCloudKelasMateri(cloudData);
       }
     }, (err) => console.error('Error listener kelas_materi:', err));
+  }
+
+  if (!unsubscribeKelasInfo) {
+    unsubscribeKelasInfo = firestoreDb.collection('kelas_info').onSnapshot((snapshot) => {
+      const cloudData = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data && data.judul) cloudData.push({ id: doc.id, ...data });
+      });
+      console.log(`📌 ${cloudData.length} informasi kelas tersinkron dari cloud.`);
+      if (typeof handleCloudKelasInfo === 'function') {
+        handleCloudKelasInfo(cloudData);
+      }
+    }, (err) => console.error('Error listener kelas_info:', err));
   }
 }
 window.setupClassListeners = setupClassListeners;
@@ -764,6 +780,31 @@ async function deleteKelasMateriFromCloud(id) {
     console.log('🗑️ Materi resmi kelas dihapus dari cloud:', id);
   } catch (err) { console.error('Gagal hapus materi kelas dari cloud:', err); }
 }
+
+// INFORMASI & KELOMPOK KELAS
+async function syncKelasInfoToCloud(info) {
+  if (!isFirebaseConnected || !firestoreDb || !info || !info.id) return;
+  try {
+    const cleanData = JSON.parse(JSON.stringify(info));
+    await firestoreDb.collection('kelas_info').doc(info.id).set(cleanData, { merge: true });
+    console.log('✅ Informasi kelas tersimpan di cloud:', info.judul);
+  } catch (err) {
+    console.error('Gagal sync info kelas ke cloud:', err);
+    if (typeof showToast === 'function') {
+      showToast('⚠️ Info tersimpan lokal. Periksa koneksi cloud Anda.', 'warning');
+    }
+  }
+}
+window.syncKelasInfoToCloud = syncKelasInfoToCloud;
+
+async function deleteKelasInfoFromCloud(id) {
+  if (!isFirebaseConnected || !firestoreDb || !id) return;
+  try {
+    await firestoreDb.collection('kelas_info').doc(id).delete();
+    console.log('🗑️ Informasi kelas dihapus dari cloud:', id);
+  } catch (err) { console.error('Gagal hapus info kelas dari cloud:', err); }
+}
+window.deleteKelasInfoFromCloud = deleteKelasInfoFromCloud;
 
 // MATA KULIAH
 async function syncMatkulToCloud(matkul) {

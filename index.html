@@ -16,7 +16,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="apple-touch-icon" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=5.7">
+  <link rel="stylesheet" href="style.css?v=5.8">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -332,6 +332,11 @@
           <i data-feather="layers"></i>
           <span>Mata Kuliah</span>
           <span class="nav-badge matkul-badge" id="badgeTotalMatkul">0</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="tab-info-kelas">
+          <i data-feather="users"></i>
+          <span>Informasi Kelas</span>
+          <span class="nav-badge info-kelas-badge" id="badgeTotalInfoKelas">0</span>
         </button>
 
         <div class="nav-label">FILTER MATA KULIAH</div>
@@ -744,6 +749,52 @@
             <h3>Belum Ada Mata Kuliah Terdaftar</h3>
             <p>Daftarkan mata kuliah yang Anda ambil semester ini untuk mengelompokkan tugas dan materi secara rapi.</p>
             <button class="btn btn-secondary mt-3" id="btnEmptyAddMatkul" onclick="openAddMatkulModal()">+ Tambah Mata Kuliah Pertama</button>
+          </div>
+        </section>
+
+        <!-- ========================================================
+             TAB 5: INFORMASI & KELOMPOK KELAS
+             ======================================================== -->
+        <section class="tab-pane" id="tab-info-kelas">
+          <div class="pane-header">
+            <div>
+              <h1 class="pane-title">Informasi & Kelompok Kelas</h1>
+              <p class="pane-sub">Daftar kelompok mata kuliah, catatan proyek, foto papan tulis/tabel, dan pengumuman resmi kelas.</p>
+            </div>
+            <button class="btn btn-primary" id="btnPaneAddInfoKelas" onclick="openAddInfoKelasModal()">
+              <i data-feather="plus"></i>
+              <span>Tambah Informasi</span>
+            </button>
+          </div>
+
+          <!-- Filter & Search Toolbar -->
+          <div class="toolbar-card">
+            <div class="toolbar-filters">
+              <div class="filter-item">
+                <label for="filterInfoKelasMatkul">Mata Kuliah / Kategori:</label>
+                <select id="filterInfoKelasMatkul" class="custom-select" onchange="filterInfoKelas()">
+                  <option value="ALL">Semua Informasi</option>
+                </select>
+              </div>
+
+              <div class="filter-item search-filter-item">
+                <label for="searchInfoKelasInput">Cari Kelompok / Topik / Nama:</label>
+                <input type="text" id="searchInfoKelasInput" class="custom-input" placeholder="Ketik kata kunci topik atau nama anggota..." oninput="filterInfoKelas()">
+              </div>
+            </div>
+          </div>
+
+          <!-- Grid Kartu Informasi Kelas -->
+          <div class="info-kelas-grid" id="infoKelasGridContainer">
+            <!-- Diisi otomatis oleh JS -->
+          </div>
+
+          <!-- State Kosong jika belum ada informasi -->
+          <div class="empty-state-card" id="emptyInfoKelasState" style="display: none;">
+            <i data-feather="users" class="empty-icon-lg"></i>
+            <h3>Belum Ada Informasi Kelas</h3>
+            <p>Belum ada data kelompok atau pengumuman yang dipublikasikan oleh pengurus kelas.</p>
+            <button class="btn btn-secondary mt-3" id="btnEmptyAddInfoKelas" onclick="openAddInfoKelasModal()">+ Tambah Informasi Pertama</button>
           </div>
         </section>
 
@@ -1614,6 +1665,88 @@
     </div>
   </dialog>
 
+  <!-- ========================================================
+       MODAL: TAMBAH / EDIT INFORMASI KELAS
+       ======================================================== -->
+  <dialog class="app-dialog" id="infoKelasModal">
+    <div class="dialog-box">
+      <div class="dialog-header">
+        <h3 class="dialog-title" id="infoKelasModalTitle">Tambah Informasi Kelas</h3>
+        <button type="button" class="icon-btn btn-close-dialog" onclick="closeInfoKelasModal()" title="Tutup">
+          <i data-feather="x"></i>
+        </button>
+      </div>
+      <form id="infoKelasForm" class="dialog-form">
+        <input type="hidden" id="editInfoKelasId">
+
+        <div class="form-group">
+          <label for="infoKelasJudul">Judul Informasi / Nama Kelompok *</label>
+          <input type="text" id="infoKelasJudul" class="custom-input" placeholder="Contoh: Pembagian Kelompok RP (Rekayasa Perangkat Lunak)" required>
+        </div>
+
+        <div class="form-group">
+          <label for="infoKelasMatkul">Terkait Mata Kuliah</label>
+          <select id="infoKelasMatkul" class="custom-select">
+            <option value="Umum">Umum / Seluruh Kelas</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="infoKelasKonten">Isi Catatan / Daftar Anggota / Teks *</label>
+          <textarea id="infoKelasKonten" class="custom-textarea" rows="6" placeholder="Ketik rincian informasi, daftar nama kelompok, topik tugas, nomor kontak, dll..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Lampiran Gambar (Opsional - Screenshot/Foto)</label>
+          <input type="file" id="infoKelasImageInput" accept="image/*" style="display: none;">
+          
+          <!-- Dropzone -->
+          <div class="image-upload-zone" id="infoKelasDropzone" onclick="document.getElementById('infoKelasImageInput').click()">
+            <i data-feather="image"></i>
+            <span>Klik untuk pilih gambar (JPG, PNG, WebP)</span>
+            <small>Mendukung foto papan tulis, screenshot Excel, atau tabel pembagian kelompok</small>
+          </div>
+
+          <!-- Preview Box -->
+          <div class="image-preview-card" id="infoKelasImagePreviewCard" style="display: none;">
+            <img id="infoKelasImagePreview" src="" alt="Pratinjau Foto">
+            <div class="preview-actions">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('infoKelasImageInput').click()">Ganti Foto</button>
+              <button type="button" class="btn btn-danger btn-sm" onclick="clearInfoKelasImage()">Hapus Foto</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="dialog-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeInfoKelasModal()">Batal</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitInfoKelas">Publikasikan Informasi</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- ========================================================
+       MODAL: LIGHTBOX PRATINJAU GAMBAR PENUH
+       ======================================================== -->
+  <dialog class="app-dialog lightbox-dialog" id="imageLightboxModal">
+    <div class="lightbox-content">
+      <div class="lightbox-header">
+        <span class="lightbox-title" id="lightboxTitle">Pratinjau Gambar</span>
+        <div class="lightbox-actions">
+          <a id="lightboxDownloadBtn" href="#" download="informasi-kelas.jpg" class="icon-btn" title="Unduh Gambar">
+            <i data-feather="download"></i>
+          </a>
+          <button type="button" class="icon-btn btn-close-dialog" onclick="closeImageLightbox()" title="Tutup">
+            <i data-feather="x"></i>
+          </button>
+        </div>
+      </div>
+      <div class="lightbox-image-wrap">
+        <img id="lightboxImage" src="" alt="Foto Penuh">
+      </div>
+    </div>
+  </dialog>
+
   <!-- Container Notifikasi Toast -->
   <div class="toast-wrapper" id="toastWrapper"></div>
 
@@ -1624,9 +1757,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=5.7"></script>
+  <script src="firebase-config.js?v=5.8"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=5.7"></script>
+  <script src="app.js?v=5.8"></script>
 </body>
 </html>

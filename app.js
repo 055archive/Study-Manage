@@ -121,18 +121,35 @@ const DEFAULT_MATKUL = [
 // Storage Keys untuk data bersama kelas & status pengerjaan
 const CLASS_TUGAS_STORAGE_KEY = 'study_class_tugas_v2';
 const CLASS_MATERI_STORAGE_KEY = 'study_class_materi_v2';
+const CLASS_INFO_STORAGE_KEY = 'study_class_info_v2';
 const TUGAS_STATUS_STORAGE_KEY = 'study_tugas_status_cache';
 const NOTIFS_STORAGE_KEY = 'study_notifs_cache';
 
 // Daftar tugas dan materi dimulai dari 0 (bersih) agar mahasiswa bebas mengunggah tugas & materinya sendiri
 const DEFAULT_TUGAS = [];
 const DEFAULT_MATERI = [];
+const DEFAULT_INFO_KELAS = [
+  {
+    id: 'info-sample-1',
+    judul: 'Pembagian Kelompok Tugas Proyek (RP)',
+    matkul: 'Umum',
+    konten: 'Daftar pembagian kelompok tugas besar semester ini:\n\nKelompok 1 (Ketua: Ahmad Syakir):\n• Ahmad Syakir (Ketua)\n• Budi Setiawan\n• Clara Salsabila\n\nKelompok 2 (Ketua: Dimas Arya):\n• Dimas Arya (Ketua)\n• Eka Ningsih\n• Fajar Ramadhan\n\nCatatan: Silakan diskusikan judul proyek bersama anggota kelompok masing-masing.',
+    gambar: null,
+    authorNama: 'Pengurus Kelas',
+    authorJabatan: 'Ketua Kelas',
+    authorUid: 'admin-sample',
+    createdAt: Date.now() - (2 * 86400000),
+    updatedAt: Date.now() - (2 * 86400000)
+  }
+];
 
 let matkulList = loadFromStorage(MATKUL_STORAGE_KEY, DEFAULT_MATKUL);
 let personalTugas = loadFromStorage(TUGAS_STORAGE_KEY, DEFAULT_TUGAS);
 let classTugas = loadFromStorage(CLASS_TUGAS_STORAGE_KEY, []);
 let personalMateri = loadFromStorage(MATERI_STORAGE_KEY, DEFAULT_MATERI);
 let classMateri = loadFromStorage(CLASS_MATERI_STORAGE_KEY, []);
+let classInfoList = loadFromStorage(CLASS_INFO_STORAGE_KEY, DEFAULT_INFO_KELAS);
+let stagedInfoKelasImage = null;
 let tugasStatusMap = loadFromStorage(TUGAS_STATUS_STORAGE_KEY, {});
 
 // Array gabungan (tugas resmi kelas + tugas pribadi) yang ditampilkan ke UI
@@ -186,6 +203,7 @@ function saveStorage() {
     localStorage.setItem(CLASS_TUGAS_STORAGE_KEY, JSON.stringify(classTugas));
     localStorage.setItem(MATERI_STORAGE_KEY, JSON.stringify(personalMateri));
     localStorage.setItem(CLASS_MATERI_STORAGE_KEY, JSON.stringify(classMateri));
+    localStorage.setItem(CLASS_INFO_STORAGE_KEY, JSON.stringify(classInfoList));
     localStorage.setItem(TUGAS_STATUS_STORAGE_KEY, JSON.stringify(tugasStatusMap));
   } catch (e) {}
 }
@@ -2773,8 +2791,11 @@ searchMateriInput.addEventListener('input', renderMateri);
 globalSearchInput.addEventListener('input', (e) => {
   searchTugasInput.value = e.target.value;
   searchMateriInput.value = e.target.value;
+  const searchInfoKelas = document.getElementById('searchInfoKelasInput');
+  if (searchInfoKelas) searchInfoKelas.value = e.target.value;
   renderTugas();
   renderMateri();
+  if (typeof renderInfoKelas === 'function') renderInfoKelas();
 });
 
 // ============================================================================
@@ -3992,12 +4013,26 @@ function updateAdminUI() {
   if (elBtnPaneAddMatkul) elBtnPaneAddMatkul.style.display = isPengurus ? 'inline-flex' : 'none';
   if (elBtnEmptyAddMatkul) elBtnEmptyAddMatkul.style.display = isPengurus ? 'inline-block' : 'none';
 
+  const elBtnPaneAddInfoKelas = document.getElementById('btnPaneAddInfoKelas');
+  const elBtnEmptyAddInfoKelas = document.getElementById('btnEmptyAddInfoKelas');
+  if (elBtnPaneAddInfoKelas) elBtnPaneAddInfoKelas.style.display = isPengurus ? 'inline-flex' : 'none';
+  if (elBtnEmptyAddInfoKelas) elBtnEmptyAddInfoKelas.style.display = isPengurus ? 'inline-block' : 'none';
+
   // Sinkronkan kartu mata kuliah agar tombol Edit & Hapus muncul/hilang secara reaktif
   if (typeof renderMatkul === 'function') {
     try {
       renderMatkul();
     } catch (e) {
       console.warn('Gagal merender ulang kartu matkul di updateAdminUI:', e);
+    }
+  }
+
+  // Sinkronkan kartu informasi kelas agar tombol Edit & Hapus muncul/hilang secara reaktif
+  if (typeof renderInfoKelas === 'function') {
+    try {
+      renderInfoKelas();
+    } catch (e) {
+      console.warn('Gagal merender ulang info kelas di updateAdminUI:', e);
     }
   }
 
@@ -5146,10 +5181,494 @@ function setupAcademicBadgeSecretTrigger() {
 setupAcademicBadgeSecretTrigger();
 
 // ============================================================================
+// 10B. INFORMASI & KELOMPOK KELAS MODULE
+// ============================================================================
+
+// Handler Real-time dari Cloud Firestore
+window.handleCloudKelasInfo = function(cloudData) {
+  if (!Array.isArray(cloudData)) return;
+  classInfoList = cloudData;
+  saveStorage();
+  try {
+    renderInfoKelas();
+  } catch (e) {
+    console.warn('Gagal merender info kelas dari cloud:', e);
+  }
+};
+
+// Kompresi Gambar agar ukuran file hemat & sinkronisasi cepat
+function compressImageFile(file, maxWidth = 1200, maxHeight = 1200, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth || height > maxHeight) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = () => reject(new Error('Gagal memproses gambar'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('Gagal membaca berkas'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// Buka Modal Tambah Info Kelas
+function openAddInfoKelasModal() {
+  if (!isCurrentUserAdmin) {
+    showToast('Hanya Pengurus Kelas yang dapat menambah informasi kelas!', 'warning');
+    return;
+  }
+
+  const modal = document.getElementById('infoKelasModal');
+  const form = document.getElementById('infoKelasForm');
+  const editId = document.getElementById('editInfoKelasId');
+  const modalTitle = document.getElementById('infoKelasModalTitle');
+  const submitBtn = document.getElementById('btnSubmitInfoKelas');
+
+  if (form) form.reset();
+  if (editId) editId.value = '';
+  if (modalTitle) modalTitle.textContent = 'Tambah Informasi Kelas';
+  if (submitBtn) submitBtn.textContent = 'Publikasikan Informasi';
+
+  stagedInfoKelasImage = null;
+  clearInfoKelasImage();
+  populateInfoKelasMatkulOptions('Umum');
+
+  if (modal) modal.showModal();
+}
+window.openAddInfoKelasModal = openAddInfoKelasModal;
+
+// Buka Modal Edit Info Kelas
+function openEditInfoKelasModal(id) {
+  if (!isCurrentUserAdmin) {
+    showToast('Hanya Pengurus Kelas yang dapat mengedit informasi kelas!', 'warning');
+    return;
+  }
+
+  const item = classInfoList.find(i => i.id === id);
+  if (!item) return;
+
+  const modal = document.getElementById('infoKelasModal');
+  const editId = document.getElementById('editInfoKelasId');
+  const modalTitle = document.getElementById('infoKelasModalTitle');
+  const submitBtn = document.getElementById('btnSubmitInfoKelas');
+  const judulInput = document.getElementById('infoKelasJudul');
+  const kontenInput = document.getElementById('infoKelasKonten');
+
+  if (editId) editId.value = item.id;
+  if (modalTitle) modalTitle.textContent = 'Edit Informasi Kelas';
+  if (submitBtn) submitBtn.textContent = 'Perbarui Informasi';
+  if (judulInput) judulInput.value = item.judul || '';
+  if (kontenInput) kontenInput.value = item.konten || '';
+
+  populateInfoKelasMatkulOptions(item.matkul || 'Umum');
+
+  if (item.gambar) {
+    stagedInfoKelasImage = item.gambar;
+    showInfoKelasImagePreview(item.gambar);
+  } else {
+    stagedInfoKelasImage = null;
+    clearInfoKelasImage();
+  }
+
+  if (modal) modal.showModal();
+}
+window.openEditInfoKelasModal = openEditInfoKelasModal;
+
+// Tutup Modal Info Kelas
+function closeInfoKelasModal() {
+  const modal = document.getElementById('infoKelasModal');
+  if (modal) modal.close();
+  stagedInfoKelasImage = null;
+}
+window.closeInfoKelasModal = closeInfoKelasModal;
+
+// Hapus Gambar dari Stage / Preview
+function clearInfoKelasImage() {
+  stagedInfoKelasImage = null;
+  const input = document.getElementById('infoKelasImageInput');
+  const dropzone = document.getElementById('infoKelasDropzone');
+  const previewCard = document.getElementById('infoKelasImagePreviewCard');
+  const previewImg = document.getElementById('infoKelasImagePreview');
+
+  if (input) input.value = '';
+  if (previewImg) previewImg.src = '';
+  if (previewCard) previewCard.style.display = 'none';
+  if (dropzone) dropzone.style.display = 'flex';
+}
+window.clearInfoKelasImage = clearInfoKelasImage;
+
+// Tampilkan Preview Gambar
+function showInfoKelasImagePreview(src) {
+  const dropzone = document.getElementById('infoKelasDropzone');
+  const previewCard = document.getElementById('infoKelasImagePreviewCard');
+  const previewImg = document.getElementById('infoKelasImagePreview');
+
+  if (previewImg) previewImg.src = src;
+  if (dropzone) dropzone.style.display = 'none';
+  if (previewCard) previewCard.style.display = 'flex';
+}
+
+// Populate Dropdown Matkul di Modal Info Kelas
+function populateInfoKelasMatkulOptions(selectedVal = 'Umum') {
+  const select = document.getElementById('infoKelasMatkul');
+  if (!select) return;
+
+  const courses = getAllMataKuliahList();
+  select.innerHTML = '<option value="Umum">Umum / Seluruh Kelas</option>';
+
+  courses.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    if (c.toLowerCase() === (selectedVal || '').toLowerCase()) {
+      opt.selected = true;
+    }
+    select.appendChild(opt);
+  });
+
+  if (selectedVal === 'Umum') {
+    select.value = 'Umum';
+  }
+}
+
+// Hapus Informasi Kelas
+function deleteInfoKelas(id) {
+  if (!isCurrentUserAdmin) {
+    showToast('Hanya Pengurus Kelas yang dapat menghapus informasi kelas!', 'warning');
+    return;
+  }
+
+  const found = classInfoList.find(i => i.id === id);
+  if (!found) return;
+
+  if (confirm(`Hapus informasi "${found.judul}"? Tindakan ini akan menghapus informasi untuk seluruh kelas.`)) {
+    classInfoList = classInfoList.filter(i => i.id !== id);
+    saveStorage();
+    if (typeof deleteKelasInfoFromCloud === 'function') {
+      deleteKelasInfoFromCloud(id);
+    }
+    renderInfoKelas();
+    showToast(`Informasi "${found.judul}" berhasil dihapus`, 'danger');
+  }
+}
+window.deleteInfoKelas = deleteInfoKelas;
+
+// Salin Teks Informasi ke Clipboard
+window.copyInfoKelasText = function(id) {
+  const item = classInfoList.find(i => i.id === id);
+  if (!item) return;
+
+  const textToCopy = `📌 *${item.judul}*\n[Mata Kuliah: ${item.matkul || 'Umum'}]\n\n${item.konten || ''}\n\n— *StudyManage Portal Kelas*`;
+  navigator.clipboard.writeText(textToCopy).then(() => {
+    showToast('Teks informasi berhasil disalin ke clipboard! 📋', 'success');
+  }).catch(() => {
+    showToast('Gagal menyalin teks', 'danger');
+  });
+};
+
+// Bagikan Informasi ke WhatsApp
+window.shareInfoKelasToWA = function(id) {
+  const item = classInfoList.find(i => i.id === id);
+  if (!item) return;
+
+  const textToShare = `📢 *INFORMASI KELAS*\n\n📌 *${item.judul}*\n📚 *Mata Kuliah:* ${item.matkul || 'Umum'}\n\n${item.konten || ''}\n\n_Lihat foto & rincian lengkap di Portal Kuliah StudyManage._`;
+  const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(textToShare)}`;
+  window.open(url, '_blank');
+};
+
+// Lightbox: Pratinjau Foto Penuh
+window.openImageLightbox = function(imgSrc, title = 'Pratinjau Foto') {
+  const modal = document.getElementById('imageLightboxModal');
+  const img = document.getElementById('lightboxImage');
+  const titleEl = document.getElementById('lightboxTitle');
+  const downloadBtn = document.getElementById('lightboxDownloadBtn');
+
+  if (img) img.src = imgSrc;
+  if (titleEl) titleEl.textContent = title;
+  if (downloadBtn) {
+    downloadBtn.href = imgSrc;
+    downloadBtn.download = `${(title || 'informasi-kelas').replace(/[^a-zA-Z0-9]/g, '_')}.jpg`;
+  }
+
+  if (modal) modal.showModal();
+  if (window.feather) feather.replace();
+};
+
+window.closeImageLightbox = function() {
+  const modal = document.getElementById('imageLightboxModal');
+  if (modal) modal.close();
+};
+
+// Filter Informasi Kelas
+window.filterInfoKelas = function() {
+  renderInfoKelas();
+};
+
+// Render Informasi Kelas ke Halaman
+function renderInfoKelas() {
+  const gridContainer = document.getElementById('infoKelasGridContainer');
+  const emptyState = document.getElementById('emptyInfoKelasState');
+  const badgeTotal = document.getElementById('badgeTotalInfoKelas');
+  const filterSelect = document.getElementById('filterInfoKelasMatkul');
+  const searchInput = document.getElementById('searchInfoKelasInput');
+
+  if (!gridContainer) return;
+
+  // Update badge total di sidebar
+  if (badgeTotal) {
+    badgeTotal.textContent = classInfoList.length;
+    badgeTotal.style.display = classInfoList.length > 0 ? 'inline-flex' : 'none';
+  }
+
+  // Populate filter dropdown jika belum
+  if (filterSelect && filterSelect.options.length <= 1) {
+    const courses = getAllMataKuliahList();
+    const currentVal = filterSelect.value || 'ALL';
+    filterSelect.innerHTML = '<option value="ALL">Semua Informasi</option><option value="Umum">Umum / Seluruh Kelas</option>';
+    courses.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = c;
+      filterSelect.appendChild(opt);
+    });
+    filterSelect.value = currentVal;
+  }
+
+  const activeFilter = filterSelect ? filterSelect.value : 'ALL';
+  const searchQuery = (searchInput ? searchInput.value : '').toLowerCase().trim();
+
+  // Filter daftar informasi
+  let filtered = classInfoList.filter(item => {
+    if (!item) return false;
+
+    // Filter Matkul
+    if (activeFilter !== 'ALL') {
+      if ((item.matkul || 'Umum').toLowerCase() !== activeFilter.toLowerCase()) {
+        return false;
+      }
+    }
+
+    // Filter Search
+    if (searchQuery) {
+      const matchJudul = (item.judul || '').toLowerCase().includes(searchQuery);
+      const matchKonten = (item.konten || '').toLowerCase().includes(searchQuery);
+      const matchMatkul = (item.matkul || '').toLowerCase().includes(searchQuery);
+      if (!matchJudul && !matchKonten && !matchMatkul) return false;
+    }
+
+    return true;
+  });
+
+  // Urutkan dari yang terbaru
+  filtered.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+  gridContainer.innerHTML = '';
+
+  if (filtered.length === 0) {
+    if (emptyState) emptyState.style.display = 'block';
+  } else {
+    if (emptyState) emptyState.style.display = 'none';
+
+    filtered.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'info-card';
+
+      const courseColor = getCourseColor(item.matkul === 'Umum' ? '' : item.matkul);
+      const authorText = item.authorNama ? `${escapeHtml(item.authorNama)} (${escapeHtml(item.authorJabatan || 'Pengurus')})` : 'Pengurus Kelas';
+      const dateText = item.createdAt ? new Date(item.createdAt).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      }) : 'Baru saja';
+
+      card.innerHTML = `
+        <div class="info-card-top-bar" style="background-color: ${courseColor};"></div>
+        <div class="info-card-header">
+          <div class="info-card-badges">
+            <span class="info-matkul-badge" style="background-color: ${courseColor}18; color: ${courseColor};">
+              <i data-feather="${item.matkul === 'Umum' ? 'globe' : 'book'}"></i>
+              <span>${escapeHtml(item.matkul || 'Umum')}</span>
+            </span>
+            <span class="info-author-badge" title="Dipublikasikan oleh ${authorText}">
+              <i data-feather="user"></i>
+              <span>${escapeHtml(authorText)} • ${dateText}</span>
+            </span>
+          </div>
+          ${isCurrentUserAdmin ? `
+            <div class="card-actions-group">
+              <button class="btn-edit-item" onclick="openEditInfoKelasModal('${item.id}')" title="Edit Informasi">
+                <i data-feather="edit-2"></i>
+              </button>
+              <button class="btn-delete-item" onclick="deleteInfoKelas('${item.id}')" title="Hapus Informasi">
+                <i data-feather="trash-2"></i>
+              </button>
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="info-card-body">
+          <h3 class="info-card-title">${escapeHtml(item.judul)}</h3>
+          <p class="info-card-text">${escapeHtml(item.konten || '')}</p>
+
+          ${item.gambar ? `
+            <div class="info-card-image-wrap" onclick="openImageLightbox('${item.gambar}', '${escapeHtml(item.judul)}')" title="Klik untuk memperbesar gambar">
+              <img src="${item.gambar}" alt="${escapeHtml(item.judul)}" loading="lazy">
+              <div class="info-card-image-overlay">
+                <i data-feather="maximize-2"></i>
+                <span>Klik untuk perbesar foto</span>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="info-card-footer">
+          <div class="info-footer-left">
+            <button type="button" class="btn-info-action" onclick="copyInfoKelasText('${item.id}')" title="Salin teks ke clipboard">
+              <i data-feather="copy"></i>
+              <span>Salin</span>
+            </button>
+            <button type="button" class="btn-info-action" onclick="shareInfoKelasToWA('${item.id}')" title="Bagikan ke WhatsApp">
+              <i data-feather="share-2"></i>
+              <span>Share WA</span>
+            </button>
+          </div>
+          ${item.gambar ? `
+            <button type="button" class="btn-info-action" onclick="openImageLightbox('${item.gambar}', '${escapeHtml(item.judul)}')" title="Lihat ukuran penuh">
+              <i data-feather="eye"></i>
+              <span>Foto Penuh</span>
+            </button>
+          ` : ''}
+        </div>
+      `;
+
+      gridContainer.appendChild(card);
+    });
+  }
+
+  if (window.feather) feather.replace();
+}
+window.renderInfoKelas = renderInfoKelas;
+
+// ============================================================================
 // 11. INITIALIZATION
 // ============================================================================
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
+
+  // Setup form & image input listener untuk Info Kelas
+  const infoKelasImageInput = document.getElementById('infoKelasImageInput');
+  if (infoKelasImageInput) {
+    infoKelasImageInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showToast('Hanya berkas gambar (JPG, PNG, WebP) yang didukung!', 'danger');
+        return;
+      }
+
+      try {
+        showToast('Memproses & mengoptimasi gambar...', 'info');
+        const compressedDataUrl = await compressImageFile(file);
+        stagedInfoKelasImage = compressedDataUrl;
+        showInfoKelasImagePreview(compressedDataUrl);
+        showToast('Gambar siap dilampirkan! 📸', 'success');
+      } catch (err) {
+        console.error('Gagal mengompres gambar:', err);
+        showToast('Gagal memproses gambar: ' + err.message, 'danger');
+      }
+    });
+  }
+
+  const infoKelasForm = document.getElementById('infoKelasForm');
+  if (infoKelasForm) {
+    infoKelasForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      if (!isCurrentUserAdmin) {
+        showToast('Hanya Pengurus Kelas yang dapat mempublikasikan informasi!', 'warning');
+        return;
+      }
+
+      const editId = document.getElementById('editInfoKelasId').value;
+      const judul = document.getElementById('infoKelasJudul').value.trim();
+      const matkul = document.getElementById('infoKelasMatkul').value.trim();
+      const konten = document.getElementById('infoKelasKonten').value.trim();
+
+      if (!judul || !konten) {
+        showToast('Judul dan isi catatan wajib diisi!', 'danger');
+        return;
+      }
+
+      const authorNama = currentUserProfile ? currentUserProfile.nama : 'Pengurus';
+      const authorJabatan = currentUserProfile && currentUserProfile.role ? currentUserProfile.role : 'Pengurus Kelas';
+      const authorUid = currentUserProfile ? currentUserProfile.uid : '';
+
+      if (editId) {
+        // Mode Edit
+        const idx = classInfoList.findIndex(i => i.id === editId);
+        if (idx !== -1) {
+          classInfoList[idx] = {
+            ...classInfoList[idx],
+            judul,
+            matkul,
+            konten,
+            gambar: stagedInfoKelasImage !== undefined ? stagedInfoKelasImage : classInfoList[idx].gambar,
+            updatedAt: Date.now()
+          };
+
+          if (typeof syncKelasInfoToCloud === 'function') {
+            syncKelasInfoToCloud(classInfoList[idx]);
+          }
+          showToast(`Informasi "${judul}" berhasil diperbarui! ✏️`, 'success');
+        }
+      } else {
+        // Mode Tambah Baru
+        const newInfo = {
+          id: 'info-' + Date.now(),
+          judul,
+          matkul,
+          konten,
+          gambar: stagedInfoKelasImage || null,
+          authorNama,
+          authorJabatan,
+          authorUid,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        };
+
+        classInfoList.unshift(newInfo);
+
+        if (typeof syncKelasInfoToCloud === 'function') {
+          syncKelasInfoToCloud(newInfo);
+        }
+        showToast(`Informasi "${judul}" berhasil dipublikasikan! 📢`, 'success');
+      }
+
+      saveStorage();
+      renderInfoKelas();
+      closeInfoKelasModal();
+    });
+  }
 
   // Set Tanggal Hari Ini di Header Banner
   const now = new Date();
@@ -5178,6 +5697,7 @@ document.addEventListener('DOMContentLoaded', () => {
   try { renderCourseFilters(); } catch (e) { console.warn('Init renderCourseFilters error:', e); }
   try { renderTugas(); } catch (e) { console.warn('Init renderTugas error:', e); }
   try { renderMateri(); } catch (e) { console.warn('Init renderMateri error:', e); }
+  try { renderInfoKelas(); } catch (e) { console.warn('Init renderInfoKelas error:', e); }
   try { renderNotificationsUI(); } catch (e) { console.warn('Init renderNotificationsUI error:', e); }
   try { updateNotifPermissionUI(); } catch (e) { console.warn('Init updateNotifPermissionUI error:', e); }
   try { checkDeadlinesAndNotify(); } catch (e) { console.warn('Init checkDeadlinesAndNotify error:', e); }
