@@ -16,7 +16,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="apple-touch-icon" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=5.8">
+  <link rel="stylesheet" href="style.css?v=5.9">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1065,9 +1065,16 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <label for="matkulDosen">Dosen Pengampu (Opsional)</label>
-          <input type="text" id="matkulDosen" class="custom-input" placeholder="Contoh: Dr. Budi Santoso, M.Kom.">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="matkulDosen">Dosen Pengampu (Opsional)</label>
+            <input type="text" id="matkulDosen" class="custom-input" placeholder="Contoh: Dr. Budi Santoso, M.Kom.">
+          </div>
+
+          <div class="form-group">
+            <label for="matkulPj">PJ Mata Kuliah (Opsional)</label>
+            <input type="text" id="matkulPj" class="custom-input" placeholder="Contoh: Ahmad / Siti Rahma">
+          </div>
         </div>
 
         <div class="form-row">
@@ -1757,9 +1764,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=5.8"></script>
+  <script src="firebase-config.js?v=5.9"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=5.8"></script>
+  <script src="app.js?v=5.9"></script>
 </body>
 </html>

@@ -2061,6 +2061,8 @@ function openAddMatkulModal() {
   }
   matkulForm.reset();
   if (editMatkulId) editMatkulId.value = '';
+  const pjInput = document.getElementById('matkulPj');
+  if (pjInput) pjInput.value = '';
   if (matkulModalTitle) matkulModalTitle.textContent = 'Tambah Mata Kuliah Baru';
   if (btnSubmitMatkul) btnSubmitMatkul.textContent = 'Simpan Mata Kuliah';
   matkulModal.showModal();
@@ -2082,6 +2084,8 @@ function openEditMatkulModal(id) {
   document.getElementById('matkulKode').value = course.kode || '';
   document.getElementById('matkulSks').value = course.sks || 3;
   document.getElementById('matkulDosen').value = course.dosen || '';
+  const pjInput = document.getElementById('matkulPj');
+  if (pjInput) pjInput.value = course.pj || '';
   document.getElementById('matkulJadwal').value = course.jadwal || '';
   document.getElementById('matkulRuangan').value = course.ruangan || '';
 
@@ -2515,6 +2519,7 @@ if (matkulForm) {
     const kode = document.getElementById('matkulKode').value.trim();
     const sks = Number(document.getElementById('matkulSks').value) || 0;
     const dosen = document.getElementById('matkulDosen').value.trim();
+    const pj = document.getElementById('matkulPj') ? document.getElementById('matkulPj').value.trim() : '';
     const jadwal = document.getElementById('matkulJadwal').value.trim();
     const ruangan = document.getElementById('matkulRuangan').value.trim();
     const warnaEl = document.querySelector('input[name="matkulWarna"]:checked');
@@ -2537,6 +2542,7 @@ if (matkulForm) {
           kode,
           sks,
           dosen,
+          pj,
           jadwal,
           ruangan,
           warna
@@ -2576,6 +2582,7 @@ if (matkulForm) {
           kode,
           sks,
           dosen,
+          pj,
           jadwal,
           ruangan,
           warna
@@ -2591,6 +2598,7 @@ if (matkulForm) {
           kode,
           sks,
           dosen,
+          pj,
           jadwal,
           ruangan,
           warna
@@ -2664,6 +2672,10 @@ function renderMatkul() {
               <span>${escapeHtml(course.dosen)}</span>
             </div>
           ` : ''}
+          <div class="course-detail-item course-pj-item" title="Penanggung Jawab Mata Kuliah">
+            <i data-feather="user-check"></i>
+            <span>PJ MK: ${course.pj ? `<strong>${escapeHtml(course.pj)}</strong>` : `<span style="opacity: 0.6; font-style: italic;">Belum diatur</span>`}</span>
+          </div>
           ${course.jadwal ? `
             <div class="course-detail-item">
               <i data-feather="clock"></i>

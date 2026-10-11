@@ -4731,3 +4731,18 @@ input:-webkit-autofill:active {
   object-fit: contain;
   border-radius: 8px;
 }
+
+/* Styling PJ Mata Kuliah pada kartu matkul */
+.course-pj-item {
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.course-pj-item i {
+  color: var(--primary);
+}
+
+.course-pj-item strong {
+  color: var(--primary);
+  font-weight: 700;
+}
