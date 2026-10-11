@@ -1760,6 +1760,11 @@ function renderOverviewRecentMaterials() {
 
 // TUGAS MODAL
 function openAddTugasModal() {
+  if (!isCurrentUserAdmin) {
+    showToast('Hanya Pengurus Kelas yang dapat menambahkan tugas!', 'warning');
+    return;
+  }
+
   tugasForm.reset();
   if (editTugasId) editTugasId.value = '';
   if (tugasModalTitle) tugasModalTitle.textContent = 'Tambah Tugas Kuliah';
@@ -2032,6 +2037,10 @@ window.closeMateriModal = closeMateriModal;
 
 // MATA KULIAH MODAL
 function openAddMatkulModal() {
+  if (!isCurrentUserAdmin) {
+    showToast('Hanya Pengurus Kelas yang dapat menambah mata kuliah!', 'warning');
+    return;
+  }
   matkulForm.reset();
   if (editMatkulId) editMatkulId.value = '';
   if (matkulModalTitle) matkulModalTitle.textContent = 'Tambah Mata Kuliah Baru';
@@ -2040,6 +2049,10 @@ function openAddMatkulModal() {
 }
 
 function openEditMatkulModal(id) {
+  if (!isCurrentUserAdmin) {
+    showToast('Hanya Pengurus Kelas yang dapat mengedit mata kuliah!', 'warning');
+    return;
+  }
   const course = matkulList.find(c => c.id === id);
   if (!course) return;
 
@@ -2475,6 +2488,11 @@ if (matkulForm) {
   matkulForm.addEventListener('submit', (e) => {
     e.preventDefault();
 
+    if (!isCurrentUserAdmin) {
+      showToast('Hanya Pengurus Kelas yang dapat mengelola data mata kuliah!', 'warning');
+      return;
+    }
+
     const nama = document.getElementById('matkulNama').value.trim();
     const kode = document.getElementById('matkulKode').value.trim();
     const sks = Number(document.getElementById('matkulSks').value) || 0;
@@ -2607,6 +2625,7 @@ function renderMatkul() {
             ${course.kode ? `<span class="course-code-badge">${escapeHtml(course.kode)}</span>` : ''}
             ${course.sks ? `<span class="course-sks-badge">${course.sks} SKS</span>` : ''}
           </div>
+          ${isCurrentUserAdmin ? `
           <div class="card-actions-group">
             <button class="btn-edit-item" onclick="openEditMatkulModal('${course.id}')" title="Edit Mata Kuliah">
               <i data-feather="edit-2"></i>
@@ -2615,6 +2634,7 @@ function renderMatkul() {
               <i data-feather="trash-2"></i>
             </button>
           </div>
+          ` : ''}
         </div>
 
         <h3 class="course-card-name">${escapeHtml(course.nama)}</h3>
@@ -2681,6 +2701,10 @@ window.viewCourseDetails = function(courseName) {
 };
 
 window.deleteMatkul = function(id) {
+  if (!isCurrentUserAdmin) {
+    showToast('Hanya Pengurus Kelas yang dapat menghapus mata kuliah!', 'warning');
+    return;
+  }
   const found = matkulList.find(m => m.id === id);
   if (!found) return;
   if (confirm(`Hapus mata kuliah "${found.nama}" dari daftar? (Data tugas dan materi yang sudah dicatat tidak akan hilang).`)) {
@@ -3949,6 +3973,32 @@ function updateAdminUI() {
   // 3. Tombol Cloud Modal (disembunyikan dari topbar/tampilan biasa, hanya diakses via pintu rahasia admin)
   if (btnCloudModal) {
     btnCloudModal.style.display = 'none';
+  }
+
+  // 4. Pembatasan Hak Akses: Tambah Tugas & Kelola Matkul (hanya untuk Pengurus Kelas)
+  const elBtnOpenModalTugas = document.getElementById('btnOpenModalTugas');
+  const elBtnPaneAddTugas = document.getElementById('btnPaneAddTugas');
+  const elBtnEmptyAddTugas = document.getElementById('btnEmptyAddTugas');
+
+  const elBtnOpenModalMatkul = document.getElementById('btnOpenModalMatkul');
+  const elBtnPaneAddMatkul = document.getElementById('btnPaneAddMatkul');
+  const elBtnEmptyAddMatkul = document.getElementById('btnEmptyAddMatkul');
+
+  if (elBtnOpenModalTugas) elBtnOpenModalTugas.style.display = isPengurus ? 'inline-flex' : 'none';
+  if (elBtnPaneAddTugas) elBtnPaneAddTugas.style.display = isPengurus ? 'inline-flex' : 'none';
+  if (elBtnEmptyAddTugas) elBtnEmptyAddTugas.style.display = isPengurus ? 'inline-block' : 'none';
+
+  if (elBtnOpenModalMatkul) elBtnOpenModalMatkul.style.display = isPengurus ? 'inline-flex' : 'none';
+  if (elBtnPaneAddMatkul) elBtnPaneAddMatkul.style.display = isPengurus ? 'inline-flex' : 'none';
+  if (elBtnEmptyAddMatkul) elBtnEmptyAddMatkul.style.display = isPengurus ? 'inline-block' : 'none';
+
+  // Sinkronkan kartu mata kuliah agar tombol Edit & Hapus muncul/hilang secara reaktif
+  if (typeof renderMatkul === 'function') {
+    try {
+      renderMatkul();
+    } catch (e) {
+      console.warn('Gagal merender ulang kartu matkul di updateAdminUI:', e);
+    }
   }
 
   if (window.feather) feather.replace();

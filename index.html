@@ -16,7 +16,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="apple-touch-icon" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=5.6">
+  <link rel="stylesheet" href="style.css?v=5.7">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -602,7 +602,7 @@
               <h1 class="pane-title">Daftar Tugas Kuliah</h1>
               <p class="pane-sub">Lacak tugas, mata kuliah, deadline, dan status penyelesaian tugasmu.</p>
             </div>
-            <button class="btn btn-primary" onclick="openAddTugasModal()">
+            <button class="btn btn-primary" id="btnPaneAddTugas" onclick="openAddTugasModal()">
               <i data-feather="plus"></i>
               <span>Tambah Tugas</span>
             </button>
@@ -656,7 +656,7 @@
             <i data-feather="check-circle" class="empty-icon-lg"></i>
             <h3>Tidak Ada Tugas</h3>
             <p>Tidak ada tugas yang cocok dengan filter atau semua tugas sudah kamu selesaikan!</p>
-            <button class="btn btn-secondary mt-3" onclick="openAddTugasModal()">+ Tambah Tugas Baru</button>
+            <button class="btn btn-secondary mt-3" id="btnEmptyAddTugas" onclick="openAddTugasModal()">+ Tambah Tugas Baru</button>
           </div>
         </section>
 
@@ -727,7 +727,7 @@
               <h1 class="pane-title">Kelola Mata Kuliah</h1>
               <p class="pane-sub">Daftarkan seluruh mata kuliah semester ini, dosen pengampu, SKS, jadwal kelas, dan ruang belajar.</p>
             </div>
-            <button class="btn btn-primary" onclick="openAddMatkulModal()">
+            <button class="btn btn-primary" id="btnPaneAddMatkul" onclick="openAddMatkulModal()">
               <i data-feather="plus"></i>
               <span>Tambah Mata Kuliah</span>
             </button>
@@ -743,7 +743,7 @@
             <i data-feather="book-open" class="empty-icon-lg"></i>
             <h3>Belum Ada Mata Kuliah Terdaftar</h3>
             <p>Daftarkan mata kuliah yang Anda ambil semester ini untuk mengelompokkan tugas dan materi secara rapi.</p>
-            <button class="btn btn-secondary mt-3" onclick="openAddMatkulModal()">+ Tambah Mata Kuliah Pertama</button>
+            <button class="btn btn-secondary mt-3" id="btnEmptyAddMatkul" onclick="openAddMatkulModal()">+ Tambah Mata Kuliah Pertama</button>
           </div>
         </section>
 
@@ -1624,9 +1624,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=5.6"></script>
+  <script src="firebase-config.js?v=5.7"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=5.6"></script>
+  <script src="app.js?v=5.7"></script>
 </body>
 </html>
