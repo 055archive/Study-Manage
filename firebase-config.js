@@ -232,10 +232,26 @@ async function registerWithNIM(nama, nim, password, pin, classCode = null) {
   const pinHash = await hashSHA256(trimmedPIN);
 
   // Buat akun resmi di Firebase Auth
-  const userCredential = await firebaseAuth.createUserWithEmailAndPassword(virtualEmail, password);
-  const user = userCredential.user;
+  let user = null;
+  try {
+    const userCredential = await firebaseAuth.createUserWithEmailAndPassword(virtualEmail, password);
+    user = userCredential.user;
+  } catch (authErr) {
+    if (authErr && authErr.code === 'auth/email-already-in-use') {
+      try {
+        const signCred = await firebaseAuth.signInWithEmailAndPassword(virtualEmail, password);
+        user = signCred.user;
+      } catch (signErr) {
+        throw new Error(`NIM ${trimmedNIM} sudah terdaftar. Silakan masuk dengan kata sandi kamu di tab Masuk!`);
+      }
+    } else {
+      throw authErr;
+    }
+  }
 
-  await user.updateProfile({ displayName: trimmedNama });
+  if (trimmedNama && user.updateProfile) {
+    try { await user.updateProfile({ displayName: trimmedNama }); } catch (e) {}
+  }
 
   // Simpan profil lengkap ke Firestore
   const isEnrolled = !!trimmedClassCode;
@@ -253,6 +269,11 @@ async function registerWithNIM(nama, nim, password, pin, classCode = null) {
     createdAt: new Date().toISOString()
   };
 
+  // Simpan sesi lokal agar auth observer dan UI langsung mengenali akun ini
+  localStorage.setItem('studysync_active_uid', user.uid);
+  localStorage.setItem('studysync_logged_nim', trimmedNIM);
+  localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(profileData));
+
   await saveUserProfile(user.uid, profileData);
 
   // Daftarkan di nim_index untuk lookup login & verifikasi lupa sandi
@@ -264,17 +285,14 @@ async function registerWithNIM(nama, nim, password, pin, classCode = null) {
       pin: trimmedPIN,
       pinHash: pinHash,
       passwordHash: pwdHash,
-      classCode: officialCode,
+      classCode: trimmedClassCode || null,
       createdAt: new Date().toISOString()
     });
   }
 
-  // Sign out sementara agar mahasiswa diarahkan login mandiri dengan NIM
-  await firebaseAuth.signOut();
-  currentUser = null;
-
+  currentUser = user;
   console.log('✅ Akun mahasiswa murni NIM berhasil didaftarkan untuk:', trimmedNama, '| NIM:', trimmedNIM);
-  return { nama: trimmedNama, nim: trimmedNIM };
+  return { user, profile: profileData };
 }
 window.registerWithNIM = registerWithNIM;
 

@@ -3554,11 +3554,13 @@ function setupAuthObserver() {
     if (user) {
       console.log('👤 Auth state: Logged in sebagai', user.email || 'NIM Mahasiswa', '| UID:', user.uid);
 
+      const isInternalNimUser = (user.email && user.email.endsWith('@kelas.internal')) || !user.email;
       const effectiveUid = (typeof getCurrentUserUID === 'function' ? getCurrentUserUID() : null) || user.uid;
 
-      // Ambil profil dari Firestore
+      // 1. Ambil profil dari Firestore
       let profile = await getUserProfile(effectiveUid);
 
+      // 2. Lookup dari nim_index jika ada saved NIM
       if (!profile) {
         const savedNim = localStorage.getItem('studysync_logged_nim');
         if (savedNim && typeof firestoreDb !== 'undefined' && firestoreDb) {
@@ -3571,14 +3573,26 @@ function setupAuthObserver() {
         }
       }
 
+      // 3. Fallback ke profil di localStorage
       if (!profile) {
-        if (localStorage.getItem('studysync_logged_nim')) {
-          console.warn('Profil mahasiswa sedang disinkronkan dari nim_index...');
+        const cached = localStorage.getItem(USER_PROFILE_STORAGE_KEY);
+        if (cached) {
+          try { profile = JSON.parse(cached); } catch (e) {}
+        }
+      }
+
+      if (!profile) {
+        if (isInternalNimUser) {
+          console.warn('Profil mahasiswa internal NIM sedang diproses...');
           return;
         }
-        // Pengguna Google baru yang belum mengisi NIM
-        if (googleNamaInput) googleNamaInput.value = user.displayName || '';
-        if (completeNIMModal) completeNIMModal.showModal();
+
+        // Hanya tampilkan modal jika akun berasal dari penyedia Google
+        const isGoogleProvider = Array.isArray(user.providerData) && user.providerData.some(p => p.providerId === 'google.com');
+        if (isGoogleProvider) {
+          if (googleNamaInput) googleNamaInput.value = user.displayName || '';
+          if (completeNIMModal) completeNIMModal.showModal();
+        }
         return;
       }
 
@@ -3706,18 +3720,15 @@ if (registerForm) {
     }
 
     try {
-      await registerWithNIM(nama, nim, pwd, pin);
+      const result = await registerWithNIM(nama, nim, pwd, pin);
       registerForm.reset();
 
-      // Pindahkan pengguna ke tab Masuk, isi otomatis NIM, dan arahkan ke kolom password
-      switchAuthTab('masuk');
-      if (loginNimInput) loginNimInput.value = nim;
-      if (loginPasswordInput) {
-        loginPasswordInput.value = '';
-        setTimeout(() => loginPasswordInput.focus(), 250);
+      if (result && result.profile) {
+        updateStudentProfileUI(result.profile);
       }
+      unlockPortal(true);
 
-      showToast(`Akun berhasil dibuat! Silakan masuk menggunakan NIM dan kata sandi kamu 🎓`, 'success');
+      showToast(`Selamat datang, ${nama}! Akun kamu berhasil dibuat & langsung masuk ke portal 🎓`, 'success');
     } catch (err) {
       console.error('Register error:', err);
       if (registerErrorMsg && registerErrorText) {
@@ -3847,7 +3858,7 @@ window.cancelGoogleRegistration = async function() {
   }
 
   lockPortal();
-  showToast('Pendaftaran dibatalkan. Silakan pilih akun email yang benar.', 'info');
+  showToast('Pendaftaran Google dibatalkan.', 'info');
 };
 
 // ----------------------------------------------------------------------------
