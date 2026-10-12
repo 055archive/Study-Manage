@@ -16,14 +16,32 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="apple-touch-icon" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=5.9">
+  <link rel="stylesheet" href="style.css?v=6.0">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Feather Icons -->
   <script src="https://unpkg.com/feather-icons"></script>
+  <!-- PRE-RENDER AUTH CHECK: Sembunyikan form login seketika (0ms) jika sesi tersimpan di browser -->
+  <script>
+    (function() {
+      try {
+        var profile = localStorage.getItem('studysync_profile_v2');
+        if (profile) {
+          document.documentElement.classList.add('has-auth-session');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <style>
+    /* Cegah Flash of Unauthenticated Content (FOUC) saat refresh / buka web */
+    html.has-auth-session #loginOverlay {
+      display: none !important;
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
     /* PERBAIKAN DARURAT: Hilangkan tombol keluar topbar & pastikan menu garis 3 selalu muncul */
     .btn-topbar-exit-admin,
     .topbar-admin-group .btn-topbar-exit-admin {
@@ -1764,9 +1782,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=5.9"></script>
+  <script src="firebase-config.js?v=6.0"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=5.9"></script>
+  <script src="app.js?v=6.0"></script>
 </body>
 </html>

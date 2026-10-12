@@ -3187,6 +3187,7 @@ function updateStudentProfileUI(profile) {
  * Buka kunci portal dan tampilkan seluruh data
  */
 function unlockPortal(showToastAlert = false) {
+  document.documentElement.classList.add('has-auth-session');
   if (loginOverlay) loginOverlay.classList.add('hidden');
   if (appLayout) appLayout.classList.remove('locked');
   if (showToastAlert) {
@@ -3204,6 +3205,7 @@ function unlockPortal(showToastAlert = false) {
  * Kunci portal dan tampilkan layar login
  */
 function lockPortal() {
+  document.documentElement.classList.remove('has-auth-session');
   if (loginOverlay) loginOverlay.classList.remove('hidden');
   if (appLayout) appLayout.classList.add('locked');
   if (loginPasswordInput) loginPasswordInput.value = '';
@@ -3272,6 +3274,7 @@ function setupAuthObserver() {
       setupRealtimeListeners(user.uid);
     } else {
       console.log('🔒 Auth state: Belum login / Sesi berakhir');
+      localStorage.removeItem(USER_PROFILE_STORAGE_KEY);
       lockPortal();
     }
   });
@@ -5669,6 +5672,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (cachedProfile) {
     try {
       updateStudentProfileUI(JSON.parse(cachedProfile));
+      unlockPortal(false); // Segera buka portal secara optimis dari cache lokal tanpa jeda
     } catch (e) {}
   } else {
     updateAdminUI();
