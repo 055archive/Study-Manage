@@ -848,8 +848,9 @@ async function uploadFileToFirebaseStorage(fileBlobOrDataUrl, fileName, fileId) 
     const storageRef = firebaseStorage.ref().child(storagePath);
 
     const uploadPromise = storageRef.put(blob);
+    // Timeout dipersingkat menjadi 2.5 detik agar proses tidak pernah membekukan aplikasi
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Firebase Storage timeout')), 25000)
+      setTimeout(() => reject(new Error('Firebase Storage timeout')), 2500)
     );
     const snapshot = await Promise.race([uploadPromise, timeoutPromise]);
     const downloadUrl = await snapshot.ref.getDownloadURL();
@@ -857,7 +858,7 @@ async function uploadFileToFirebaseStorage(fileBlobOrDataUrl, fileName, fileId) 
     console.log('✅ File berhasil diunggah ke Firebase Storage:', downloadUrl);
     return { storageType: 'firebase', downloadUrl, path: storagePath };
   } catch (err) {
-    console.warn('Firebase Storage dilewati (file disimpan di IndexedDB lokal):', err.message);
+    console.warn('Firebase Storage dilewati (file otomatis disimpan langsung ke Cloud Firestore):', err.message);
     return null;
   }
 }

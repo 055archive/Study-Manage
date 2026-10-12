@@ -1058,12 +1058,14 @@ function escapeHtml(str) {
 
 function showToast(message, type = 'info') {
   const container = document.getElementById('toastWrapper');
+  if (!container) return;
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
 
   let iconName = 'info';
   if (type === 'success') iconName = 'check-circle';
-  if (type === 'danger') iconName = 'trash-2';
+  if (type === 'danger') iconName = 'alert-triangle';
+  if (type === 'warning') iconName = 'alert-circle';
 
   toast.innerHTML = `
     <i data-feather="${iconName}"></i>
@@ -1071,14 +1073,14 @@ function showToast(message, type = 'info') {
   `;
 
   container.appendChild(toast);
-  feather.replace();
+  if (window.feather) feather.replace();
 
   setTimeout(() => {
     toast.style.opacity = '0';
-    toast.style.transform = 'translateY(10px)';
-    toast.style.transition = 'all 0.25s ease';
-    setTimeout(() => toast.remove(), 250);
-  }, 2800);
+    toast.style.transform = 'translateY(15px) scale(0.95)';
+    toast.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+    setTimeout(() => toast.remove(), 300);
+  }, 3800);
 }
 
 // ============================================================================
@@ -2172,13 +2174,12 @@ tugasForm.addEventListener('submit', async (e) => {
       if (stagedTugasFile.isNew) {
         await saveUploadedFile(stagedTugasFile);
 
-        // Jika Firebase aktif, unggah juga ke Firebase Cloud Storage
         let cloudFile = null;
-        if (typeof uploadFileToFirebaseStorage === 'function') {
+        // Jika berkas <= 800KB, langsung sematkan base64 ke Firestore Cloud agar instan (<1s) dan bisa dibuka seluruh mahasiswa
+        if (stagedTugasFile.size > 800000 && typeof uploadFileToFirebaseStorage === 'function') {
           cloudFile = await uploadFileToFirebaseStorage(stagedTugasFile.data, stagedTugasFile.name, stagedTugasFile.id);
         }
 
-        // Simpan data base64 jika ukurannya aman (< 750KB) agar bisa dibuka di semua perangkat (HP, laptop, teman sekelas)
         const canEmbed = stagedTugasFile.data && stagedTugasFile.data.length < 800000;
         fileMeta = {
           id: stagedTugasFile.id,
@@ -2203,6 +2204,9 @@ tugasForm.addEventListener('submit', async (e) => {
     }
 
     let savedTask = null;
+    // Selalu simpan ke Cloud Resmi Kelas agar semua mahasiswa dapat melihatnya
+    const willBeKelas = true;
+
     if (editId) {
       // Mode Edit
       const classIdx = classTugas.findIndex(t => t.id === editId);
@@ -2227,38 +2231,24 @@ tugasForm.addEventListener('submit', async (e) => {
           prioritas,
           deskripsi,
           file: fileMeta,
-          isKelas: willBeKelas,
+          isKelas: true,
           updatedAt: new Date().toISOString()
         };
 
-        if (willBeKelas) {
-          if (!savedTask.authorJabatan && currentUserProfile) {
-            savedTask.authorJabatan = currentUserProfile.role || 'Pengurus';
-            savedTask.authorNama = currentUserProfile.nama || 'Pengurus';
-          }
-          if (wasKelas) {
-            classTugas[classIdx] = savedTask;
-          } else {
-            if (personalIdx !== -1) personalTugas.splice(personalIdx, 1);
-            if (typeof deleteTugasFromCloud === 'function') deleteTugasFromCloud(editId);
-            classTugas.unshift(savedTask);
-          }
-          if (typeof syncKelasTugasToCloud === 'function') {
-            syncKelasTugasToCloud(savedTask);
-          }
-        } else {
-          if (wasKelas) {
-            classTugas.splice(classIdx, 1);
-            if (typeof deleteKelasTugasFromCloud === 'function') deleteKelasTugasFromCloud(editId);
-            personalTugas.unshift(savedTask);
-          } else {
-            personalTugas[personalIdx] = savedTask;
-          }
-          if (typeof syncTugasToCloud === 'function') {
-            syncTugasToCloud(savedTask);
-          }
+        if (!savedTask.authorJabatan && currentUserProfile) {
+          savedTask.authorJabatan = currentUserProfile.role || 'Pengurus';
+          savedTask.authorNama = currentUserProfile.nama || 'Pengurus';
         }
-        showToast('Tugas berhasil diperbarui! ✏️', 'success');
+        if (wasKelas) {
+          classTugas[classIdx] = savedTask;
+        } else {
+          if (personalIdx !== -1) personalTugas.splice(personalIdx, 1);
+          if (typeof deleteTugasFromCloud === 'function') deleteTugasFromCloud(editId);
+          classTugas.unshift(savedTask);
+        }
+        if (typeof syncKelasTugasToCloud === 'function') {
+          await syncKelasTugasToCloud(savedTask);
+        }
       }
     } else {
       // Mode Tambah Baru
@@ -2272,40 +2262,36 @@ tugasForm.addEventListener('submit', async (e) => {
         deskripsi,
         file: fileMeta,
         completed: false,
-        isKelas: willBeKelas,
+        isKelas: true,
+        authorJabatan: currentUserProfile ? (currentUserProfile.role || 'Pengurus') : 'Pengurus',
+        authorNama: currentUserProfile ? (currentUserProfile.nama || 'Pengurus') : 'Pengurus',
         createdAt: new Date().toISOString()
       };
 
-      if (willBeKelas) {
-        savedTask.authorJabatan = currentUserProfile ? (currentUserProfile.role || 'Pengurus') : 'Pengurus';
-        savedTask.authorNama = currentUserProfile ? (currentUserProfile.nama || 'Pengurus') : 'Pengurus';
-        classTugas.unshift(savedTask);
-        if (typeof syncKelasTugasToCloud === 'function') {
-          syncKelasTugasToCloud(savedTask);
-        }
-        if (typeof markClassTugasSeen === 'function') {
-          markClassTugasSeen(savedTask.id);
-        }
-        addNotification({
-          type: 'tugas',
-          title: `Tugas Baru: ${savedTask.matkul} 📢`,
-          message: `${savedTask.judul} (Deadline: ${formatIndoDate(savedTask.deadline)})`,
-          time: new Date().toISOString(),
-          taskId: savedTask.id
-        });
-        showToast('Tugas resmi kelas berhasil dipublikasikan untuk seluruh kelas! 📢', 'success');
-      } else {
-        personalTugas.unshift(savedTask);
-        if (typeof syncTugasToCloud === 'function') {
-          syncTugasToCloud(savedTask);
-        }
-        showToast('Tugas pribadi berhasil disimpan! 📋', 'success');
+      classTugas.unshift(savedTask);
+      if (typeof syncKelasTugasToCloud === 'function') {
+        await syncKelasTugasToCloud(savedTask);
       }
+      if (typeof markClassTugasSeen === 'function') {
+        markClassTugasSeen(savedTask.id);
+      }
+      addNotification({
+        type: 'tugas',
+        title: `Tugas Baru: ${savedTask.matkul} 📢`,
+        message: `${savedTask.judul} (Deadline: ${formatIndoDate(savedTask.deadline)})`,
+        time: new Date().toISOString(),
+        taskId: savedTask.id
+      });
     }
 
     saveStorage();
     rebuildTugasList();
     tugasModal.close();
+
+    const toastMsg = editId
+      ? 'Tugas berhasil diperbarui di Cloud! ✏️'
+      : 'Tugas resmi kelas berhasil dibagikan ke Cloud! Seluruh mahasiswa dapat melihatnya 📢';
+    showToast(toastMsg, 'success');
   } catch (err) {
     console.error('Gagal menyimpan tugas:', err);
     showToast('Terjadi kesalahan: ' + err.message, 'danger');
@@ -2362,11 +2348,11 @@ materiForm.addEventListener('submit', async (e) => {
         await saveUploadedFile(stagedMateriFile);
 
         let cloudFile = null;
-        if (typeof uploadFileToFirebaseStorage === 'function') {
+        // Jika file <= 800KB, langsung sematkan base64 ke dokumen Cloud Firestore agar instan (<1s) dan bisa dibuka seluruh mahasiswa
+        if (stagedMateriFile.size > 800000 && typeof uploadFileToFirebaseStorage === 'function') {
           cloudFile = await uploadFileToFirebaseStorage(stagedMateriFile.data, stagedMateriFile.name, stagedMateriFile.id);
         }
 
-        // Simpan data base64 jika ukurannya aman (< 750KB) agar bisa dibuka di semua perangkat (HP, laptop, teman sekelas)
         const canEmbed = stagedMateriFile.data && stagedMateriFile.data.length < 800000;
         fileMeta = {
           id: stagedMateriFile.id,
@@ -2391,6 +2377,9 @@ materiForm.addEventListener('submit', async (e) => {
     }
 
     let savedMateri = null;
+    // Selalu simpan ke Cloud Resmi Kelas agar semua mahasiswa dapat melihatnya
+    const willBeKelas = true;
+
     if (editId) {
       // Mode Edit
       const classIdx = classMateri.findIndex(m => m.id === editId);
@@ -2415,38 +2404,24 @@ materiForm.addEventListener('submit', async (e) => {
           link,
           file: fileMeta,
           catatan,
-          isKelas: willBeKelas,
+          isKelas: true,
           updatedAt: new Date().toISOString()
         };
 
-        if (willBeKelas) {
-          if (!savedMateri.authorJabatan && currentUserProfile) {
-            savedMateri.authorJabatan = currentUserProfile.role || 'Pengurus';
-            savedMateri.authorNama = currentUserProfile.nama || 'Pengurus';
-          }
-          if (wasKelas) {
-            classMateri[classIdx] = savedMateri;
-          } else {
-            if (personalIdx !== -1) personalMateri.splice(personalIdx, 1);
-            if (typeof deleteMateriFromCloud === 'function') deleteMateriFromCloud(editId);
-            classMateri.unshift(savedMateri);
-          }
-          if (typeof syncKelasMateriToCloud === 'function') {
-            syncKelasMateriToCloud(savedMateri);
-          }
-        } else {
-          if (wasKelas) {
-            classMateri.splice(classIdx, 1);
-            if (typeof deleteKelasMateriFromCloud === 'function') deleteKelasMateriFromCloud(editId);
-            personalMateri.unshift(savedMateri);
-          } else {
-            personalMateri[personalIdx] = savedMateri;
-          }
-          if (typeof syncMateriToCloud === 'function') {
-            syncMateriToCloud(savedMateri);
-          }
+        if (!savedMateri.authorJabatan && currentUserProfile) {
+          savedMateri.authorJabatan = currentUserProfile.role || 'Pengurus';
+          savedMateri.authorNama = currentUserProfile.nama || 'Pengurus';
         }
-        showToast(`Materi pertemuan ${pertemuan} diperbarui! ✏️`, 'success');
+        if (wasKelas) {
+          classMateri[classIdx] = savedMateri;
+        } else {
+          if (personalIdx !== -1) personalMateri.splice(personalIdx, 1);
+          if (typeof deleteMateriFromCloud === 'function') deleteMateriFromCloud(editId);
+          classMateri.unshift(savedMateri);
+        }
+        if (typeof syncKelasMateriToCloud === 'function') {
+          await syncKelasMateriToCloud(savedMateri);
+        }
       }
     } else {
       // Mode Tambah Baru
@@ -2460,40 +2435,36 @@ materiForm.addEventListener('submit', async (e) => {
         link,
         file: fileMeta,
         catatan,
-        isKelas: willBeKelas,
+        isKelas: true,
+        authorJabatan: currentUserProfile ? (currentUserProfile.role || 'Pengurus') : 'Pengurus',
+        authorNama: currentUserProfile ? (currentUserProfile.nama || 'Pengurus') : 'Pengurus',
         createdAt: new Date().toISOString()
       };
 
-      if (willBeKelas) {
-        savedMateri.authorJabatan = currentUserProfile ? (currentUserProfile.role || 'Pengurus') : 'Pengurus';
-        savedMateri.authorNama = currentUserProfile ? (currentUserProfile.nama || 'Pengurus') : 'Pengurus';
-        classMateri.unshift(savedMateri);
-        if (typeof syncKelasMateriToCloud === 'function') {
-          syncKelasMateriToCloud(savedMateri);
-        }
-        if (typeof markClassMateriSeen === 'function') {
-          markClassMateriSeen(savedMateri.id);
-        }
-        addNotification({
-          type: 'materi',
-          title: `Materi Baru: ${savedMateri.matkul} 📚`,
-          message: `Pertemuan ${savedMateri.pertemuan}: ${savedMateri.judul}`,
-          time: new Date().toISOString(),
-          taskId: savedMateri.id
-        });
-        showToast(`Materi resmi pertemuan ${pertemuan} berhasil dibagikan ke seluruh kelas! 📚`, 'success');
-      } else {
-        personalMateri.unshift(savedMateri);
-        if (typeof syncMateriToCloud === 'function') {
-          syncMateriToCloud(savedMateri);
-        }
-        showToast(`Catatan materi pertemuan ${pertemuan} berhasil disimpan! 📖`, 'success');
+      classMateri.unshift(savedMateri);
+      if (typeof syncKelasMateriToCloud === 'function') {
+        await syncKelasMateriToCloud(savedMateri);
       }
+      if (typeof markClassMateriSeen === 'function') {
+        markClassMateriSeen(savedMateri.id);
+      }
+      addNotification({
+        type: 'materi',
+        title: `Materi Baru: ${savedMateri.matkul} 📚`,
+        message: `Pertemuan ${savedMateri.pertemuan}: ${savedMateri.judul}`,
+        time: new Date().toISOString(),
+        taskId: savedMateri.id
+      });
     }
 
     saveStorage();
     rebuildMateriList();
     materiModal.close();
+
+    const toastMsg = editId
+      ? `Materi pertemuan ${pertemuan} berhasil diperbarui di Cloud! ✏️`
+      : `Materi pertemuan ${pertemuan} berhasil dibagikan ke Cloud! Seluruh mahasiswa dapat melihatnya 📚`;
+    showToast(toastMsg, 'success');
   } catch (err) {
     console.error('Gagal menyimpan materi:', err);
     showToast('Terjadi kesalahan: ' + err.message, 'danger');
