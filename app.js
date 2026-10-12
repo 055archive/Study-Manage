@@ -253,21 +253,29 @@ function saveStorage() {
  */
 function getEnrolledCourses() {
   const cached = localStorage.getItem(COURSE_ENROLLED_STORAGE_KEY);
-  if (cached) {
+  if (cached !== null) {
     try {
       const arr = JSON.parse(cached);
-      if (Array.isArray(arr) && arr.length > 0) return arr;
+      if (Array.isArray(arr)) return arr;
     } catch (e) {}
   }
-  if (currentUserProfile && Array.isArray(currentUserProfile.enrolledCourses) && currentUserProfile.enrolledCourses.length > 0) {
-    return currentUserProfile.enrolledCourses;
+  if (currentUserProfile) {
+    if (Array.isArray(currentUserProfile.enrolledCourses)) {
+      try {
+        localStorage.setItem(COURSE_ENROLLED_STORAGE_KEY, JSON.stringify(currentUserProfile.enrolledCourses));
+      } catch (e) {}
+      return currentUserProfile.enrolledCourses;
+    }
+    // Jika user lama (11 mahasiswa yang terdaftar sebelum fitur per-matkul), atau pengurus kelas
+    if (currentUserProfile.isClassEnrolled || (currentUserProfile.role && currentUserProfile.role !== 'Mahasiswa')) {
+      const allIds = matkulList.map(m => m.id);
+      try {
+        localStorage.setItem(COURSE_ENROLLED_STORAGE_KEY, JSON.stringify(allIds));
+      } catch (e) {}
+      return allIds;
+    }
   }
-  // Default untuk seluruh mahasiswa terdaftar / akun lama: terdaftar di semua mata kuliah yang ada
-  const allIds = matkulList.map(m => m.id);
-  try {
-    localStorage.setItem(COURSE_ENROLLED_STORAGE_KEY, JSON.stringify(allIds));
-  } catch (e) {}
-  return allIds;
+  return [];
 }
 
 /**
@@ -288,7 +296,32 @@ async function enrollCourseByCode(enteredCode) {
   if (!enteredCode) throw new Error('Mohon masukkan Kode Gabung Mata Kuliah.');
   const cleanCode = enteredCode.trim().toUpperCase();
 
-  // Cari mata kuliah yang memiliki kode ini
+  // 1. Cek jika menggunakan Kode Akses Resmi Angkatan (TI2026) -> Daftarkan ke SELURUH mata kuliah sekaligus
+  const officialClassCode = (typeof getOfficialClassCode === 'function' ? getOfficialClassCode() : 'TI2026').toUpperCase();
+  if (cleanCode === officialClassCode || cleanCode === 'TI2026') {
+    const allCourseIds = matkulList.map(m => m.id);
+    const enrolled = getEnrolledCourses();
+    const newEnrolled = Array.from(new Set([...enrolled, ...allCourseIds]));
+    localStorage.setItem(COURSE_ENROLLED_STORAGE_KEY, JSON.stringify(newEnrolled));
+
+    if (currentUserProfile) {
+      currentUserProfile.enrolledCourses = newEnrolled;
+      currentUserProfile.isClassEnrolled = true;
+    }
+
+    const uid = typeof getCurrentUserUID === 'function' ? getCurrentUserUID() : null;
+    if (uid && typeof updateUserProfile === 'function') {
+      try {
+        await updateUserProfile(uid, { enrolledCourses: newEnrolled, isClassEnrolled: true });
+      } catch (e) {
+        console.warn('Gagal sync enrolledCourses ke Firestore:', e);
+      }
+    }
+
+    return { allCourses: true, count: matkulList.length };
+  }
+
+  // 2. Cari mata kuliah spesifik yang memiliki kode ini
   const course = matkulList.find(m => {
     const cCode = (m.classCode || '').trim().toUpperCase();
     const kCode = (m.kode || '').trim().toUpperCase();
@@ -2951,7 +2984,9 @@ if (joinCourseForm) {
     try {
       const result = await enrollCourseByCode(code);
       closeJoinCourseModal();
-      if (result.alreadyEnrolled) {
+      if (result.allCourses) {
+        showToast(`Selamat! Kamu resmi bergabung ke SEMUA mata kuliah (${result.count} Matkul) Teknik Informatika! 🎓🎉`, 'success');
+      } else if (result.alreadyEnrolled) {
         showToast(`Anda sudah terdaftar di mata kuliah ${result.course.nama}! 🎓`, 'info');
       } else {
         showToast(`Berhasil bergabung ke mata kuliah ${result.course.nama}! 🎉`, 'success');
@@ -3619,16 +3654,22 @@ if (registerForm) {
     e.preventDefault();
     const nama = regNamaInput ? regNamaInput.value.trim() : '';
     const nim = regNimInput ? regNimInput.value.trim() : '';
-    const classCodeInput = document.getElementById('regClassCodeInput');
-    const classCode = classCodeInput ? classCodeInput.value.trim() : '';
     const pinInput = document.getElementById('regPinInput');
     const pin = pinInput ? pinInput.value.trim() : '';
     const pwd = regPasswordInput ? regPasswordInput.value : '';
     const confirmPwd = regConfirmPasswordInput ? regConfirmPasswordInput.value : '';
 
-    if (!classCode) {
+    if (!nama) {
       if (registerErrorMsg && registerErrorText) {
-        registerErrorText.textContent = 'Mohon masukkan Kode Akses Kelas (tanyakan ke Ketua Kelas/grup)!';
+        registerErrorText.textContent = 'Nama lengkap mahasiswa wajib diisi!';
+        registerErrorMsg.style.display = 'flex';
+      }
+      return;
+    }
+
+    if (!nim) {
+      if (registerErrorMsg && registerErrorText) {
+        registerErrorText.textContent = 'NIM mahasiswa wajib diisi!';
         registerErrorMsg.style.display = 'flex';
       }
       return;
@@ -3661,11 +3702,11 @@ if (registerForm) {
     if (registerErrorMsg) registerErrorMsg.style.display = 'none';
     if (btnSubmitRegister) {
       btnSubmitRegister.disabled = true;
-      btnSubmitRegister.innerHTML = '<span>Mendaftarkan & menggabungkan kelas...</span>';
+      btnSubmitRegister.innerHTML = '<span>Mendaftarkan akun...</span>';
     }
 
     try {
-      await registerWithNIM(nama, nim, pwd, pin, classCode);
+      await registerWithNIM(nama, nim, pwd, pin);
       registerForm.reset();
 
       // Pindahkan pengguna ke tab Masuk, isi otomatis NIM, dan arahkan ke kolom password
@@ -3676,7 +3717,7 @@ if (registerForm) {
         setTimeout(() => loginPasswordInput.focus(), 250);
       }
 
-      showToast(`Akun berhasil dibuat & kamu resmi bergabung di kelas! Silakan masuk menggunakan NIM dan sandi kamu 🎓`, 'success');
+      showToast(`Akun berhasil dibuat! Silakan masuk menggunakan NIM dan kata sandi kamu 🎓`, 'success');
     } catch (err) {
       console.error('Register error:', err);
       if (registerErrorMsg && registerErrorText) {
@@ -3690,7 +3731,7 @@ if (registerForm) {
     } finally {
       if (btnSubmitRegister) {
         btnSubmitRegister.disabled = false;
-        btnSubmitRegister.innerHTML = '<i data-feather="user-plus"></i><span>Buat Akun & Gabung Kelas</span>';
+        btnSubmitRegister.innerHTML = '<i data-feather="user-plus"></i><span>Buat Akun Mahasiswa</span>';
         if (window.feather) feather.replace();
       }
     }

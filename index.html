@@ -147,12 +147,6 @@
         </div>
 
         <div class="form-group">
-          <label for="regClassCodeInput">Kode Akses Kelas (Google Classroom Style)</label>
-          <input type="text" id="regClassCodeInput" class="custom-input" placeholder="Contoh: TI2026 (Minta ke Ketua Kelas)" required style="text-transform: uppercase;">
-          <small class="auth-input-hint" style="color: var(--text-muted); font-size: 0.78rem;">Kunci gerbang resmi kelas. Cukup diisi 1x saat pendaftaran.</small>
-        </div>
-
-        <div class="form-group">
           <label for="regPinInput">4-Digit PIN Pemulihan Rahasia</label>
           <input type="password" id="regPinInput" class="custom-input" placeholder="Contoh: 2004 (4 angka unik)" maxlength="4" pattern="[0-9]{4}" required>
           <small class="auth-input-hint" style="color: var(--text-muted); font-size: 0.78rem;">Digunakan untuk verifikasi mandiri jika sewaktu-waktu lupa kata sandi.</small>
@@ -185,7 +179,7 @@
 
         <button type="submit" class="btn btn-primary btn-login-submit" id="btnSubmitRegister">
           <i data-feather="user-plus"></i>
-          <span>Buat Akun & Gabung Kelas</span>
+          <span>Buat Akun Mahasiswa</span>
         </button>
 
         <p class="auth-switch-hint">
@@ -1187,7 +1181,7 @@
           <label for="joinCourseCodeInput">Kode Gabung Mata Kuliah *</label>
           <input type="text" id="joinCourseCodeInput" class="custom-input" placeholder="Contoh: PW2026 atau STAT2026" required style="text-transform: uppercase; font-weight: 700; letter-spacing: 1px;" autocomplete="off">
           <small class="form-hint" style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px; display: block;">
-            💡 Tanya kode kepada Ketua Kelas atau PJ Mata Kuliah.
+            💡 Masukkan kode mata kuliah (misal: PW2026) atau kode kelas angkatan (TI2026) untuk bergabung ke seluruh mata kuliah sekaligus.
           </small>
         </div>
 

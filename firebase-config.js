@@ -207,7 +207,7 @@ window.hashSHA256 = hashSHA256;
  * DAFTAR AKUN MAHASISWA BARU (Tanpa Gmail pribadi)
  * Identitas: Nama, NIM, Kata Sandi, 4-Digit PIN Pemulihan, dan Kode Akses Kelas
  */
-async function registerWithNIM(nama, nim, password, pin, classCode) {
+async function registerWithNIM(nama, nim, password, pin, classCode = null) {
   if (!firebaseAuth) throw new Error('Firebase Auth belum diinisialisasi.');
 
   const trimmedNIM = nim.trim();
@@ -215,24 +215,18 @@ async function registerWithNIM(nama, nim, password, pin, classCode) {
   const trimmedClassCode = (classCode || '').trim().toUpperCase();
   const trimmedPIN = (pin || '').trim();
 
-  // 1. Validasi Kode Kelas ala Google Classroom
-  const officialCode = getOfficialClassCode();
-  if (trimmedClassCode !== officialCode) {
-    throw new Error(`Kode Akses Kelas salah! Pastikan kamu memasukkan kode kelas resmi yang benar (${officialCode}). Hubungi Ketua Kelas jika belum punya kode.`);
-  }
-
-  // 2. Validasi 4-Digit PIN Pemulihan
+  // 1. Validasi 4-Digit PIN Pemulihan
   if (!/^\d{4}$/.test(trimmedPIN)) {
     throw new Error('PIN Pemulihan harus berupa 4 digit angka rahasia (contoh: 2004).');
   }
 
-  // 3. Cek apakah NIM sudah terdaftar sebelumnya
+  // 2. Cek apakah NIM sudah terdaftar sebelumnya
   const existingEmail = await lookupEmailByNIM(trimmedNIM);
   if (existingEmail) {
     throw new Error(`NIM ${trimmedNIM} sudah terdaftar. Silakan langsung login dengan kata sandi kamu.`);
   }
 
-  // 4. Buat identitas virtual murni kampus tanpa Gmail pribadi
+  // 3. Buat identitas virtual murni kampus tanpa Gmail pribadi
   const virtualEmail = `${trimmedNIM}@kelas.internal`;
   const pwdHash = await hashSHA256(password);
   const pinHash = await hashSHA256(trimmedPIN);
@@ -244,13 +238,15 @@ async function registerWithNIM(nama, nim, password, pin, classCode) {
   await user.updateProfile({ displayName: trimmedNama });
 
   // Simpan profil lengkap ke Firestore
+  const isEnrolled = !!trimmedClassCode;
   const profileData = {
     nama: trimmedNama,
     nim: trimmedNIM,
     email: virtualEmail,
     role: 'Mahasiswa',
-    classCode: officialCode,
-    isClassEnrolled: true,
+    classCode: trimmedClassCode || null,
+    isClassEnrolled: isEnrolled,
+    enrolledCourses: isEnrolled ? ['matkul-1', 'matkul-2', 'matkul-3', 'matkul-4', 'matkul-5', 'matkul-6', 'matkul-7', 'matkul-8', 'matkul-9', 'matkul-10'] : [],
     pin: trimmedPIN,
     pinHash: pinHash,
     passwordHash: pwdHash,
