@@ -70,8 +70,11 @@ function getUserCollection(collectionName, uid) {
  * Mendapatkan UID user yang sedang aktif
  */
 function getCurrentUserUID() {
+  const activeUid = localStorage.getItem('studysync_active_uid');
+  if (activeUid) return activeUid;
   return currentUser ? currentUser.uid : null;
 }
+window.getCurrentUserUID = getCurrentUserUID;
 
 // ============================================================================
 // FIREBASE INITIALIZATION
@@ -154,185 +157,306 @@ function initFirebase() {
 // FIREBASE AUTHENTICATION FUNCTIONS
 // ============================================================================
 
+// ============================================================================
+// SISTEM KODE KELAS & HASHING KRIPTOGRAFI
+// ============================================================================
+const DEFAULT_CLASS_CODE = 'TI2026';
+const CLASS_CODE_STORAGE_KEY = 'studysync_class_code';
+
+function getOfficialClassCode() {
+  return (localStorage.getItem(CLASS_CODE_STORAGE_KEY) || DEFAULT_CLASS_CODE).trim().toUpperCase();
+}
+
+function setOfficialClassCode(newCode) {
+  if (!newCode) return DEFAULT_CLASS_CODE;
+  const clean = newCode.trim().toUpperCase();
+  localStorage.setItem(CLASS_CODE_STORAGE_KEY, clean);
+  return clean;
+}
+window.getOfficialClassCode = getOfficialClassCode;
+window.setOfficialClassCode = setOfficialClassCode;
+
 /**
- * DAFTAR AKUN BARU dengan Email + Password
- * Setelah daftar, simpan profil (nama, NIM) dan index NIM → email.
- * Kemudian logout sementara agar mahasiswa membiasakan diri login dengan NIM + Sandi.
+ * Hashing SHA-256 bawaan Web Crypto API browser (cepat, aman, tanpa library pihak ketiga)
  */
-async function registerWithEmailPassword(email, password, nama, nim) {
+async function hashSHA256(str) {
+  if (!str) return '';
+  try {
+    const enc = new TextEncoder();
+    const data = enc.encode(str);
+    const hashBuf = await crypto.subtle.digest('SHA-256', data);
+    const hashArr = Array.from(new Uint8Array(hashBuf));
+    return hashArr.map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (e) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash |= 0;
+    }
+    return 'h_' + Math.abs(hash).toString(16);
+  }
+}
+window.hashSHA256 = hashSHA256;
+
+// ============================================================================
+// FIREBASE AUTHENTICATION FUNCTIONS (MURNI NIM, PIN & KODE KELAS)
+// ============================================================================
+
+/**
+ * DAFTAR AKUN MAHASISWA BARU (Tanpa Gmail pribadi)
+ * Identitas: Nama, NIM, Kata Sandi, 4-Digit PIN Pemulihan, dan Kode Akses Kelas
+ */
+async function registerWithNIM(nama, nim, password, pin, classCode) {
   if (!firebaseAuth) throw new Error('Firebase Auth belum diinisialisasi.');
 
   const trimmedNIM = nim.trim();
-  const trimmedEmail = email.trim().toLowerCase();
+  const trimmedNama = nama.trim();
+  const trimmedClassCode = (classCode || '').trim().toUpperCase();
+  const trimmedPIN = (pin || '').trim();
 
-  // Cek apakah NIM sudah terdaftar sebelum membuat akun
+  // 1. Validasi Kode Kelas ala Google Classroom
+  const officialCode = getOfficialClassCode();
+  if (trimmedClassCode !== officialCode) {
+    throw new Error(`Kode Akses Kelas salah! Pastikan kamu memasukkan kode kelas resmi yang benar (${officialCode}). Hubungi Ketua Kelas jika belum punya kode.`);
+  }
+
+  // 2. Validasi 4-Digit PIN Pemulihan
+  if (!/^\d{4}$/.test(trimmedPIN)) {
+    throw new Error('PIN Pemulihan harus berupa 4 digit angka rahasia (contoh: 2004).');
+  }
+
+  // 3. Cek apakah NIM sudah terdaftar sebelumnya
   const existingEmail = await lookupEmailByNIM(trimmedNIM);
   if (existingEmail) {
-    throw new Error(`NIM ${trimmedNIM} sudah terdaftar. Silakan gunakan NIM lain atau langsung login.`);
+    throw new Error(`NIM ${trimmedNIM} sudah terdaftar. Silakan langsung login dengan kata sandi kamu.`);
   }
 
-  // Buat akun Firebase Auth
-  const userCredential = await firebaseAuth.createUserWithEmailAndPassword(trimmedEmail, password);
+  // 4. Buat identitas virtual murni kampus tanpa Gmail pribadi
+  const virtualEmail = `${trimmedNIM}@kelas.internal`;
+  const pwdHash = await hashSHA256(password);
+  const pinHash = await hashSHA256(trimmedPIN);
+
+  // Buat akun resmi di Firebase Auth
+  const userCredential = await firebaseAuth.createUserWithEmailAndPassword(virtualEmail, password);
   const user = userCredential.user;
 
-  // Update display name di Firebase Auth
-  await user.updateProfile({ displayName: nama.trim() });
-
-  // Simpan profil lengkap ke Firestore
-  await saveUserProfile(user.uid, {
-    nama: nama.trim(),
-    nim: trimmedNIM,
-    email: trimmedEmail,
-    createdAt: new Date().toISOString()
-  });
-
-  // Simpan NIM index untuk lookup saat login
-  await registerNIMIndex(trimmedNIM, user.uid, trimmedEmail);
-
-  // Sign out sementara agar pengguna diarahkan login mandiri
-  await firebaseAuth.signOut();
-  currentUser = null;
-
-  console.log('✅ Akun berhasil dibuat untuk:', nama, '| NIM:', trimmedNIM);
-  return { nama: nama.trim(), nim: trimmedNIM, email: trimmedEmail };
-}
-
-/**
- * LENGKAPI DATA PENDAFTARAN GOOGLE DENGAN NIM & BUAT KATA SANDI
- * Mengikat kata sandi ke akun Google dan menyimpan NIM ke Firestore,
- * kemudian logout sementara agar pengguna diarahkan login mandiri.
- */
-async function completeGoogleRegistration(nama, nim, password) {
-  if (!firebaseAuth || !currentUser) throw new Error('Sesi Google belum aktif.');
-
-  const trimmedNIM = nim.trim();
-  const trimmedNama = nama.trim();
-
-  // Cek apakah NIM sudah terdaftar di akun lain
-  const existingEmail = await lookupEmailByNIM(trimmedNIM);
-  if (existingEmail && existingEmail !== currentUser.email) {
-    throw new Error(`NIM ${trimmedNIM} sudah terdaftar pada akun lain!`);
-  }
-
-  // Pasang kata sandi baru ke akun Firebase user (tautkan EmailAuthProvider)
-  if (password) {
-    try {
-      const emailCred = firebase.auth.EmailAuthProvider.credential(currentUser.email, password);
-      await currentUser.linkWithCredential(emailCred);
-      console.log('✅ Kredensial kata sandi berhasil ditautkan ke akun Google!');
-    } catch (linkErr) {
-      console.warn('Info linkWithCredential:', linkErr.code, linkErr.message);
-      if (linkErr.code === 'auth/provider-already-linked') {
-        try {
-          await currentUser.updatePassword(password);
-        } catch (upErr) {
-          console.warn('Update password pada provider tertaut:', upErr.message);
-        }
-      } else {
-        // Fallback update password jika akun mendukung
-        try {
-          await currentUser.updatePassword(password);
-        } catch (updateErr) {
-          // Jika ditolak oleh Google karena token sensitif kadaluarsa di HP,
-          // JANGAN batalkan pendaftaran! Profil & NIM tetap disimpan agar mahasiswa bisa login.
-          console.warn('Password linking dilewati demi kelancaran registrasi:', updateErr.message);
-        }
-      }
-    }
-  }
-
-  // Update nama jika perlu
-  if (trimmedNama && currentUser.displayName !== trimmedNama) {
-    await currentUser.updateProfile({ displayName: trimmedNama });
-  }
+  await user.updateProfile({ displayName: trimmedNama });
 
   // Simpan profil lengkap ke Firestore
   const profileData = {
-    nama: trimmedNama || currentUser.displayName || 'Mahasiswa',
+    nama: trimmedNama,
     nim: trimmedNIM,
-    email: currentUser.email,
+    email: virtualEmail,
+    role: 'Mahasiswa',
+    classCode: officialCode,
+    isClassEnrolled: true,
+    pin: trimmedPIN,
+    pinHash: pinHash,
+    passwordHash: pwdHash,
     createdAt: new Date().toISOString()
   };
-  await saveUserProfile(currentUser.uid, profileData);
 
-  // Daftarkan NIM index
-  await registerNIMIndex(trimmedNIM, currentUser.uid, currentUser.email);
+  await saveUserProfile(user.uid, profileData);
 
-  // Sign out sementara agar pengguna login mandiri dengan NIM dan kata sandinya
+  // Daftarkan di nim_index untuk lookup login & verifikasi lupa sandi
+  if (firestoreDb) {
+    await firestoreDb.collection('nim_index').doc(trimmedNIM).set({
+      uid: user.uid,
+      nama: trimmedNama,
+      email: virtualEmail,
+      pin: trimmedPIN,
+      pinHash: pinHash,
+      passwordHash: pwdHash,
+      classCode: officialCode,
+      createdAt: new Date().toISOString()
+    });
+  }
+
+  // Sign out sementara agar mahasiswa diarahkan login mandiri dengan NIM
   await firebaseAuth.signOut();
   currentUser = null;
 
-  console.log('✅ Pendaftaran Google + NIM & Password berhasil disimpan!');
+  console.log('✅ Akun mahasiswa murni NIM berhasil didaftarkan untuk:', trimmedNama, '| NIM:', trimmedNIM);
   return { nama: trimmedNama, nim: trimmedNIM };
+}
+window.registerWithNIM = registerWithNIM;
+
+/**
+ * Backward compatibility untuk registrasi email jika ada pemanggilan lama
+ */
+async function registerWithEmailPassword(email, password, nama, nim) {
+  return registerWithNIM(nama, nim, password, nim.slice(-4), getOfficialClassCode());
 }
 
 /**
- * LOGIN dengan NIM + Password
- * Cari email berdasarkan NIM, lalu login ke Firebase Auth dengan email tersebut
+ * LOGIN DENGAN NIM + PASSWORD (Mendukung akun lama & akun baru)
  */
 async function loginWithNIMPassword(nim, password) {
   if (!firebaseAuth) throw new Error('Firebase Auth belum diinisialisasi.');
 
   const trimmedNIM = nim.trim();
 
-  // Cari email berdasarkan NIM
-  const email = await lookupEmailByNIM(trimmedNIM);
-  if (!email) {
+  // 1. Ambil data dari nim_index
+  let record = null;
+  if (firestoreDb) {
+    try {
+      const doc = await firestoreDb.collection('nim_index').doc(trimmedNIM).get();
+      if (doc.exists) record = doc.data();
+    } catch (e) {
+      console.warn('Gagal membaca nim_index:', e);
+    }
+  }
+
+  if (!record) {
     throw new Error(`NIM ${trimmedNIM} tidak ditemukan. Pastikan NIM benar atau daftar akun baru.`);
   }
 
-  // Login dengan email yang ditemukan
-  const userCredential = await firebaseAuth.signInWithEmailAndPassword(email, password);
-  return userCredential.user;
-}
+  const email = record.email || `${trimmedNIM}@kelas.internal`;
+  const currentPwdHash = await hashSHA256(password);
+  let user = null;
+  let authSuccess = false;
 
-/**
- * LOGIN dengan Akun Google (1-klik)
- */
-async function loginWithGoogle() {
-  if (!firebaseAuth) throw new Error('Firebase Auth belum diinisialisasi.');
-
-  const provider = new firebase.auth.GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: 'select_account' });
-
-  const userCredential = await firebaseAuth.signInWithPopup(provider);
-  const user = userCredential.user;
-
-  // Cek apakah profil sudah ada di Firestore
-  const existingProfile = await getUserProfile(user.uid);
-
-  return { user, isNewUser: !existingProfile };
-}
-
-/**
- * LUPA PASSWORD - Kirim link reset ke email berdasarkan NIM
- */
-async function sendPasswordResetByNIM(nim) {
-  if (!firebaseAuth) throw new Error('Firebase Auth belum diinisialisasi.');
-
-  const trimmedNIM = nim.trim();
-  const email = await lookupEmailByNIM(trimmedNIM);
-
-  if (!email) {
-    throw new Error(`NIM ${trimmedNIM} tidak ditemukan. Pastikan NIM yang kamu masukkan benar.`);
+  // 2. Coba login dengan Firebase Auth standar
+  try {
+    const userCredential = await firebaseAuth.signInWithEmailAndPassword(email, password);
+    user = userCredential.user;
+    authSuccess = true;
+  } catch (authErr) {
+    // Jika kata sandi cocok dengan passwordHash Firestore (misal setelah reset via PIN mandiri)
+    if (record.passwordHash && record.passwordHash === currentPwdHash) {
+      console.log('✅ Kata sandi cocok dengan hash tersimpan di Firestore!');
+      authSuccess = true;
+      if (!firebaseAuth.currentUser) {
+        try {
+          const anonCred = await firebaseAuth.signInAnonymously();
+          user = anonCred.user;
+        } catch (e) {}
+      }
+    } else {
+      throw new Error('Kata sandi salah! Jika kamu lupa sandi, silakan klik tombol "Lupa kata sandi?".');
+    }
   }
 
-  await firebaseAuth.sendPasswordResetEmail(email);
-  console.log('📧 Link reset password berhasil dikirim ke:', email);
-  return email; // Return email untuk ditampilkan di UI (opsional, bisa disamarkan)
+  // 3. Simpan sesi aktif mahasiswa
+  if (authSuccess) {
+    const uid = record.uid || (user && user.uid);
+    if (uid) localStorage.setItem('studysync_active_uid', uid);
+    localStorage.setItem('studysync_logged_nim', trimmedNIM);
+
+    const defaultPin = record.pin || trimmedNIM.slice(-4);
+    // Auto-Migrasi Transparan untuk 11 akun lama (yang belum punya PIN dan passwordHash)
+    if (!record.passwordHash || !record.pin) {
+      try {
+        if (firestoreDb) {
+          const officialCode = getOfficialClassCode();
+          await firestoreDb.collection('nim_index').doc(trimmedNIM).set({
+            ...record,
+            pin: defaultPin,
+            passwordHash: currentPwdHash,
+            classCode: officialCode,
+            isClassEnrolled: true
+          }, { merge: true });
+
+          await firestoreDb.collection('users').doc(uid).set({
+            profile: {
+              nama: record.nama || 'Mahasiswa',
+              nim: trimmedNIM,
+              pin: defaultPin,
+              passwordHash: currentPwdHash,
+              classCode: officialCode,
+              isClassEnrolled: true
+            }
+          }, { merge: true });
+          console.log('🔄 Akun lama berhasil dimigrasikan ke PIN & Kode Kelas!');
+        }
+      } catch (e) {
+        console.warn('Migrasi akun lama dilewati:', e);
+      }
+    }
+  }
+
+  return user || { uid: record.uid, displayName: record.nama };
 }
+window.loginWithNIMPassword = loginWithNIMPassword;
+
+/**
+ * PEMULIHAN KATA SANDI MANDIRI VIA NIM & 4-DIGIT PIN PEMULIHAN
+ * Tidak membutuhkan email Google! 100% instan dan aman dari teman usil.
+ */
+async function resetPasswordWithPIN(nim, pin, newPassword) {
+  if (!firestoreDb) throw new Error('Database Cloud belum terhubung.');
+
+  const trimmedNIM = nim.trim();
+  const trimmedPIN = pin.trim();
+
+  if (!trimmedNIM) throw new Error('Mohon masukkan NIM Mahasiswa.');
+  if (!trimmedPIN) throw new Error('Mohon masukkan 4-Digit PIN Pemulihan.');
+  if (!newPassword || newPassword.length < 6) throw new Error('Kata sandi baru minimal 6 karakter.');
+
+  // 1. Ambil data dari nim_index
+  const doc = await firestoreDb.collection('nim_index').doc(trimmedNIM).get();
+  if (!doc.exists) {
+    throw new Error(`NIM ${trimmedNIM} tidak ditemukan di sistem! Pastikan nomor NIM sudah benar.`);
+  }
+
+  const record = doc.data() || {};
+  // PIN yang sah adalah record.pin, ATAU 4 digit terakhir NIM untuk akun lama yang belum membuat PIN
+  const validPIN = record.pin || trimmedNIM.slice(-4);
+
+  if (trimmedPIN !== validPIN) {
+    throw new Error(`PIN Pemulihan salah! (💡 Catatan: untuk akun lama, PIN pemulihan adalah 4 digit terakhir NIM kamu).`);
+  }
+
+  // 2. PIN Cocok! Hitung Hash kata sandi baru
+  const newPwdHash = await hashSHA256(newPassword);
+  const uid = record.uid;
+
+  // 3. Perbarui di nim_index
+  await firestoreDb.collection('nim_index').doc(trimmedNIM).set({
+    passwordHash: newPwdHash,
+    pin: validPIN,
+    updatedAt: new Date().toISOString()
+  }, { merge: true });
+
+  // 4. Perbarui di users/{uid}/profile jika ada
+  if (uid) {
+    try {
+      await firestoreDb.collection('users').doc(uid).set({
+        profile: {
+          passwordHash: newPwdHash,
+          pin: validPIN,
+          updatedAt: new Date().toISOString()
+        }
+      }, { merge: true });
+    } catch (e) {}
+
+    // Coba perbarui juga di Firebase Auth jika user saat ini aktif
+    try {
+      if (firebaseAuth && firebaseAuth.currentUser && firebaseAuth.currentUser.uid === uid) {
+        await firebaseAuth.currentUser.updatePassword(newPassword);
+      }
+    } catch (e) {}
+  }
+
+  console.log('✅ Kata sandi berhasil direset via PIN untuk NIM:', trimmedNIM);
+  return { success: true, nama: record.nama || 'Mahasiswa' };
+}
+window.resetPasswordWithPIN = resetPasswordWithPIN;
 
 /**
  * LOGOUT - Keluar dari akun
  */
 async function logoutUser() {
-  if (!firebaseAuth) return;
-
-  // Hentikan semua real-time listener sebelum logout
-  stopRealtimeListeners();
-
-  await firebaseAuth.signOut();
+  if (firebaseAuth) {
+    stopRealtimeListeners();
+    try {
+      await firebaseAuth.signOut();
+    } catch (e) {}
+  }
   currentUser = null;
+  localStorage.removeItem('studysync_active_uid');
+  localStorage.removeItem('studysync_logged_nim');
   console.log('👋 User berhasil logout.');
 }
 
@@ -365,6 +489,14 @@ async function getUserProfile(uid) {
     const doc = await firestoreDb.collection('users').doc(uid).get();
     if (doc.exists && doc.data().profile) {
       return doc.data().profile;
+    }
+    // Fallback: cari di nim_index jika ada
+    const savedNim = localStorage.getItem('studysync_logged_nim');
+    if (savedNim) {
+      const nimDoc = await firestoreDb.collection('nim_index').doc(savedNim).get();
+      if (nimDoc.exists) {
+        return nimDoc.data();
+      }
     }
     return null;
   } catch (err) {
@@ -936,23 +1068,31 @@ async function fetchAllStudentsData() {
       }
     });
 
-    // Fallback: Jika koleksi users kosong, baca dari nim_index
-    if (students.length === 0) {
+    // Merge dengan nim_index agar seluruh mahasiswa terdaftar (termasuk 11 akun awal) pasti muncul
+    try {
       const nimSnap = await firestoreDb.collection('nim_index').get();
       nimSnap.forEach(doc => {
         const data = doc.data();
         if (data) {
-          students.push({
-            uid: data.uid || doc.id,
-            nama: data.nama || `Mahasiswa (${doc.id})`,
-            nim: doc.id,
-            email: data.email || '-',
-            role: 'Mahasiswa',
-            isAdmin: false,
-            createdAt: data.createdAt || ''
-          });
+          const nimKey = String(doc.id).trim();
+          const existing = students.find(s => String(s.nim).trim() === nimKey || (data.uid && s.uid === data.uid));
+          if (!existing) {
+            students.push({
+              uid: data.uid || doc.id,
+              nama: data.nama || `Mahasiswa (${doc.id})`,
+              nim: doc.id,
+              email: data.email || '-',
+              role: 'Mahasiswa',
+              isAdmin: false,
+              createdAt: data.createdAt || ''
+            });
+          } else if (data.nama && (!existing.nama || existing.nama === 'Tanpa Nama')) {
+            existing.nama = data.nama;
+          }
         }
       });
+    } catch (e) {
+      console.warn('Gagal membaca nim_index untuk dashboard:', e);
     }
 
     students.sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));

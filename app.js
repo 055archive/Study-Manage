@@ -20,6 +20,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-1',
     nama: 'PRAKTIK IBADAH',
     kode: 'PK',
+    classCode: 'PI2026',
     sks: 2,
     dosen: 'Abdul Qodir',
     jadwal: 'Senin 13:00 - 14:40',
@@ -30,6 +31,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-2',
     nama: 'BIOINFORMATIKA',
     kode: 'BK',
+    classCode: 'BIO2026',
     sks: 2,
     dosen: 'Eri Sulistiati',
     jadwal: 'Senin 08:40 - 10:20',
@@ -40,6 +42,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-3',
     nama: 'PEMROGRAMAN BERORIENTASI OBJEK',
     kode: 'PBO',
+    classCode: 'PBO2026',
     sks: 3,
     dosen: 'Maseni',
     jadwal: '10:00 - 12:30',
@@ -50,6 +53,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-4',
     nama: 'PEMROGRAMAN WEB',
     kode: 'PW',
+    classCode: 'PW2026',
     sks: 3,
     dosen: 'Wawan Setiawan',
     jadwal: 'Senin 14:40 - 17:10',
@@ -60,6 +64,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-5',
     nama: 'REKAYASA PERANGKAT LUNAK',
     kode: 'RPL',
+    classCode: 'RPL2026',
     sks: 3,
     dosen: 'Reza Syafrizal',
     jadwal: '10:00 - 12:30',
@@ -70,6 +75,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-6',
     nama: 'MATEMATIKA DISKRIT',
     kode: 'MD',
+    classCode: 'MD2026',
     sks: 2,
     dosen: 'Ayu Siska Maryoni',
     jadwal: 'Selasa 08:30 - 10:00',
@@ -80,6 +86,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-7',
     nama: 'STATISTIKA',
     kode: 'S',
+    classCode: 'STAT2026',
     sks: 2,
     dosen: 'Eko Wahyu Wibowo',
     jadwal: '10:50 - 12:30',
@@ -90,6 +97,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-8',
     nama: 'JARINGAN KOMPUTER',
     kode: 'JK',
+    classCode: 'JK2026',
     sks: 3,
     dosen: 'Ibnu Mas\'ud',
     jadwal: 'Selasa 13:00 - 15:30',
@@ -100,6 +108,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-9',
     nama: 'KEAMANAN DATA DAN INFORMASI',
     kode: 'KDI',
+    classCode: 'KDI2026',
     sks: 2,
     dosen: 'Ibnu Mas\'ud',
     jadwal: '15:30 - 17:10',
@@ -110,6 +119,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-10',
     nama: 'INTERAKSI MANUSIA DAN KOMPUTER',
     kode: 'IMK',
+    classCode: 'IMK2026',
     sks: 2,
     dosen: 'Reza Syafrizal',
     jadwal: '14:40 - 16:20',
@@ -117,6 +127,36 @@ const DEFAULT_MATKUL = [
     warna: '#f43f5e'
   }
 ];
+
+// Helper Kode Akses Mata Kuliah & Enrollment
+const COURSE_ENROLLED_STORAGE_KEY = 'studysync_enrolled_courses_v1';
+
+function getCourseDefaultClassCode(course) {
+  if (course && course.classCode) return course.classCode.trim().toUpperCase();
+  const name = ((course && course.nama) || '').toUpperCase();
+  if (name.includes('IBADAH')) return 'PI2026';
+  if (name.includes('BIO')) return 'BIO2026';
+  if (name.includes('BERORIENTASI') || name.includes('PBO')) return 'PBO2026';
+  if (name.includes('WEB') || name.includes('PW')) return 'PW2026';
+  if (name.includes('REKAYASA') || name.includes('RPL')) return 'RPL2026';
+  if (name.includes('DISKRIT') || name.includes('MD')) return 'MD2026';
+  if (name.includes('STATISTIK')) return 'STAT2026';
+  if (name.includes('JARINGAN') || name.includes('JK')) return 'JK2026';
+  if (name.includes('KEAMANAN') || name.includes('KDI')) return 'KDI2026';
+  if (name.includes('INTERAKSI') || name.includes('IMK')) return 'IMK2026';
+  const cleanKode = ((course && course.kode) || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  return (cleanKode || 'MK') + '2026';
+}
+
+function ensureCourseClassCodes(list) {
+  if (!Array.isArray(list)) return [];
+  list.forEach(item => {
+    if (item && !item.classCode) {
+      item.classCode = getCourseDefaultClassCode(item);
+    }
+  });
+  return list;
+}
 
 // Storage Keys untuk data bersama kelas & status pengerjaan
 const CLASS_TUGAS_STORAGE_KEY = 'study_class_tugas_v2';
@@ -143,7 +183,7 @@ const DEFAULT_INFO_KELAS = [
   }
 ];
 
-let matkulList = loadFromStorage(MATKUL_STORAGE_KEY, DEFAULT_MATKUL);
+let matkulList = ensureCourseClassCodes(loadFromStorage(MATKUL_STORAGE_KEY, DEFAULT_MATKUL));
 let personalTugas = loadFromStorage(TUGAS_STORAGE_KEY, DEFAULT_TUGAS);
 let classTugas = loadFromStorage(CLASS_TUGAS_STORAGE_KEY, []);
 let personalMateri = loadFromStorage(MATERI_STORAGE_KEY, DEFAULT_MATERI);
@@ -206,6 +246,112 @@ function saveStorage() {
     localStorage.setItem(CLASS_INFO_STORAGE_KEY, JSON.stringify(classInfoList));
     localStorage.setItem(TUGAS_STATUS_STORAGE_KEY, JSON.stringify(tugasStatusMap));
   } catch (e) {}
+}
+
+/**
+ * Ambil daftar ID / nama mata kuliah yang diikuti oleh mahasiswa saat ini
+ */
+function getEnrolledCourses() {
+  const cached = localStorage.getItem(COURSE_ENROLLED_STORAGE_KEY);
+  if (cached) {
+    try {
+      const arr = JSON.parse(cached);
+      if (Array.isArray(arr) && arr.length > 0) return arr;
+    } catch (e) {}
+  }
+  if (currentUserProfile && Array.isArray(currentUserProfile.enrolledCourses) && currentUserProfile.enrolledCourses.length > 0) {
+    return currentUserProfile.enrolledCourses;
+  }
+  // Default untuk seluruh mahasiswa terdaftar / akun lama: terdaftar di semua mata kuliah yang ada
+  const allIds = matkulList.map(m => m.id);
+  try {
+    localStorage.setItem(COURSE_ENROLLED_STORAGE_KEY, JSON.stringify(allIds));
+  } catch (e) {}
+  return allIds;
+}
+
+/**
+ * Cek apakah mahasiswa aktif terdaftar di mata kuliah tertentu
+ */
+function isStudentEnrolledInCourse(course) {
+  if (!course) return false;
+  // Pengurus kelas selalu memiliki akses penuh ke seluruh mata kuliah
+  if (isCurrentUserAdmin) return true;
+  const enrolled = getEnrolledCourses();
+  return enrolled.includes(course.id) || enrolled.includes(course.nama) || (course.classCode && enrolled.includes(course.classCode));
+}
+
+/**
+ * Daftarkan mahasiswa ke mata kuliah menggunakan kode gabung unik
+ */
+async function enrollCourseByCode(enteredCode) {
+  if (!enteredCode) throw new Error('Mohon masukkan Kode Gabung Mata Kuliah.');
+  const cleanCode = enteredCode.trim().toUpperCase();
+
+  // Cari mata kuliah yang memiliki kode ini
+  const course = matkulList.find(m => {
+    const cCode = (m.classCode || '').trim().toUpperCase();
+    const kCode = (m.kode || '').trim().toUpperCase();
+    return cCode === cleanCode || kCode === cleanCode;
+  });
+
+  if (!course) {
+    throw new Error(`Mata kuliah dengan kode "${cleanCode}" tidak ditemukan! Periksa kembali kode atau tanyakan ke PJ Mata Kuliah.`);
+  }
+
+  const enrolled = getEnrolledCourses();
+  if (isStudentEnrolledInCourse(course)) {
+    return { alreadyEnrolled: true, course };
+  }
+
+  enrolled.push(course.id);
+  localStorage.setItem(COURSE_ENROLLED_STORAGE_KEY, JSON.stringify(enrolled));
+
+  if (currentUserProfile) {
+    currentUserProfile.enrolledCourses = enrolled;
+  }
+
+  // Simpan ke Firestore jika user terhubung
+  const uid = typeof getCurrentUserUID === 'function' ? getCurrentUserUID() : null;
+  if (uid && typeof updateUserProfile === 'function') {
+    try {
+      await updateUserProfile(uid, { enrolledCourses: enrolled });
+    } catch (e) {
+      console.warn('Gagal sync enrolledCourses ke Firestore:', e);
+    }
+  }
+
+  return { alreadyEnrolled: false, course };
+}
+
+/**
+ * Salin Kode Gabung Kelas Mata Kuliah ke Clipboard
+ */
+window.copyCourseCode = function(code, courseName) {
+  if (!code) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(() => {
+      showToast(`📋 Kode gabung "${code}" (${courseName || 'Mata Kuliah'}) berhasil disalin! Bagikan ke teman sekelas.`, 'success');
+    }).catch(() => {
+      fallbackCopyText(code);
+    });
+  } else {
+    fallbackCopyText(code);
+  }
+};
+
+function fallbackCopyText(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    showToast(`📋 Kode gabung "${text}" berhasil disalin!`, 'success');
+  } catch (e) {
+    prompt('Salin kode berikut:', text);
+  }
+  document.body.removeChild(ta);
 }
 
 /**
@@ -2065,6 +2211,8 @@ function openAddMatkulModal() {
   if (editMatkulId) editMatkulId.value = '';
   const pjInput = document.getElementById('matkulPj');
   if (pjInput) pjInput.value = '';
+  const classCodeInput = document.getElementById('matkulClassCode');
+  if (classCodeInput) classCodeInput.value = '';
   if (matkulModalTitle) matkulModalTitle.textContent = 'Tambah Mata Kuliah Baru';
   if (btnSubmitMatkul) btnSubmitMatkul.textContent = 'Simpan Mata Kuliah';
   matkulModal.showModal();
@@ -2084,6 +2232,8 @@ function openEditMatkulModal(id) {
 
   document.getElementById('matkulNama').value = course.nama;
   document.getElementById('matkulKode').value = course.kode || '';
+  const classCodeInput = document.getElementById('matkulClassCode');
+  if (classCodeInput) classCodeInput.value = course.classCode || getCourseDefaultClassCode(course);
   document.getElementById('matkulSks').value = course.sks || 3;
   document.getElementById('matkulDosen').value = course.dosen || '';
   const pjInput = document.getElementById('matkulPj');
@@ -2488,6 +2638,8 @@ if (matkulForm) {
 
     const nama = document.getElementById('matkulNama').value.trim();
     const kode = document.getElementById('matkulKode').value.trim();
+    const classCodeInput = document.getElementById('matkulClassCode');
+    const classCode = (classCodeInput ? classCodeInput.value.trim().toUpperCase() : '') || getCourseDefaultClassCode({ nama, kode });
     const sks = Number(document.getElementById('matkulSks').value) || 0;
     const dosen = document.getElementById('matkulDosen').value.trim();
     const pj = document.getElementById('matkulPj') ? document.getElementById('matkulPj').value.trim() : '';
@@ -2511,6 +2663,7 @@ if (matkulForm) {
           ...matkulList[courseIndex],
           nama,
           kode,
+          classCode,
           sks,
           dosen,
           pj,
@@ -2542,7 +2695,7 @@ if (matkulForm) {
           }
         }
 
-        showToast(`Mata kuliah "${nama}" berhasil diperbarui! ✏️`, 'success');
+        showToast(`Mata kuliah "${nama}" (${classCode}) berhasil diperbarui! ✏️`, 'success');
       }
     } else {
       // Mode Tambah Baru
@@ -2551,6 +2704,7 @@ if (matkulForm) {
         matkulList[existingIndex] = {
           ...matkulList[existingIndex],
           kode,
+          classCode,
           sks,
           dosen,
           pj,
@@ -2561,12 +2715,13 @@ if (matkulForm) {
         if (typeof syncMatkulToCloud === 'function') {
           syncMatkulToCloud(matkulList[existingIndex]);
         }
-        showToast(`Mata kuliah "${nama}" diperbarui!`, 'success');
+        showToast(`Mata kuliah "${nama}" (${classCode}) diperbarui!`, 'success');
       } else {
         const newMatkul = {
           id: 'mk-' + Date.now(),
           nama,
           kode,
+          classCode,
           sks,
           dosen,
           pj,
@@ -2578,7 +2733,7 @@ if (matkulForm) {
         if (typeof syncMatkulToCloud === 'function') {
           syncMatkulToCloud(newMatkul);
         }
-        showToast(`Mata kuliah "${nama}" berhasil didaftarkan! 🎓`, 'success');
+        showToast(`Mata kuliah "${nama}" (${classCode}) berhasil didaftarkan! 🎓`, 'success');
       }
     }
 
@@ -2612,8 +2767,11 @@ function renderMatkul() {
       const activeTasks = tugasList.filter(t => t && t.matkul && t.matkul.toLowerCase().trim() === courseName && !t.completed).length;
       const totalMaterials = materiList.filter(m => m && m.matkul && m.matkul.toLowerCase().trim() === courseName).length;
 
+      const classCode = course.classCode || getCourseDefaultClassCode(course);
+      const isEnrolled = isStudentEnrolledInCourse(course);
+
       const card = document.createElement('div');
-      card.className = 'course-card-full';
+      card.className = `course-card-full ${isEnrolled ? 'is-enrolled' : 'is-not-enrolled'}`;
 
       card.innerHTML = `
         <div class="course-accent-bar" style="background-color: ${course.warna || '#4f46e5'};"></div>
@@ -2621,6 +2779,10 @@ function renderMatkul() {
           <div class="course-badges-group">
             ${course.kode ? `<span class="course-code-badge">${escapeHtml(course.kode)}</span>` : ''}
             ${course.sks ? `<span class="course-sks-badge">${course.sks} SKS</span>` : ''}
+            <span class="course-enrolled-pill ${isEnrolled ? 'enrolled' : 'not-enrolled'}">
+              <i data-feather="${isEnrolled ? 'check-circle' : 'lock'}"></i>
+              <span>${isEnrolled ? 'Terdaftar' : 'Belum Gabung'}</span>
+            </span>
           </div>
           ${isCurrentUserAdmin ? `
           <div class="card-actions-group">
@@ -2635,6 +2797,18 @@ function renderMatkul() {
         </div>
 
         <h3 class="course-card-name">${escapeHtml(course.nama)}</h3>
+
+        <!-- Box Kode Gabung Kelas Mata Kuliah (Google Classroom Style) -->
+        <div class="course-class-code-box">
+          <div class="code-box-left">
+            <span class="code-box-label"><i data-feather="key"></i> Kode Gabung:</span>
+            <strong class="code-box-value">${escapeHtml(classCode)}</strong>
+          </div>
+          <button type="button" class="btn-copy-code" onclick="copyCourseCode('${escapeHtml(classCode)}', '${escapeHtml(course.nama)}')" title="Salin Kode Gabung untuk dibagikan ke teman sekelas">
+            <i data-feather="copy"></i>
+            <span>Salin</span>
+          </button>
+        </div>
 
         <div class="course-detail-list">
           ${course.dosen ? `
@@ -2667,14 +2841,21 @@ function renderMatkul() {
         </div>
 
         <div class="course-card-footer">
-          <button type="button" class="btn-course-action" onclick="viewCourseTasks('${escapeHtml(course.nama)}')" title="Lihat semua tugas untuk mata kuliah ini">
-            <i data-feather="check-square"></i>
-            <span>Buka Tugas</span>
-          </button>
-          <button type="button" class="btn-course-action" onclick="viewCourseMaterials('${escapeHtml(course.nama)}')" title="Lihat semua catatan & materi untuk mata kuliah ini">
-            <i data-feather="file-text"></i>
-            <span>Buka Materi</span>
-          </button>
+          ${isEnrolled ? `
+            <button type="button" class="btn-course-action" onclick="viewCourseTasks('${escapeHtml(course.nama)}')" title="Lihat semua tugas untuk mata kuliah ini">
+              <i data-feather="check-square"></i>
+              <span>Buka Tugas</span>
+            </button>
+            <button type="button" class="btn-course-action" onclick="viewCourseMaterials('${escapeHtml(course.nama)}')" title="Lihat semua catatan & materi untuk mata kuliah ini">
+              <i data-feather="file-text"></i>
+              <span>Buka Materi</span>
+            </button>
+          ` : `
+            <button type="button" class="btn-course-action btn-join-now" onclick="promptJoinSpecificCourse('${escapeHtml(classCode)}')" style="grid-column: 1 / -1; background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700;">
+              <i data-feather="key"></i>
+              <span>Gabung Kelas (${escapeHtml(classCode)})</span>
+            </button>
+          `}
         </div>
       `;
 
@@ -2719,6 +2900,81 @@ window.deleteMatkul = function(id) {
     showToast(`Mata kuliah "${found.nama}" dihapus`, 'danger');
   }
 };
+
+// ============================================================================
+// MODAL GABUNG MATA KULIAH DENGAN KODE (GOOGLE CLASSROOM STYLE)
+// ============================================================================
+function openJoinCourseModal(prefilledCode = '') {
+  const modal = document.getElementById('joinCourseModal');
+  const input = document.getElementById('joinCourseCodeInput');
+  const errorMsg = document.getElementById('joinCourseErrorMsg');
+  const form = document.getElementById('joinCourseForm');
+
+  if (form) form.reset();
+  if (errorMsg) errorMsg.style.display = 'none';
+  if (input) {
+    input.value = prefilledCode || '';
+  }
+  if (modal) modal.showModal();
+  if (input) setTimeout(() => input.focus(), 150);
+  if (window.feather) feather.replace();
+}
+
+function closeJoinCourseModal() {
+  const modal = document.getElementById('joinCourseModal');
+  if (modal) modal.close();
+}
+
+window.openJoinCourseModal = openJoinCourseModal;
+window.closeJoinCourseModal = closeJoinCourseModal;
+window.promptJoinSpecificCourse = function(code) {
+  openJoinCourseModal(code);
+};
+
+const joinCourseForm = document.getElementById('joinCourseForm');
+if (joinCourseForm) {
+  joinCourseForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('joinCourseCodeInput');
+    const code = input ? input.value.trim().toUpperCase() : '';
+    const errorMsg = document.getElementById('joinCourseErrorMsg');
+    const errorText = document.getElementById('joinCourseErrorText');
+    const submitBtn = document.getElementById('btnSubmitJoinCourse');
+
+    if (!code) return;
+    if (errorMsg) errorMsg.style.display = 'none';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>Memverifikasi kode...</span>';
+    }
+
+    try {
+      const result = await enrollCourseByCode(code);
+      closeJoinCourseModal();
+      if (result.alreadyEnrolled) {
+        showToast(`Anda sudah terdaftar di mata kuliah ${result.course.nama}! 🎓`, 'info');
+      } else {
+        showToast(`Berhasil bergabung ke mata kuliah ${result.course.nama}! 🎉`, 'success');
+      }
+      renderMatkul();
+      renderCourseFilters();
+      renderTugas();
+      renderMateri();
+    } catch (err) {
+      console.error('Gagal gabung matkul:', err);
+      if (errorMsg && errorText) {
+        errorText.textContent = err.message || 'Kode mata kuliah tidak valid.';
+        errorMsg.style.display = 'flex';
+      }
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i data-feather="check-circle"></i><span>Gabung Kelas</span>';
+        if (window.feather) feather.replace();
+      }
+    }
+  });
+}
 
 // ============================================================================
 // 9. THEME & SIDEBAR TOGGLE
@@ -3076,6 +3332,9 @@ const btnForgotPassword = document.getElementById('btnForgotPassword');
 const forgotPasswordModal = document.getElementById('forgotPasswordModal');
 const forgotPasswordForm = document.getElementById('forgotPasswordForm');
 const forgotNimInput = document.getElementById('forgotNimInput');
+const forgotPinInput = document.getElementById('forgotPinInput');
+const forgotNewPassword = document.getElementById('forgotNewPassword');
+const btnToggleForgotNewPwd = document.getElementById('btnToggleForgotNewPwd');
 const forgotErrorMsg = document.getElementById('forgotErrorMsg');
 const forgotErrorText = document.getElementById('forgotErrorText');
 const btnSubmitForgot = document.getElementById('btnSubmitForgot');
@@ -3245,6 +3504,9 @@ if (btnToggleGooglePwd) {
 if (btnToggleGoogleConfirmPwd) {
   btnToggleGoogleConfirmPwd.addEventListener('click', () => togglePasswordInput('googleConfirmPasswordInput', btnToggleGoogleConfirmPwd));
 }
+if (btnToggleForgotNewPwd) {
+  btnToggleForgotNewPwd.addEventListener('click', () => togglePasswordInput('forgotNewPassword', btnToggleForgotNewPwd));
+}
 
 /**
  * Auth State Listener (Observer Firebase Auth)
@@ -3255,12 +3517,30 @@ function setupAuthObserver() {
   firebaseAuth.onAuthStateChanged(async (user) => {
     currentUser = user;
     if (user) {
-      console.log('👤 Auth state: Logged in sebagai', user.email, '| UID:', user.uid);
+      console.log('👤 Auth state: Logged in sebagai', user.email || 'NIM Mahasiswa', '| UID:', user.uid);
+
+      const effectiveUid = (typeof getCurrentUserUID === 'function' ? getCurrentUserUID() : null) || user.uid;
 
       // Ambil profil dari Firestore
-      let profile = await getUserProfile(user.uid);
+      let profile = await getUserProfile(effectiveUid);
 
       if (!profile) {
+        const savedNim = localStorage.getItem('studysync_logged_nim');
+        if (savedNim && typeof firestoreDb !== 'undefined' && firestoreDb) {
+          try {
+            const nimDoc = await firestoreDb.collection('nim_index').doc(savedNim).get();
+            if (nimDoc.exists) {
+              profile = nimDoc.data();
+            }
+          } catch (e) {}
+        }
+      }
+
+      if (!profile) {
+        if (localStorage.getItem('studysync_logged_nim')) {
+          console.warn('Profil mahasiswa sedang disinkronkan dari nim_index...');
+          return;
+        }
         // Pengguna Google baru yang belum mengisi NIM
         if (googleNamaInput) googleNamaInput.value = user.displayName || '';
         if (completeNIMModal) completeNIMModal.showModal();
@@ -3271,10 +3551,12 @@ function setupAuthObserver() {
       unlockPortal(false);
 
       // Hubungkan real-time listeners untuk user ini
-      setupRealtimeListeners(user.uid);
+      setupRealtimeListeners(effectiveUid);
     } else {
       console.log('🔒 Auth state: Belum login / Sesi berakhir');
       localStorage.removeItem(USER_PROFILE_STORAGE_KEY);
+      localStorage.removeItem('studysync_logged_nim');
+      localStorage.removeItem('studysync_active_uid');
       lockPortal();
     }
   });
@@ -3298,6 +3580,7 @@ if (loginForm) {
     }
 
     try {
+      localStorage.setItem('studysync_logged_nim', nim);
       await loginWithNIMPassword(nim, pwd);
       showToast('Login berhasil! Memuat portal...', 'success');
       // Auth observer onAuthStateChanged akan membuka portal dan me-load data otomatis
@@ -3336,9 +3619,28 @@ if (registerForm) {
     e.preventDefault();
     const nama = regNamaInput ? regNamaInput.value.trim() : '';
     const nim = regNimInput ? regNimInput.value.trim() : '';
-    const email = regEmailInput ? regEmailInput.value.trim() : '';
+    const classCodeInput = document.getElementById('regClassCodeInput');
+    const classCode = classCodeInput ? classCodeInput.value.trim() : '';
+    const pinInput = document.getElementById('regPinInput');
+    const pin = pinInput ? pinInput.value.trim() : '';
     const pwd = regPasswordInput ? regPasswordInput.value : '';
     const confirmPwd = regConfirmPasswordInput ? regConfirmPasswordInput.value : '';
+
+    if (!classCode) {
+      if (registerErrorMsg && registerErrorText) {
+        registerErrorText.textContent = 'Mohon masukkan Kode Akses Kelas (tanyakan ke Ketua Kelas/grup)!';
+        registerErrorMsg.style.display = 'flex';
+      }
+      return;
+    }
+
+    if (!pin || !/^\d{4}$/.test(pin)) {
+      if (registerErrorMsg && registerErrorText) {
+        registerErrorText.textContent = 'PIN Pemulihan harus berupa 4 digit angka (contoh: 2004)!';
+        registerErrorMsg.style.display = 'flex';
+      }
+      return;
+    }
 
     if (pwd !== confirmPwd) {
       if (registerErrorMsg && registerErrorText) {
@@ -3359,11 +3661,11 @@ if (registerForm) {
     if (registerErrorMsg) registerErrorMsg.style.display = 'none';
     if (btnSubmitRegister) {
       btnSubmitRegister.disabled = true;
-      btnSubmitRegister.innerHTML = '<span>Mendaftarkan akun...</span>';
+      btnSubmitRegister.innerHTML = '<span>Mendaftarkan & menggabungkan kelas...</span>';
     }
 
     try {
-      await registerWithEmailPassword(email, pwd, nama, nim);
+      await registerWithNIM(nama, nim, pwd, pin, classCode);
       registerForm.reset();
 
       // Pindahkan pengguna ke tab Masuk, isi otomatis NIM, dan arahkan ke kolom password
@@ -3374,18 +3676,11 @@ if (registerForm) {
         setTimeout(() => loginPasswordInput.focus(), 250);
       }
 
-      showToast(`Akun berhasil dibuat untuk ${nama}! Silakan masuk menggunakan NIM dan kata sandi Anda 🎓`, 'success');
+      showToast(`Akun berhasil dibuat & kamu resmi bergabung di kelas! Silakan masuk menggunakan NIM dan sandi kamu 🎓`, 'success');
     } catch (err) {
       console.error('Register error:', err);
       if (registerErrorMsg && registerErrorText) {
-        let msg = err.message;
-        if (err.code === 'auth/email-already-in-use') {
-          msg = 'Alamat email ini sudah terdaftar! Gunakan email lain.';
-        } else if (err.code === 'auth/invalid-email') {
-          msg = 'Format alamat email tidak valid.';
-        } else if (err.code === 'auth/weak-password') {
-          msg = 'Kata sandi terlalu sederhana. Tambahkan kombinasi angka.';
-        }
+        let msg = err.message || 'Gagal mendaftar akun.';
         registerErrorText.textContent = msg;
         registerErrorMsg.style.display = 'flex';
         registerErrorMsg.style.animation = 'none';
@@ -3395,7 +3690,7 @@ if (registerForm) {
     } finally {
       if (btnSubmitRegister) {
         btnSubmitRegister.disabled = false;
-        btnSubmitRegister.innerHTML = '<i data-feather="user-plus"></i><span>Buat Akun Sekarang</span>';
+        btnSubmitRegister.innerHTML = '<i data-feather="user-plus"></i><span>Buat Akun & Gabung Kelas</span>';
         if (window.feather) feather.replace();
       }
     }
@@ -3541,30 +3836,63 @@ if (forgotPasswordForm) {
   forgotPasswordForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const nim = forgotNimInput ? forgotNimInput.value.trim() : '';
+    const pin = forgotPinInput ? forgotPinInput.value.trim() : '';
+    const newPwd = forgotNewPassword ? forgotNewPassword.value : '';
 
-    if (!nim) return;
+    if (!nim) {
+      if (forgotErrorMsg && forgotErrorText) {
+        forgotErrorText.textContent = 'Mohon masukkan NIM Mahasiswa!';
+        forgotErrorMsg.style.display = 'flex';
+      }
+      return;
+    }
+
+    if (!pin || !/^\d{4}$/.test(pin)) {
+      if (forgotErrorMsg && forgotErrorText) {
+        forgotErrorText.textContent = 'PIN Pemulihan harus berupa 4 digit angka (contoh: 2004)!';
+        forgotErrorMsg.style.display = 'flex';
+      }
+      return;
+    }
+
+    if (!newPwd || newPwd.length < 6) {
+      if (forgotErrorMsg && forgotErrorText) {
+        forgotErrorText.textContent = 'Kata sandi baru minimal 6 karakter!';
+        forgotErrorMsg.style.display = 'flex';
+      }
+      return;
+    }
+
     if (forgotErrorMsg) forgotErrorMsg.style.display = 'none';
     if (btnSubmitForgot) {
       btnSubmitForgot.disabled = true;
-      btnSubmitForgot.innerHTML = '<span>Mencari data & mengirim...</span>';
+      btnSubmitForgot.innerHTML = '<span>Memverifikasi PIN & menyimpan sandi...</span>';
     }
 
     try {
-      const email = await sendPasswordResetByNIM(nim);
-      const maskedEmail = email.replace(/^(.)(.*)(@.*)$/, (_, a, b, c) => a + '***' + c);
-
+      const result = await resetPasswordWithPIN(nim, pin, newPwd);
       if (forgotPasswordModal) forgotPasswordModal.close();
-      showToast(`Link reset sandi telah dikirim ke email (${maskedEmail})! Periksa Inbox atau Spam Anda. 📧`, 'success');
+      forgotPasswordForm.reset();
+
+      // Isi otomatis NIM ke input login dan alihkan ke tab masuk
+      switchAuthTab('masuk');
+      if (loginNimInput) loginNimInput.value = nim;
+      if (loginPasswordInput) {
+        loginPasswordInput.value = '';
+        setTimeout(() => loginPasswordInput.focus(), 250);
+      }
+
+      showToast(`Kata sandi untuk ${result.nama || nim} berhasil diperbarui! Silakan login dengan sandi baru Anda. 🔑🎉`, 'success');
     } catch (err) {
       console.error('Forgot password error:', err);
       if (forgotErrorMsg && forgotErrorText) {
-        forgotErrorText.textContent = err.message;
+        forgotErrorText.textContent = err.message || 'Gagal mereset kata sandi.';
         forgotErrorMsg.style.display = 'flex';
       }
     } finally {
       if (btnSubmitForgot) {
         btnSubmitForgot.disabled = false;
-        btnSubmitForgot.innerHTML = '<i data-feather="send"></i><span>Kirim Link Reset Sandi</span>';
+        btnSubmitForgot.innerHTML = '<i data-feather="check"></i><span>Simpan Sandi Baru</span>';
         if (window.feather) feather.replace();
       }
     }
@@ -3579,6 +3907,8 @@ async function handleLogoutAction() {
     try {
       await logoutUser();
       localStorage.removeItem(USER_PROFILE_STORAGE_KEY);
+      localStorage.removeItem('studysync_logged_nim');
+      localStorage.removeItem('studysync_active_uid');
       lockPortal();
       showToast('Anda telah keluar dari akun. Sampai jumpa! 👋', 'info');
     } catch (err) {
@@ -4883,7 +5213,9 @@ function renderStudentsListUI(students) {
             </div>
             <div class="student-meta-text">
               <span><i data-feather="hash"></i> NIM: <strong>${escapeHtml(s.nim || '-')}</strong></span>
-              <span><i data-feather="mail"></i> ${escapeHtml(s.email || '-')}</span>
+              ${(s.email && !s.email.endsWith('@kelas.internal')) 
+                ? `<span><i data-feather="mail"></i> ${escapeHtml(s.email)}</span>` 
+                : `<span style="color: #10b981; font-weight: 500;"><i data-feather="check-circle"></i> Terdaftar Resmi</span>`}
             </div>
           </div>
         </div>
@@ -5094,7 +5426,11 @@ window.promptDeleteStudent = function(uid) {
 
   if (elName) elName.textContent = student.nama || 'Mahasiswa';
   if (elNim) elNim.textContent = 'NIM: ' + (student.nim || '-');
-  if (elEmail) elEmail.textContent = 'Email: ' + (student.email || '-');
+  if (elEmail) {
+    elEmail.textContent = (student.email && !student.email.endsWith('@kelas.internal'))
+      ? 'Email: ' + student.email
+      : 'Status: Terdaftar Resmi Mahasiswa';
+  }
 
   if (modal) modal.showModal();
   if (window.feather) feather.replace();

@@ -553,6 +553,19 @@ button, input, select, textarea {
   transform: translateY(-1px);
 }
 
+.btn-outline-primary {
+  background-color: transparent;
+  color: var(--primary);
+  border: 1.5px solid var(--primary);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+}
+
 .btn-modal-delete {
   font-size: 0.84rem;
   padding: 8px 14px;
@@ -2419,12 +2432,115 @@ html.has-auth-session .login-overlay {
   color: var(--primary-text);
 }
 
+.course-enrolled-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+}
+
+.course-enrolled-pill.enrolled {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+
+.course-enrolled-pill.not-enrolled {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+.course-enrolled-pill i {
+  width: 11px;
+  height: 11px;
+}
+
 .course-card-name {
   font-size: 1.2rem;
   font-weight: 700;
   color: var(--text-main);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   line-height: 1.35;
+}
+
+/* Box Kode Gabung Kelas Mata Kuliah (Google Classroom Style) */
+.course-class-code-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-surface-secondary);
+  border: 1px dashed var(--border-light);
+  border-radius: var(--radius-md);
+  margin-bottom: 14px;
+}
+
+.code-box-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+
+.code-box-label {
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.code-box-label i {
+  width: 13px;
+  height: 13px;
+  color: var(--primary);
+}
+
+.code-box-value {
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: 1px;
+  font-size: 0.92rem;
+  font-family: monospace;
+}
+
+.btn-copy-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btn-copy-code:hover {
+  background: var(--primary-subtle);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.btn-copy-code i {
+  width: 12px;
+  height: 12px;
+}
+
+.btn-join-now {
+  transition: all var(--transition);
+}
+
+.btn-join-now:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
 }
 
 .course-detail-list {

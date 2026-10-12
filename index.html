@@ -91,20 +91,11 @@
       </div>
 
       <!-- ===== FORM MASUK (NIM + Password) ===== -->
+      <!-- ===== FORM MASUK (NIM + Password Murni Tanpa Google) ===== -->
       <form id="loginForm" class="login-form auth-tab-panel active" data-tab="masuk" autocomplete="off">
-
-        <!-- Tombol Login Google -->
-        <button type="button" class="btn-google-signin" id="btnGoogleSignIn">
-          <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
-            <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
-            <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/>
-            <path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.347 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-            <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-          </svg>
-          <span>Lanjutkan dengan Google</span>
-        </button>
-
-        <div class="auth-divider"><span>atau masuk dengan NIM</span></div>
+        <div class="auth-clean-header" style="margin-bottom: 16px; text-align: center;">
+          <p class="auth-clean-subtitle" style="font-size: 0.85rem; color: var(--text-muted);">Masuk menggunakan NIM & Kata Sandi terdaftar kamu</p>
+        </div>
 
         <div class="form-group">
           <label for="loginNimInput">NIM Mahasiswa</label>
@@ -139,21 +130,11 @@
         </button>
       </form>
 
-      <!-- ===== FORM DAFTAR AKUN BARU ===== -->
+      <!-- ===== FORM DAFTAR AKUN BARU (Murni Identitas Mahasiswa & Kode Kelas) ===== -->
       <form id="registerForm" class="login-form auth-tab-panel" data-tab="daftar" autocomplete="off" style="display: none;">
-
-        <!-- Tombol Daftar dengan Google -->
-        <button type="button" class="btn-google-signin" id="btnGoogleSignInRegister">
-          <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
-            <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
-            <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/>
-            <path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.347 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-            <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-          </svg>
-          <span>Daftar dengan Google</span>
-        </button>
-
-        <div class="auth-divider"><span>atau daftar dengan email & NIM</span></div>
+        <div class="auth-clean-header" style="margin-bottom: 16px; text-align: center;">
+          <p class="auth-clean-subtitle" style="font-size: 0.85rem; color: var(--text-muted);">Daftarkan akun perkuliahan murni dengan identitas kampus</p>
+        </div>
 
         <div class="form-group">
           <label for="regNamaInput">Nama Lengkap Mahasiswa</label>
@@ -162,13 +143,19 @@
 
         <div class="form-group">
           <label for="regNimInput">NIM Mahasiswa</label>
-          <input type="text" id="regNimInput" class="custom-input" placeholder="Contoh: 231011400123" required>
+          <input type="text" id="regNimInput" class="custom-input" placeholder="Contoh: 251603099" required>
         </div>
 
         <div class="form-group">
-          <label for="regEmailInput">Alamat Email</label>
-          <input type="email" id="regEmailInput" class="custom-input" placeholder="email.kamu@gmail.com" required>
-          <small class="auth-input-hint">Email untuk pemulihan & verifikasi lupa password. Sehari-hari login cukup pakai NIM.</small>
+          <label for="regClassCodeInput">Kode Akses Kelas (Google Classroom Style)</label>
+          <input type="text" id="regClassCodeInput" class="custom-input" placeholder="Contoh: TI2026 (Minta ke Ketua Kelas)" required style="text-transform: uppercase;">
+          <small class="auth-input-hint" style="color: var(--text-muted); font-size: 0.78rem;">Kunci gerbang resmi kelas. Cukup diisi 1x saat pendaftaran.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="regPinInput">4-Digit PIN Pemulihan Rahasia</label>
+          <input type="password" id="regPinInput" class="custom-input" placeholder="Contoh: 2004 (4 angka unik)" maxlength="4" pattern="[0-9]{4}" required>
+          <small class="auth-input-hint" style="color: var(--text-muted); font-size: 0.78rem;">Digunakan untuk verifikasi mandiri jika sewaktu-waktu lupa kata sandi.</small>
         </div>
 
         <div class="form-group">
@@ -198,7 +185,7 @@
 
         <button type="submit" class="btn btn-primary btn-login-submit" id="btnSubmitRegister">
           <i data-feather="user-plus"></i>
-          <span>Buat Akun Sekarang</span>
+          <span>Buat Akun & Gabung Kelas</span>
         </button>
 
         <p class="auth-switch-hint">
@@ -207,18 +194,18 @@
       </form>
 
       <div class="login-footer">
-        <p>🎓 Portal Mahasiswa StudySync. Data tugas & materi terisolasi per akun.</p>
+        <p>🎓 Portal Mahasiswa StudySync. Aman tanpa Gmail pribadi & Terkunci Kode Kelas.</p>
       </div>
     </div>
   </div>
 
-  <!-- ===== MODAL: LUPA KATA SANDI (via NIM) ===== -->
+  <!-- ===== MODAL: LUPA KATA SANDI MANDIRI (via NIM & PIN Pemulihan) ===== -->
   <dialog id="forgotPasswordModal" class="app-dialog auth-dialog">
     <div class="dialog-box">
       <div class="dialog-header">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <i data-feather="mail" style="color: var(--primary);"></i>
-          <h3 class="dialog-title">Reset Kata Sandi</h3>
+          <i data-feather="key" style="color: var(--primary);"></i>
+          <h3 class="dialog-title">Pemulihan Kata Sandi Mandiri</h3>
         </div>
         <button class="icon-btn btn-close-dialog" id="btnCloseForgotModal" aria-label="Tutup">
           <i data-feather="x"></i>
@@ -226,22 +213,42 @@
       </div>
       <div class="dialog-body" style="padding: 16px 20px 24px 20px;">
         <p class="forgot-modal-desc">
-          Masukkan <strong>NIM</strong> Anda. Kami akan mencari email Anda dan mengirimkan tautan reset kata sandi resmi dari Google Firebase.
+          Verifikasi identitas Anda dengan <strong>NIM</strong> dan <strong>4-Digit PIN Pemulihan</strong> untuk membuat kata sandi baru secara instan.
         </p>
         <form id="forgotPasswordForm" class="dialog-form" style="margin-top: 14px;">
           <div class="form-group">
             <label for="forgotNimInput">NIM Mahasiswa *</label>
             <input type="text" id="forgotNimInput" class="custom-input" placeholder="Masukkan NIM kamu..." required>
           </div>
+
+          <div class="form-group">
+            <label for="forgotPinInput">4-Digit PIN Pemulihan *</label>
+            <input type="password" id="forgotPinInput" class="custom-input" placeholder="4 digit angka PIN..." maxlength="4" required>
+            <small class="auth-input-hint" style="color: var(--text-muted); font-size: 0.78rem;">
+              💡 <em>Untuk akun lama: PIN adalah 4 digit terakhir NIM kamu.</em>
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="forgotNewPassword">Kata Sandi Baru *</label>
+            <div class="password-input-wrapper">
+              <input type="password" id="forgotNewPassword" class="custom-input password-field" placeholder="Minimal 6 karakter..." required minlength="6">
+              <button type="button" class="btn-toggle-pwd" id="btnToggleForgotNewPwd" title="Lihat Sandi">
+                <i data-feather="eye"></i>
+              </button>
+            </div>
+          </div>
+
           <div class="login-error-msg" id="forgotErrorMsg" style="display: none; margin-bottom: 12px;">
             <i data-feather="alert-circle"></i>
             <span id="forgotErrorText"></span>
           </div>
+
           <div class="dialog-footer" style="padding: 0; margin-top: 16px;">
             <button type="button" class="btn btn-secondary" id="btnCancelForgotModal">Batal</button>
             <button type="submit" class="btn btn-primary" id="btnSubmitForgot">
-              <i data-feather="send"></i>
-              <span>Kirim Link Reset Sandi</span>
+              <i data-feather="check"></i>
+              <span>Simpan Sandi Baru</span>
             </button>
           </div>
         </form>
@@ -750,10 +757,16 @@
               <h1 class="pane-title">Kelola Mata Kuliah</h1>
               <p class="pane-sub">Daftarkan seluruh mata kuliah semester ini, dosen pengampu, SKS, jadwal kelas, dan ruang belajar.</p>
             </div>
-            <button class="btn btn-primary" id="btnPaneAddMatkul" onclick="openAddMatkulModal()">
-              <i data-feather="plus"></i>
-              <span>Tambah Mata Kuliah</span>
-            </button>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <button type="button" class="btn btn-outline-primary" id="btnPaneJoinMatkul" onclick="openJoinCourseModal()">
+                <i data-feather="key"></i>
+                <span>Gabung Mata Kuliah</span>
+              </button>
+              <button type="button" class="btn btn-primary" id="btnPaneAddMatkul" onclick="openAddMatkulModal()">
+                <i data-feather="plus"></i>
+                <span>Tambah Mata Kuliah</span>
+              </button>
+            </div>
           </div>
 
           <!-- Grid Kartu Mata Kuliah -->
@@ -1073,38 +1086,43 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label for="matkulKode">Kode MK (Opsional)</label>
-            <input type="text" id="matkulKode" class="custom-input" placeholder="Contoh: IF2101">
+            <label for="matkulKode">Kode MK Singkat (Opsional)</label>
+            <input type="text" id="matkulKode" class="custom-input" placeholder="Contoh: PW / IF2101">
           </div>
 
+          <div class="form-group">
+            <label for="matkulClassCode">Kode Gabung Kelas (Google Classroom) *</label>
+            <input type="text" id="matkulClassCode" class="custom-input" placeholder="Contoh: PW2026" required style="text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">
+          </div>
+        </div>
+
+        <div class="form-row">
           <div class="form-group">
             <label for="matkulSks">Bobot SKS (Opsional)</label>
             <input type="number" id="matkulSks" class="custom-input" placeholder="3" min="1" max="10" value="3">
           </div>
-        </div>
 
-        <div class="form-row">
           <div class="form-group">
             <label for="matkulDosen">Dosen Pengampu (Opsional)</label>
             <input type="text" id="matkulDosen" class="custom-input" placeholder="Contoh: Dr. Budi Santoso, M.Kom.">
           </div>
-
-          <div class="form-group">
-            <label for="matkulPj">PJ Mata Kuliah (Opsional)</label>
-            <input type="text" id="matkulPj" class="custom-input" placeholder="Contoh: Ahmad / Siti Rahma">
-          </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label for="matkulJadwal">Jadwal / Hari & Jam (Opsional)</label>
-            <input type="text" id="matkulJadwal" class="custom-input" placeholder="Contoh: Senin, 08:00 - 10:30">
+            <label for="matkulPj">PJ Mata Kuliah (Opsional)</label>
+            <input type="text" id="matkulPj" class="custom-input" placeholder="Contoh: Ahmad / Siti Rahma">
           </div>
 
           <div class="form-group">
-            <label for="matkulRuangan">Ruangan / Tautan Kelas (Opsional)</label>
-            <input type="text" id="matkulRuangan" class="custom-input" placeholder="Contoh: Lab Komputer 3 / Zoom">
+            <label for="matkulJadwal">Jadwal / Hari & Jam (Opsional)</label>
+            <input type="text" id="matkulJadwal" class="custom-input" placeholder="Contoh: Senin, 08:00 - 10:30">
           </div>
+        </div>
+
+        <div class="form-group">
+          <label for="matkulRuangan">Ruangan / Tautan Kelas (Opsional)</label>
+          <input type="text" id="matkulRuangan" class="custom-input" placeholder="Contoh: Lab Komputer 3 / Zoom">
         </div>
 
         <div class="form-group">
@@ -1140,6 +1158,50 @@
         <div class="dialog-footer">
           <button type="button" class="btn btn-secondary" onclick="closeMatkulModal()">Batal</button>
           <button type="submit" class="btn btn-primary" id="btnSubmitMatkul">Simpan Mata Kuliah</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- ========================================================
+       MODAL: GABUNG MATA KULIAH DENGAN KODE (GOOGLE CLASSROOM STYLE)
+       ======================================================== -->
+  <dialog class="app-dialog auth-dialog" id="joinCourseModal">
+    <div class="dialog-box" style="max-width: 440px;">
+      <div class="dialog-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i data-feather="key" style="color: var(--primary);"></i>
+          <h3 class="dialog-title">Gabung Mata Kuliah</h3>
+        </div>
+        <button type="button" class="icon-btn btn-close-dialog" onclick="closeJoinCourseModal()" title="Tutup">
+          <i data-feather="x"></i>
+        </button>
+      </div>
+
+      <form id="joinCourseForm" class="dialog-form" autocomplete="off">
+        <p class="forgot-modal-desc">
+          Masukkan <strong>Kode Gabung Mata Kuliah</strong> (ala Google Classroom) yang dibagikan oleh PJ Mata Kuliah atau Dosen untuk mengikuti kelas ini.
+        </p>
+
+        <div class="form-group" style="margin-top: 12px;">
+          <label for="joinCourseCodeInput">Kode Gabung Mata Kuliah *</label>
+          <input type="text" id="joinCourseCodeInput" class="custom-input" placeholder="Contoh: PW2026 atau STAT2026" required style="text-transform: uppercase; font-weight: 700; letter-spacing: 1px;" autocomplete="off">
+          <small class="form-hint" style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px; display: block;">
+            💡 Tanya kode kepada Ketua Kelas atau PJ Mata Kuliah.
+          </small>
+        </div>
+
+        <div class="login-error-msg" id="joinCourseErrorMsg" style="display: none; margin-bottom: 12px;">
+          <i data-feather="alert-circle"></i>
+          <span id="joinCourseErrorText">Kode mata kuliah tidak ditemukan!</span>
+        </div>
+
+        <div class="dialog-footer" style="padding: 0; margin-top: 16px;">
+          <button type="button" class="btn btn-secondary" onclick="closeJoinCourseModal()">Batal</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitJoinCourse">
+            <i data-feather="check-circle"></i>
+            <span>Gabung Kelas</span>
+          </button>
         </div>
       </form>
     </div>
