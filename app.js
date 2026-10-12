@@ -252,28 +252,22 @@ function saveStorage() {
  * Ambil daftar ID / nama mata kuliah yang diikuti oleh mahasiswa saat ini
  */
 function getEnrolledCourses() {
+  if (currentUserProfile) {
+    if (Array.isArray(currentUserProfile.enrolledCourses)) {
+      return currentUserProfile.enrolledCourses;
+    }
+    // Jika user lama (11 mahasiswa yang terdaftar sebelum fitur per-matkul), atau pengurus kelas
+    if (currentUserProfile.isClassEnrolled || (currentUserProfile.role && currentUserProfile.role !== 'Mahasiswa') || currentUserProfile.isAdmin) {
+      return matkulList.map(m => m.id);
+    }
+    return [];
+  }
   const cached = localStorage.getItem(COURSE_ENROLLED_STORAGE_KEY);
   if (cached !== null) {
     try {
       const arr = JSON.parse(cached);
       if (Array.isArray(arr)) return arr;
     } catch (e) {}
-  }
-  if (currentUserProfile) {
-    if (Array.isArray(currentUserProfile.enrolledCourses)) {
-      try {
-        localStorage.setItem(COURSE_ENROLLED_STORAGE_KEY, JSON.stringify(currentUserProfile.enrolledCourses));
-      } catch (e) {}
-      return currentUserProfile.enrolledCourses;
-    }
-    // Jika user lama (11 mahasiswa yang terdaftar sebelum fitur per-matkul), atau pengurus kelas
-    if (currentUserProfile.isClassEnrolled || (currentUserProfile.role && currentUserProfile.role !== 'Mahasiswa')) {
-      const allIds = matkulList.map(m => m.id);
-      try {
-        localStorage.setItem(COURSE_ENROLLED_STORAGE_KEY, JSON.stringify(allIds));
-      } catch (e) {}
-      return allIds;
-    }
   }
   return [];
 }
@@ -286,7 +280,25 @@ function isStudentEnrolledInCourse(course) {
   // Pengurus kelas selalu memiliki akses penuh ke seluruh mata kuliah
   if (isCurrentUserAdmin) return true;
   const enrolled = getEnrolledCourses();
-  return enrolled.includes(course.id) || enrolled.includes(course.nama) || (course.classCode && enrolled.includes(course.classCode));
+  const cId = course.id;
+  const cNama = (course.nama || '').trim().toLowerCase();
+  const cCode = (course.classCode || '').trim().toUpperCase();
+  return enrolled.some(e => {
+    if (!e) return false;
+    const cleanE = String(e).trim();
+    return cleanE === cId || cleanE.toLowerCase() === cNama || (cCode && cleanE.toUpperCase() === cCode);
+  });
+}
+
+/**
+ * Cek apakah mahasiswa aktif terdaftar di mata kuliah berdasarkan nama string
+ */
+function isCourseEnrolledByName(courseName) {
+  if (!courseName) return true;
+  if (isCurrentUserAdmin) return true;
+  const matchCourse = matkulList.find(m => (m.nama || '').toLowerCase().trim() === courseName.toLowerCase().trim());
+  if (!matchCourse) return true;
+  return isStudentEnrolledInCourse(matchCourse);
 }
 
 /**
@@ -332,23 +344,24 @@ async function enrollCourseByCode(enteredCode) {
     throw new Error(`Mata kuliah dengan kode "${cleanCode}" tidak ditemukan! Periksa kembali kode atau tanyakan ke PJ Mata Kuliah.`);
   }
 
-  const enrolled = getEnrolledCourses();
+  const enrolled = getEnrolledCourses().slice();
   if (isStudentEnrolledInCourse(course)) {
     return { alreadyEnrolled: true, course };
   }
 
   enrolled.push(course.id);
-  localStorage.setItem(COURSE_ENROLLED_STORAGE_KEY, JSON.stringify(enrolled));
+  const uniqueEnrolled = Array.from(new Set(enrolled));
+  localStorage.setItem(COURSE_ENROLLED_STORAGE_KEY, JSON.stringify(uniqueEnrolled));
 
   if (currentUserProfile) {
-    currentUserProfile.enrolledCourses = enrolled;
+    currentUserProfile.enrolledCourses = uniqueEnrolled;
   }
 
   // Simpan ke Firestore jika user terhubung
   const uid = typeof getCurrentUserUID === 'function' ? getCurrentUserUID() : null;
   if (uid && typeof updateUserProfile === 'function') {
     try {
-      await updateUserProfile(uid, { enrolledCourses: enrolled });
+      await updateUserProfile(uid, { enrolledCourses: uniqueEnrolled });
     } catch (e) {
       console.warn('Gagal sync enrolledCourses ke Firestore:', e);
     }
@@ -395,9 +408,11 @@ function rebuildTugasList() {
   const seenIds = new Set();
 
   // 1. Tugas Resmi Kelas (Status pengerjaan diambil dari status per-user)
+  // 1. Tugas Resmi Kelas (Status pengerjaan diambil dari status per-user, hanya mata kuliah yang diikuti)
   if (Array.isArray(classTugas)) {
     classTugas.forEach(ct => {
       if (!ct || !ct.id) return;
+      if (!isCourseEnrolledByName(ct.matkul)) return; // Sembunyikan jika belum bergabung ke mata kuliah ini
       const isCompleted = !!tugasStatusMap[ct.id];
       combined.push({
         ...ct,
@@ -444,10 +459,11 @@ function rebuildMateriList() {
   const combined = [];
   const seenIds = new Set();
 
-  // 1. Materi Resmi Kelas
+  // 1. Materi Resmi Kelas (Hanya mata kuliah yang diikuti)
   if (Array.isArray(classMateri)) {
     classMateri.forEach(cm => {
       if (!cm || !cm.id) return;
+      if (!isCourseEnrolledByName(cm.matkul)) return; // Sembunyikan jika belum bergabung ke mata kuliah ini
       combined.push({
         ...cm,
         isKelas: true
@@ -1297,11 +1313,12 @@ navTabButtons.forEach(btn => {
 
 function getAllMataKuliahList() {
   const set = new Set();
-  if (Array.isArray(matkulList)) matkulList.forEach(m => m && m.nama && set.add(m.nama.trim()));
+  if (Array.isArray(matkulList)) {
+    const list = isCurrentUserAdmin ? matkulList : matkulList.filter(m => isStudentEnrolledInCourse(m));
+    list.forEach(m => m && m.nama && set.add(m.nama.trim()));
+  }
   if (Array.isArray(tugasList)) tugasList.forEach(t => t && t.matkul && set.add(t.matkul.trim()));
   if (Array.isArray(materiList)) materiList.forEach(m => m && m.matkul && set.add(m.matkul.trim()));
-  if (Array.isArray(classTugas)) classTugas.forEach(t => t && t.matkul && set.add(t.matkul.trim()));
-  if (Array.isArray(classMateri)) classMateri.forEach(m => m && m.matkul && set.add(m.matkul.trim()));
   return Array.from(set).sort();
 }
 
@@ -2780,20 +2797,27 @@ if (matkulForm) {
 }
 
 function renderMatkul() {
+  const visibleCourses = isCurrentUserAdmin ? matkulList : matkulList.filter(course => isStudentEnrolledInCourse(course));
+
   if (badgeTotalMatkul) {
-    badgeTotalMatkul.textContent = matkulList.length;
+    badgeTotalMatkul.textContent = visibleCourses.length;
   }
 
   if (!matkulGridContainer) return;
 
-  if (matkulList.length === 0) {
+  const btnEmptyAdd = document.getElementById('btnEmptyAddMatkul');
+  const btnEmptyJoin = document.getElementById('btnEmptyJoinMatkul');
+  if (btnEmptyAdd) btnEmptyAdd.style.display = isCurrentUserAdmin ? 'inline-flex' : 'none';
+  if (btnEmptyJoin) btnEmptyJoin.style.display = isCurrentUserAdmin ? 'none' : 'inline-flex';
+
+  if (visibleCourses.length === 0) {
     if (emptyMatkulState) emptyMatkulState.style.display = 'block';
     matkulGridContainer.innerHTML = '';
   } else {
     if (emptyMatkulState) emptyMatkulState.style.display = 'none';
     matkulGridContainer.innerHTML = '';
 
-    matkulList.forEach(course => {
+    visibleCourses.forEach(course => {
       if (!course || !course.nama) return;
       const courseName = (course.nama || '').toLowerCase().trim();
       // Hitung tugas & materi untuk mata kuliah ini (case-insensitive & null-safe)
@@ -2991,6 +3015,8 @@ if (joinCourseForm) {
       } else {
         showToast(`Berhasil bergabung ke mata kuliah ${result.course.nama}! 🎉`, 'success');
       }
+      rebuildTugasList();
+      rebuildMateriList();
       renderMatkul();
       renderCourseFilters();
       renderTugas();
@@ -3445,6 +3471,21 @@ function updateStudentProfileUI(profile) {
   currentUserProfile = profile;
   isCurrentUserAdmin = !!(profile.role && profile.role !== 'Mahasiswa') || !!profile.isAdmin;
 
+  if (Array.isArray(profile.enrolledCourses)) {
+    try {
+      localStorage.setItem(COURSE_ENROLLED_STORAGE_KEY, JSON.stringify(profile.enrolledCourses));
+    } catch (e) {}
+  } else if (profile.isClassEnrolled || isCurrentUserAdmin) {
+    const allIds = matkulList.map(m => m.id);
+    try {
+      localStorage.setItem(COURSE_ENROLLED_STORAGE_KEY, JSON.stringify(allIds));
+    } catch (e) {}
+  } else {
+    try {
+      localStorage.setItem(COURSE_ENROLLED_STORAGE_KEY, JSON.stringify([]));
+    } catch (e) {}
+  }
+
   try {
     localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(profile));
   } catch (e) {}
@@ -3475,6 +3516,8 @@ function updateStudentProfileUI(profile) {
   // Rebuild tugas & materi agar hak akses edit/hapus dan status pengerjaan sesuai
   if (typeof rebuildTugasList === 'function') rebuildTugasList();
   if (typeof rebuildMateriList === 'function') rebuildMateriList();
+  if (typeof renderMatkul === 'function') renderMatkul();
+  if (typeof renderCourseFilters === 'function') renderCourseFilters();
 }
 
 /**
@@ -3499,6 +3542,8 @@ function unlockPortal(showToastAlert = false) {
  * Kunci portal dan tampilkan layar login
  */
 function lockPortal() {
+  currentUserProfile = null;
+  localStorage.removeItem(COURSE_ENROLLED_STORAGE_KEY);
   document.documentElement.classList.remove('has-auth-session');
   if (loginOverlay) loginOverlay.classList.remove('hidden');
   if (appLayout) appLayout.classList.add('locked');

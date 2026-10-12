@@ -768,12 +768,25 @@
             <!-- Diisi otomatis oleh JS -->
           </div>
 
-          <!-- State Kosong jika belum ada mata kuliah -->
-          <div class="empty-state-card" id="emptyMatkulState" style="display: none;">
-            <i data-feather="book-open" class="empty-icon-lg"></i>
-            <h3>Belum Ada Mata Kuliah Terdaftar</h3>
-            <p>Daftarkan mata kuliah yang Anda ambil semester ini untuk mengelompokkan tugas dan materi secara rapi.</p>
-            <button class="btn btn-secondary mt-3" id="btnEmptyAddMatkul" onclick="openAddMatkulModal()">+ Tambah Mata Kuliah Pertama</button>
+          <!-- State Kosong jika belum ada mata kuliah yang diikuti -->
+          <div class="empty-state-card" id="emptyMatkulState" style="display: none; max-width: 540px; margin: 40px auto; text-align: center;">
+            <div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(99, 102, 241, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+              <i data-feather="book-open" style="width: 36px; height: 36px;"></i>
+            </div>
+            <h3 id="emptyMatkulTitle" style="font-size: 1.25rem; font-weight: 700; margin-bottom: 8px;">Belum Ada Mata Kuliah yang Diikuti</h3>
+            <p id="emptyMatkulDesc" style="color: var(--text-muted); font-size: 0.92rem; line-height: 1.6; margin-bottom: 20px;">
+              Kamu belum bergabung ke mata kuliah manapun. Dapatkan kode gabung dari Dosen / PJ Mata Kuliah (atau gunakan kode kelas angkatan <strong>TI2026</strong>), lalu gabung untuk mulai belajar!
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+              <button type="button" class="btn btn-primary" id="btnEmptyJoinMatkul" onclick="openJoinCourseModal()">
+                <i data-feather="key"></i>
+                <span>+ Gabung Mata Kuliah</span>
+              </button>
+              <button type="button" class="btn btn-secondary" id="btnEmptyAddMatkul" onclick="openAddMatkulModal()" style="display: none;">
+                <i data-feather="plus"></i>
+                <span>Tambah Mata Kuliah Baru</span>
+              </button>
+            </div>
           </div>
         </section>
 
