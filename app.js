@@ -282,11 +282,12 @@ function isStudentEnrolledInCourse(course) {
   const enrolled = getEnrolledCourses();
   const cId = course.id;
   const cNama = (course.nama || '').trim().toLowerCase();
-  const cCode = (course.classCode || '').trim().toUpperCase();
+  const cCode = (course.classCode || (typeof getCourseDefaultClassCode === 'function' ? getCourseDefaultClassCode(course) : '')).trim().toUpperCase();
+  const kCode = (course.kode || '').trim().toUpperCase();
   return enrolled.some(e => {
     if (!e) return false;
     const cleanE = String(e).trim();
-    return cleanE === cId || cleanE.toLowerCase() === cNama || (cCode && cleanE.toUpperCase() === cCode);
+    return cleanE === cId || cleanE.toLowerCase() === cNama || (cCode && cleanE.toUpperCase() === cCode) || (kCode && cleanE.toUpperCase() === kCode);
   });
 }
 
@@ -307,6 +308,13 @@ function isCourseEnrolledByName(courseName) {
 async function enrollCourseByCode(enteredCode) {
   if (!enteredCode) throw new Error('Mohon masukkan Kode Gabung Mata Kuliah.');
   const cleanCode = enteredCode.trim().toUpperCase();
+
+  // Pastikan matkulList selalu terisi dari DEFAULT_MATKUL jika kosong
+  if (!matkulList || matkulList.length === 0) {
+    if (typeof DEFAULT_MATKUL !== 'undefined' && Array.isArray(DEFAULT_MATKUL)) {
+      matkulList = typeof ensureCourseClassCodes === 'function' ? ensureCourseClassCodes(DEFAULT_MATKUL.slice()) : DEFAULT_MATKUL.slice();
+    }
+  }
 
   // 1. Cek jika menggunakan Kode Akses Resmi Angkatan (TI2026) -> Daftarkan ke SELURUH mata kuliah sekaligus
   const officialClassCode = (typeof getOfficialClassCode === 'function' ? getOfficialClassCode() : 'TI2026').toUpperCase();
@@ -334,14 +342,50 @@ async function enrollCourseByCode(enteredCode) {
   }
 
   // 2. Cari mata kuliah spesifik yang memiliki kode ini
-  const course = matkulList.find(m => {
-    const cCode = (m.classCode || '').trim().toUpperCase();
+  let course = matkulList.find(m => {
+    if (!m) return false;
+    const directCode = (m.classCode || '').trim().toUpperCase();
+    const defaultCode = (typeof getCourseDefaultClassCode === 'function' ? getCourseDefaultClassCode(m) : '').trim().toUpperCase();
     const kCode = (m.kode || '').trim().toUpperCase();
-    return cCode === cleanCode || kCode === cleanCode;
+    const mNama = (m.nama || '').trim().toUpperCase();
+
+    return (
+      (directCode && directCode === cleanCode) ||
+      (defaultCode && defaultCode === cleanCode) ||
+      (kCode && (kCode === cleanCode || (kCode + '2026') === cleanCode)) ||
+      mNama === cleanCode
+    );
   });
+
+  // Jika belum ada di matkulList lokal, cari di DEFAULT_MATKUL
+  if (!course && typeof DEFAULT_MATKUL !== 'undefined' && Array.isArray(DEFAULT_MATKUL)) {
+    course = DEFAULT_MATKUL.find(m => {
+      if (!m) return false;
+      const directCode = (m.classCode || '').trim().toUpperCase();
+      const defaultCode = (typeof getCourseDefaultClassCode === 'function' ? getCourseDefaultClassCode(m) : '').trim().toUpperCase();
+      const kCode = (m.kode || '').trim().toUpperCase();
+      return (
+        (directCode && directCode === cleanCode) ||
+        (defaultCode && defaultCode === cleanCode) ||
+        (kCode && (kCode === cleanCode || (kCode + '2026') === cleanCode))
+      );
+    });
+
+    if (course) {
+      const exists = matkulList.some(m => m.id === course.id);
+      if (!exists) {
+        matkulList.push({ ...course, classCode: course.classCode || getCourseDefaultClassCode(course) });
+        saveStorage();
+      }
+    }
+  }
 
   if (!course) {
     throw new Error(`Mata kuliah dengan kode "${cleanCode}" tidak ditemukan! Periksa kembali kode atau tanyakan ke PJ Mata Kuliah.`);
+  }
+
+  if (!course.classCode && typeof getCourseDefaultClassCode === 'function') {
+    course.classCode = getCourseDefaultClassCode(course);
   }
 
   const enrolled = getEnrolledCourses().slice();

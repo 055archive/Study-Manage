@@ -717,7 +717,13 @@ function setupRealtimeListeners(uid) {
       if (data && (data.nama || data.kode)) cloudData.push({ id: doc.id, ...data });
     });
 
-    matkulList = cloudData;
+    if (cloudData.length > 0) {
+      matkulList = typeof ensureCourseClassCodes === 'function' ? ensureCourseClassCodes(cloudData) : cloudData;
+    } else if (!matkulList || matkulList.length === 0) {
+      const fallbackList = (typeof DEFAULT_MATKUL !== 'undefined' && Array.isArray(DEFAULT_MATKUL)) ? DEFAULT_MATKUL.slice() : [];
+      matkulList = typeof ensureCourseClassCodes === 'function' ? ensureCourseClassCodes(fallbackList) : fallbackList;
+    }
+
     saveStorage();
     try {
       renderMatkul();
