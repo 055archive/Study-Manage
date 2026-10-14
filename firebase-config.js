@@ -525,9 +525,10 @@ async function getUserProfile(uid) {
 async function updateUserProfile(uid, updates) {
   if (!firestoreDb || !uid) return;
   try {
+    const profile = await getUserProfile(uid);
+
     // Jika NIM berubah, perbarui juga nim_index
     if (updates.nim) {
-      const profile = await getUserProfile(uid);
       if (profile && profile.nim && profile.nim !== updates.nim) {
         // Hapus index NIM lama
         await firestoreDb.collection('nim_index').doc(profile.nim).delete();
@@ -535,12 +536,30 @@ async function updateUserProfile(uid, updates) {
         await registerNIMIndex(updates.nim, uid, profile.email);
       }
     }
+
+    // Selalu sinkronkan perubahan nama & foto profil ke dokumen nim_index jika ada NIM
+    const targetNim = updates.nim || (profile ? profile.nim : null) || localStorage.getItem('studysync_logged_nim');
+    if (targetNim) {
+      const nimUpdates = {};
+      if (updates.nama !== undefined) nimUpdates.nama = updates.nama;
+      if (updates.photoURL !== undefined) nimUpdates.photoURL = updates.photoURL;
+      if (Object.keys(nimUpdates).length > 0) {
+        try {
+          await firestoreDb.collection('nim_index').doc(String(targetNim).trim()).set(nimUpdates, { merge: true });
+        } catch (nimErr) {
+          console.warn('Gagal sinkron nama/photo ke nim_index:', nimErr);
+        }
+      }
+    }
+
     await firestoreDb.collection('users').doc(uid).set({ profile: updates }, { merge: true });
+    console.log('✅ Profil mahasiswa berhasil disinkron ke Firestore users/' + uid);
   } catch (err) {
     console.error('Gagal update profil:', err);
     throw err;
   }
 }
+window.updateUserProfile = updateUserProfile;
 
 /**
  * Simpan index NIM → email untuk keperluan login
@@ -1082,6 +1101,7 @@ async function fetchAllStudentsData() {
           nim: data.profile.nim || '-',
           email: data.profile.email || '-',
           role: data.profile.role || 'Mahasiswa',
+          photoURL: data.profile.photoURL || null,
           isAdmin: !!data.profile.isAdmin,
           createdAt: data.profile.createdAt || ''
         });
@@ -1103,11 +1123,17 @@ async function fetchAllStudentsData() {
               nim: doc.id,
               email: data.email || '-',
               role: 'Mahasiswa',
+              photoURL: data.photoURL || null,
               isAdmin: false,
               createdAt: data.createdAt || ''
             });
-          } else if (data.nama && (!existing.nama || existing.nama === 'Tanpa Nama')) {
-            existing.nama = data.nama;
+          } else {
+            if (data.nama && (!existing.nama || existing.nama === 'Tanpa Nama')) {
+              existing.nama = data.nama;
+            }
+            if (data.photoURL && !existing.photoURL) {
+              existing.photoURL = data.photoURL;
+            }
           }
         }
       });

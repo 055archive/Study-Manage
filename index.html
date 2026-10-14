@@ -16,7 +16,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="apple-touch-icon" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=6.0">
+  <link rel="stylesheet" href="style.css?v=7.0">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -365,11 +365,17 @@
       </nav>
 
       <div class="sidebar-footer">
-        <!-- Badge Profil Mahasiswa -->
-        <div class="user-profile-badge" id="sidebarUserProfile">
-          <div class="user-avatar" id="sidebarUserAvatar">M</div>
+        <!-- Badge Profil Mahasiswa (Bisa diklik untuk edit profil & foto bergaya Instagram) -->
+        <div class="user-profile-badge" id="sidebarUserProfile" onclick="openEditProfileModal()" title="Klik untuk edit nama & foto profil" style="cursor: pointer;">
+          <div class="user-avatar-wrapper">
+            <div class="user-avatar ig-avatar-ring-sm" id="sidebarUserAvatar">M</div>
+            <span class="avatar-edit-badge" title="Ubah Foto"><i data-feather="camera"></i></span>
+          </div>
           <div class="user-meta">
-            <span class="user-name" id="sidebarUserName">Mahasiswa</span>
+            <div class="user-name-row-badge">
+              <span class="user-name" id="sidebarUserName">Mahasiswa</span>
+              <i data-feather="edit-2" class="profile-edit-icon" style="width: 12px; height: 12px; opacity: 0.6; margin-left: 4px;"></i>
+            </div>
             <span class="user-nim" id="sidebarUserNim">NIM: -</span>
           </div>
         </div>
@@ -471,6 +477,12 @@
             <i data-feather="lock"></i>
           </button>
 
+          <!-- Tombol Profil Mahasiswa & Foto (Gaya Instagram) -->
+          <button type="button" class="topbar-profile-btn" id="btnTopbarProfile" onclick="openEditProfileModal()" title="Profil Mahasiswa: Edit Nama & Foto" aria-label="Profil Mahasiswa">
+            <div class="topbar-avatar ig-avatar-ring-sm" id="topbarUserAvatar">M</div>
+            <span class="topbar-profile-edit-badge"><i data-feather="camera"></i></span>
+          </button>
+
           <!-- Tombol Aksi Cepat -->
           <div class="quick-add-group">
             <button class="btn btn-secondary" id="btnOpenModalMatkul" title="Tambah Mata Kuliah Baru">
@@ -536,9 +548,23 @@
              ======================================================== -->
         <section class="tab-pane active" id="tab-overview">
           <div class="page-title-banner">
-            <div>
-              <h1 class="welcome-heading">Selamat Belajar, <span id="dashboardStudentName">Mahasiswa</span>! 🎓</h1>
-              <p class="welcome-sub"><span class="banner-nim-pill" id="dashboardStudentNim">NIM: -</span> Kelola seluruh tenggat tugas dan arsip materi kuliahmu secara terpusat.</p>
+            <div class="welcome-banner-content">
+              <div class="welcome-avatar-wrapper" onclick="openEditProfileModal()" title="Klik untuk edit nama & foto profil" style="cursor: pointer;">
+                <div class="welcome-avatar ig-avatar-ring-lg" id="welcomeUserAvatar">M</div>
+                <span class="welcome-avatar-camera-btn" title="Ganti Foto">
+                  <i data-feather="camera"></i>
+                </span>
+              </div>
+              <div class="welcome-banner-texts">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <h1 class="welcome-heading">Selamat Belajar, <span id="dashboardStudentName">Mahasiswa</span>! 🎓</h1>
+                  <button type="button" class="btn-edit-profile-pill" onclick="openEditProfileModal()" title="Ubah Nama & Foto Profil">
+                    <i data-feather="edit-3"></i>
+                    <span>Edit Profil</span>
+                  </button>
+                </div>
+                <p class="welcome-sub"><span class="banner-nim-pill" id="dashboardStudentNim">NIM: -</span> Kelola seluruh tenggat tugas dan arsip materi kuliahmu secara terpusat.</p>
+              </div>
             </div>
             <div class="semester-info-pill">
               <i data-feather="calendar"></i>
@@ -1841,6 +1867,125 @@
     </div>
   </dialog>
 
+  <!-- ========================================================
+       MODAL: EDIT PROFIL MAHASISWA & FOTO (GAYA INSTAGRAM)
+       ======================================================== -->
+  <dialog class="app-dialog edit-profile-dialog" id="editProfileModal">
+    <div class="dialog-box edit-profile-box">
+      <!-- Header Dialog -->
+      <div class="dialog-header edit-profile-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="ig-header-icon">
+            <i data-feather="user"></i>
+          </div>
+          <div>
+            <h3 class="dialog-title">Edit Profil Mahasiswa</h3>
+            <span class="edit-profile-sub">Ubah nama tampilan & foto profil seperti Instagram</span>
+          </div>
+        </div>
+        <button type="button" class="icon-btn btn-close-dialog" onclick="closeEditProfileModal()" title="Tutup">
+          <i data-feather="x"></i>
+        </button>
+      </div>
+
+      <form id="editProfileForm" class="dialog-form edit-profile-form" onsubmit="handleSaveProfile(event)">
+        <!-- Bagian Foto Profil Gaya Instagram (Story Ring + Camera Badge) -->
+        <div class="ig-profile-avatar-section">
+          <div class="ig-avatar-outer-container">
+            <div class="ig-story-ring" id="igProfileAvatarRing" onclick="triggerProfilePhotoUpload()" title="Klik untuk pilih foto dari galeri atau kamera">
+              <div class="ig-avatar-inner" id="editProfileAvatarPreview">
+                <span class="ig-avatar-initial" id="editProfileAvatarInitial">M</span>
+              </div>
+            </div>
+            <!-- Tombol Kamera Aksi Cepat Mengambang -->
+            <button type="button" class="ig-camera-badge" onclick="triggerProfilePhotoUpload()" title="Pilih Foto dari Galeri / Kamera" aria-label="Ubah Foto">
+              <i data-feather="camera"></i>
+            </button>
+          </div>
+
+          <!-- Input File Tersembunyi -->
+          <input type="file" id="profilePhotoFileInput" accept="image/png, image/jpeg, image/webp" style="display: none;" onchange="handleProfilePhotoSelected(event)">
+
+          <!-- Tombol Aksi Kontrol Foto -->
+          <div class="ig-avatar-actions">
+            <button type="button" class="btn-ig-pill btn-ig-primary" onclick="triggerProfilePhotoUpload()">
+              <i data-feather="upload"></i>
+              <span>Pilih Foto</span>
+            </button>
+            <button type="button" class="btn-ig-pill btn-ig-secondary" onclick="togglePresetAvatars()">
+              <i data-feather="smile"></i>
+              <span>Koleksi Avatar</span>
+            </button>
+            <button type="button" class="btn-ig-pill btn-ig-danger" id="btnRemoveProfilePhoto" onclick="removeProfilePhoto()" style="display: none;">
+              <i data-feather="trash-2"></i>
+              <span>Hapus Foto</span>
+            </button>
+          </div>
+          <small class="ig-avatar-hint">Mendukung format JPG, PNG, atau WebP. Otomatis dipotong bulat proporsional & dioptimasi.</small>
+
+          <!-- Drawer Koleksi Preset Avatar -->
+          <div class="ig-presets-drawer" id="presetAvatarsDrawer" style="display: none;">
+            <div class="presets-header">
+              <span>Pilihan Avatar Siap Pakai:</span>
+              <button type="button" class="btn-close-presets" onclick="togglePresetAvatars(false)" title="Tutup Koleksi">✕</button>
+            </div>
+            <div class="presets-grid" id="presetAvatarsGrid">
+              <!-- Diisi otomatis oleh JavaScript -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Bagian Input Data -->
+        <div class="edit-profile-fields">
+          <div class="form-group">
+            <label for="editProfileInputNama">Nama Mahasiswa / Nama Lengkap <span class="required-star">*</span></label>
+            <div class="input-with-icon">
+              <i data-feather="user" class="field-icon"></i>
+              <input type="text" id="editProfileInputNama" class="custom-input" placeholder="Masukkan nama lengkap Anda..." required minlength="2" maxlength="60" oninput="handleProfileNameInput(this.value)">
+            </div>
+            <small class="field-hint">Nama ini akan otomatis tampil di seluruh tugas, ringkasan kelas, dan kartu mahasiswa.</small>
+          </div>
+
+          <div class="form-row-profile">
+            <div class="form-group">
+              <label for="editProfileInputNim">NIM (Nomor Induk Mahasiswa)</label>
+              <div class="input-with-icon locked-field">
+                <i data-feather="hash" class="field-icon"></i>
+                <input type="text" id="editProfileInputNim" class="custom-input" readonly disabled>
+                <span class="locked-badge" title="NIM terikat akun & tidak dapat diubah"><i data-feather="lock"></i></span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Status Akun</label>
+              <div class="role-badge-display" id="editProfileRoleBadge">
+                <i data-feather="award"></i>
+                <span id="editProfileRoleText">Mahasiswa</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Banner Sinkronisasi Cloud Otomatis -->
+        <div class="cloud-sync-info-banner">
+          <i data-feather="cloud"></i>
+          <div>
+            <strong>Otomatis Tersinkron ke Cloud:</strong>
+            <p>Perubahan nama dan foto langsung tersimpan permanen di akun Cloud Firestore Anda.</p>
+          </div>
+        </div>
+
+        <!-- Footer Tombol Aksi -->
+        <div class="dialog-footer edit-profile-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeEditProfileModal()">Batal</button>
+          <button type="submit" class="btn btn-primary" id="btnSaveProfile">
+            <i data-feather="check"></i>
+            <span id="btnSaveProfileText">Simpan Perubahan</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
   <!-- Container Notifikasi Toast -->
   <div class="toast-wrapper" id="toastWrapper"></div>
 
@@ -1851,9 +1996,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=6.0"></script>
+  <script src="firebase-config.js?v=7.0"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=6.0"></script>
+  <script src="app.js?v=7.0"></script>
 </body>
 </html>

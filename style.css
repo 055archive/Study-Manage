@@ -4890,3 +4890,524 @@ input:-webkit-autofill:active {
   color: var(--primary);
   font-weight: 700;
 }
+
+/* ==========================================================================
+   INSTAGRAM-STYLE PROFILE & AVATAR SYSTEM
+   ========================================================================== */
+.ig-story-ring {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  padding: 3px;
+  box-shadow: 0 4px 18px rgba(220, 39, 67, 0.35);
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ig-story-ring:hover {
+  transform: scale(1.04);
+  box-shadow: 0 6px 24px rgba(220, 39, 67, 0.45);
+}
+
+.ig-avatar-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3px solid var(--bg-surface);
+  background: linear-gradient(135deg, var(--primary), #818cf8);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+.ig-avatar-initial {
+  font-size: 2.4rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.ig-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+/* Floating Camera Action Badge */
+.ig-avatar-outer-container {
+  position: relative;
+  display: inline-block;
+  margin: 0 auto;
+}
+
+.ig-camera-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #ffffff;
+  border: 3px solid var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  padding: 0;
+}
+.ig-camera-badge:hover {
+  transform: scale(1.15);
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+}
+.ig-camera-badge svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.2;
+}
+
+/* Avatar Rings for other places */
+.ig-avatar-ring-sm {
+  position: relative;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  padding: 2px;
+  box-shadow: 0 2px 8px rgba(220, 39, 67, 0.25);
+  overflow: hidden;
+}
+.ig-avatar-ring-lg {
+  position: relative;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  padding: 3px;
+  box-shadow: 0 3px 12px rgba(220, 39, 67, 0.3);
+  overflow: hidden;
+}
+
+/* Avatar Photos in UI elements */
+.avatar-photo-img,
+.user-avatar-img,
+.topbar-avatar-img,
+.welcome-avatar-img,
+.student-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+/* Topbar Profile Button */
+.topbar-profile-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 50%;
+  transition: transform 0.15s ease;
+}
+.topbar-profile-btn:hover {
+  transform: scale(1.08);
+}
+.topbar-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), #818cf8);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+.topbar-profile-edit-badge {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+.topbar-profile-edit-badge svg {
+  width: 8px;
+  height: 8px;
+  stroke-width: 2.5;
+}
+
+/* Sidebar User Profile Badge Enhancement */
+.user-profile-badge {
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+.user-profile-badge:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(99, 102, 241, 0.35);
+  transform: translateY(-1px);
+}
+.user-avatar-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+.avatar-edit-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--sidebar-bg);
+}
+.avatar-edit-badge svg {
+  width: 8px;
+  height: 8px;
+  stroke-width: 2.2;
+}
+.user-name-row-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* Welcome Banner Profile Avatar */
+.welcome-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.welcome-avatar-wrapper {
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.welcome-avatar-wrapper:hover {
+  transform: scale(1.06);
+}
+.welcome-avatar {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), #818cf8);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+}
+.welcome-avatar-camera-btn {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-surface);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+.welcome-avatar-camera-btn svg {
+  width: 11px;
+  height: 11px;
+  stroke-width: 2.2;
+}
+.btn-edit-profile-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-edit-profile-pill:hover {
+  background: var(--primary);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+.btn-edit-profile-pill svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Modal Edit Profile Styling */
+.edit-profile-dialog .edit-profile-box {
+  max-width: 520px;
+  width: 100%;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+}
+.ig-header-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(220, 39, 67, 0.12), rgba(240, 148, 51, 0.12));
+  color: #dc2743;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.edit-profile-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: block;
+}
+
+.ig-profile-avatar-section {
+  text-align: center;
+  padding: 20px 16px 14px;
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.04) 0%, transparent 100%);
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 16px;
+}
+.ig-avatar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.btn-ig-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+.btn-ig-pill svg {
+  width: 14px;
+  height: 14px;
+}
+.btn-ig-primary {
+  background: var(--primary);
+  color: #ffffff;
+}
+.btn-ig-primary:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(99, 102, 241, 0.3);
+}
+.btn-ig-secondary {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-main);
+}
+.btn-ig-secondary:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.btn-ig-danger {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+}
+.btn-ig-danger:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+.ig-avatar-hint {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+/* Preset Avatars Drawer */
+.ig-presets-drawer {
+  margin-top: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  text-align: left;
+  animation: fadeInDown 0.2s ease;
+}
+.presets-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 10px;
+}
+.btn-close-presets {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.btn-close-presets:hover {
+  color: var(--text-main);
+  background: var(--bg-hover);
+}
+.presets-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.preset-avatar-btn {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 2px;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.preset-avatar-btn:hover {
+  transform: scale(1.1);
+  border-color: var(--primary);
+}
+.preset-avatar-btn img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Form Rows & Locked Field */
+.form-row-profile {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.locked-field input {
+  background-color: var(--bg-hover) !important;
+  color: var(--text-muted) !important;
+  cursor: not-allowed;
+  padding-right: 36px !important;
+}
+.locked-badge {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+.locked-badge svg {
+  width: 14px;
+  height: 14px;
+}
+.role-badge-display {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+.role-badge-display svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Cloud Sync Banner */
+.cloud-sync-info-banner {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: rgba(16, 185, 129, 0.08);
+  border-left: 3px solid #10b981;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.78rem;
+}
+.cloud-sync-info-banner svg {
+  color: #10b981;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.cloud-sync-info-banner strong {
+  color: #10b981;
+  display: block;
+  margin-bottom: 2px;
+}
+.cloud-sync-info-banner p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* Student cards in Admin view with photos */
+.student-avatar-md.has-photo {
+  background: transparent;
+  padding: 1px;
+}
+.student-avatar-md img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.student-avatar-sm img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}

@@ -3534,7 +3534,20 @@ function updateStudentProfileUI(profile) {
     localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(profile));
   } catch (e) {}
 
-  // Sidebar elements
+  // Helper render avatar bergaya Instagram / foto profil
+  function renderAvatarElement(el, photoURL, name) {
+    if (!el) return;
+    const initial = (name || 'M').trim().charAt(0).toUpperCase();
+    if (photoURL) {
+      el.innerHTML = `<img src="${photoURL}" alt="${escapeHtml(name || 'Avatar')}" class="avatar-photo-img" onerror="this.onerror=null; this.parentElement.textContent='${initial}';">`;
+      el.classList.add('has-custom-photo');
+    } else {
+      el.textContent = initial;
+      el.classList.remove('has-custom-photo');
+    }
+  }
+
+  // 1. Sidebar elements
   const sbName = document.getElementById('sidebarUserName');
   const sbNim = document.getElementById('sidebarUserNim');
   const sbAvatar = document.getElementById('sidebarUserAvatar');
@@ -3542,15 +3555,25 @@ function updateStudentProfileUI(profile) {
   if (sbName) sbName.textContent = profile.nama || 'Mahasiswa';
   if (sbNim) sbNim.textContent = profile.nim ? `NIM: ${profile.nim}` : 'NIM: -';
   if (sbAvatar) {
-    const initial = (profile.nama || 'M').trim().charAt(0).toUpperCase();
-    sbAvatar.textContent = initial;
+    renderAvatarElement(sbAvatar, profile.photoURL, profile.nama || 'M');
   }
 
-  // Dashboard banner elements
+  // 2. Topbar elements
+  const tbAvatar = document.getElementById('topbarUserAvatar');
+  if (tbAvatar) {
+    renderAvatarElement(tbAvatar, profile.photoURL, profile.nama || 'M');
+  }
+
+  // 3. Dashboard banner elements
   const dbName = document.getElementById('dashboardStudentName');
   const dbNim = document.getElementById('dashboardStudentNim');
+  const wbAvatar = document.getElementById('welcomeUserAvatar');
+
   if (dbName) dbName.textContent = profile.nama || 'Mahasiswa';
   if (dbNim) dbNim.textContent = profile.nim ? `NIM: ${profile.nim}` : 'NIM: -';
+  if (wbAvatar) {
+    renderAvatarElement(wbAvatar, profile.photoURL, profile.nama || 'M');
+  }
 
   // Perbarui status & badge hak akses Pengurus Kelas
   if (typeof updateAdminUI === 'function') {
@@ -5340,10 +5363,14 @@ function renderStudentsListUI(students) {
     }
     const pct = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
 
+    const avatarContent = s.photoURL 
+      ? `<img src="${s.photoURL}" alt="${escapeHtml(s.nama)}" class="student-avatar-img">`
+      : initial;
+
     html += `
       <div class="student-card-row">
         <div class="student-card-left">
-          <div class="student-avatar-md">${initial}</div>
+          <div class="student-avatar-md ${s.photoURL ? 'has-photo' : ''}">${avatarContent}</div>
           <div class="student-info-main">
             <div class="student-name-row">
               <span class="student-name-text">${escapeHtml(s.nama)}</span>
@@ -5406,7 +5433,13 @@ window.openStudentProgressDetail = function(uid) {
   const elBar = document.getElementById('detailProgressBarFill');
   const elList = document.getElementById('detailTasksList');
 
-  if (elAvatar) elAvatar.textContent = initial;
+  if (elAvatar) {
+    if (student.photoURL) {
+      elAvatar.innerHTML = `<img src="${student.photoURL}" alt="${escapeHtml(student.nama)}" class="student-avatar-img">`;
+    } else {
+      elAvatar.textContent = initial;
+    }
+  }
   if (elName) elName.textContent = student.nama || 'Mahasiswa';
   if (elMeta) elMeta.textContent = `NIM: ${student.nim || '-'} • ${student.role || 'Mahasiswa'}`;
 
@@ -6030,6 +6063,348 @@ function renderInfoKelas() {
   if (window.feather) feather.replace();
 }
 window.renderInfoKelas = renderInfoKelas;
+
+// ============================================================================
+// FITUR PROFIL MAHASISWA & FOTO (GAYA INSTAGRAM) DENGAN SINKRONISASI DATABASE
+// ============================================================================
+
+let stagedProfilePhoto = null;
+
+/**
+ * Buka Modal Edit Profil Mahasiswa
+ */
+function openEditProfileModal() {
+  const modal = document.getElementById('editProfileModal');
+  if (!modal) return;
+
+  const currentName = (currentUserProfile && currentUserProfile.nama) ? currentUserProfile.nama : '';
+  const currentNim = (currentUserProfile && currentUserProfile.nim) ? currentUserProfile.nim : '';
+  const currentPhoto = (currentUserProfile && currentUserProfile.photoURL) ? currentUserProfile.photoURL : null;
+  const currentRole = (currentUserProfile && currentUserProfile.role) ? currentUserProfile.role : 'Mahasiswa';
+
+  stagedProfilePhoto = currentPhoto;
+
+  const inputNama = document.getElementById('editProfileInputNama');
+  const inputNim = document.getElementById('editProfileInputNim');
+  const roleText = document.getElementById('editProfileRoleText');
+  const btnRemove = document.getElementById('btnRemoveProfilePhoto');
+
+  if (inputNama) inputNama.value = currentName;
+  if (inputNim) inputNim.value = currentNim ? currentNim : '-';
+  if (roleText) roleText.textContent = (isCurrentUserAdmin && currentRole !== 'Mahasiswa') ? currentRole : 'Mahasiswa';
+
+  updateEditProfileAvatarPreview(currentPhoto, currentName);
+
+  if (btnRemove) {
+    btnRemove.style.display = currentPhoto ? 'inline-flex' : 'none';
+  }
+
+  // Sembunyikan drawer preset saat baru dibuka
+  togglePresetAvatars(false);
+
+  modal.showModal();
+  if (window.feather) feather.replace();
+
+  if (inputNama) {
+    setTimeout(() => inputNama.focus(), 100);
+  }
+}
+window.openEditProfileModal = openEditProfileModal;
+
+/**
+ * Tutup Modal Edit Profil Mahasiswa
+ */
+function closeEditProfileModal() {
+  const modal = document.getElementById('editProfileModal');
+  if (modal) modal.close();
+  stagedProfilePhoto = null;
+}
+window.closeEditProfileModal = closeEditProfileModal;
+
+/**
+ * Update Preview Avatar di Modal Edit Profil
+ */
+function updateEditProfileAvatarPreview(photoURL, name) {
+  const previewBox = document.getElementById('editProfileAvatarPreview');
+  const btnRemove = document.getElementById('btnRemoveProfilePhoto');
+  const initial = (name || (currentUserProfile && currentUserProfile.nama) || 'M').trim().charAt(0).toUpperCase();
+
+  if (previewBox) {
+    if (photoURL) {
+      previewBox.innerHTML = `<img src="${photoURL}" alt="Preview" class="ig-preview-img">`;
+    } else {
+      previewBox.innerHTML = `<span class="ig-avatar-initial" id="editProfileAvatarInitial">${initial}</span>`;
+    }
+  }
+
+  if (btnRemove) {
+    btnRemove.style.display = photoURL ? 'inline-flex' : 'none';
+  }
+}
+
+/**
+ * Trigger File Picker untuk Upload Foto dari Galeri / Kamera
+ */
+function triggerProfilePhotoUpload() {
+  const fileInput = document.getElementById('profilePhotoFileInput');
+  if (fileInput) fileInput.click();
+}
+window.triggerProfilePhotoUpload = triggerProfilePhotoUpload;
+
+/**
+ * Handler Saat Pengguna Memilih Berkas Foto
+ */
+async function handleProfilePhotoSelected(e) {
+  const file = e.target.files ? e.target.files[0] : null;
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    showToast('Mohon pilih berkas gambar yang valid (JPG, PNG, atau WebP)!', 'warning');
+    return;
+  }
+
+  try {
+    showToast('Mengoptimasi & memotong foto profil...', 'info');
+    const croppedDataUrl = await cropAndCompressAvatar(file, 320, 0.85);
+    stagedProfilePhoto = croppedDataUrl;
+
+    const currentName = (document.getElementById('editProfileInputNama') ? document.getElementById('editProfileInputNama').value : '') || (currentUserProfile ? currentUserProfile.nama : 'M');
+    updateEditProfileAvatarPreview(stagedProfilePhoto, currentName);
+    showToast('Foto profil dipilih! Klik "Simpan Perubahan" untuk sinkronisasi ke cloud. 📸', 'success');
+  } catch (err) {
+    console.error('Gagal memproses foto profil:', err);
+    showToast('Gagal memproses foto: ' + err.message, 'danger');
+  } finally {
+    e.target.value = '';
+  }
+}
+window.handleProfilePhotoSelected = handleProfilePhotoSelected;
+
+/**
+ * Crop Persegi 1:1 di Tengah dan Kompresi Foto Profil ke Base64
+ */
+function cropAndCompressAvatar(file, targetSize = 320, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = targetSize;
+          canvas.height = targetSize;
+          const ctx = canvas.getContext('2d');
+
+          // Logika center-crop persegi 1:1 proporsional
+          const minDim = Math.min(img.width, img.height);
+          const sx = (img.width - minDim) / 2;
+          const sy = (img.height - minDim) / 2;
+
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, targetSize, targetSize);
+
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      img.onerror = () => reject(new Error('Gagal memuat berkas gambar.'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('Gagal membaca berkas gambar.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Hapus Foto Profil (Kembali ke inisial nama)
+ */
+function removeProfilePhoto() {
+  stagedProfilePhoto = null;
+  const currentName = (document.getElementById('editProfileInputNama') ? document.getElementById('editProfileInputNama').value : '') || (currentUserProfile ? currentUserProfile.nama : 'M');
+  updateEditProfileAvatarPreview(null, currentName);
+  showToast('Foto profil dihapus (menggunakan inisial nama).', 'info');
+}
+window.removeProfilePhoto = removeProfilePhoto;
+
+/**
+ * Live Update Inisial Saat Mengetik Nama (jika belum ada foto kustom)
+ */
+function handleProfileNameInput(val) {
+  if (!stagedProfilePhoto) {
+    const initial = (val || 'M').trim().charAt(0).toUpperCase();
+    const initEl = document.getElementById('editProfileAvatarInitial');
+    if (initEl) initEl.textContent = initial;
+  }
+}
+window.handleProfileNameInput = handleProfileNameInput;
+
+/**
+ * Buat Avatar SVG Berwarna Keren untuk Preset Bawaan
+ */
+function createSvgPresetAvatar(color1, color2, iconPath) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <defs>
+      <linearGradient id="pGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${color1}"/>
+        <stop offset="100%" stop-color="${color2}"/>
+      </linearGradient>
+    </defs>
+    <circle cx="50" cy="50" r="50" fill="url(#pGrad)"/>
+    <g transform="translate(25, 25) scale(2.08)" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      ${iconPath}
+    </g>
+  </svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+/**
+ * Daftar Preset Avatar Bawaan
+ */
+function getPresetAvatarsList() {
+  return [
+    {
+      name: 'Mahasiswa / Scholar',
+      dataUrl: createSvgPresetAvatar('#4f46e5', '#818cf8', '<path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>')
+    },
+    {
+      name: 'Programmer / Developer',
+      dataUrl: createSvgPresetAvatar('#059669', '#34d399', '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>')
+    },
+    {
+      name: 'Bintang Prestasi',
+      dataUrl: createSvgPresetAvatar('#ea580c', '#fbbf24', '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>')
+    },
+    {
+      name: 'Kreatif / Empati',
+      dataUrl: createSvgPresetAvatar('#e11d48', '#fb7185', '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>')
+    },
+    {
+      name: 'Roket / Ambisi',
+      dataUrl: createSvgPresetAvatar('#0284c7', '#38bdf8', '<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>')
+    },
+    {
+      name: 'Energetik / Kilat',
+      dataUrl: createSvgPresetAvatar('#d97706', '#f59e0b', '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>')
+    },
+    {
+      name: 'Ceria / Ramah',
+      dataUrl: createSvgPresetAvatar('#7c3aed', '#a78bfa', '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>')
+    },
+    {
+      name: 'Pemimpin / Juara',
+      dataUrl: createSvgPresetAvatar('#ca8a04', '#facc15', '<circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>')
+    }
+  ];
+}
+
+/**
+ * Tampilkan atau Sembunyikan Drawer Koleksi Preset Avatar
+ */
+function togglePresetAvatars(force) {
+  const drawer = document.getElementById('presetAvatarsDrawer');
+  if (!drawer) return;
+
+  const willShow = (force !== undefined) ? !!force : (drawer.style.display === 'none');
+  drawer.style.display = willShow ? 'block' : 'none';
+
+  if (willShow) {
+    const grid = document.getElementById('presetAvatarsGrid');
+    if (grid && grid.children.length === 0) {
+      const presets = getPresetAvatarsList();
+      grid.innerHTML = presets.map((p) => `
+        <button type="button" class="preset-avatar-btn" onclick="selectPresetAvatar('${p.dataUrl}')" title="${p.name}">
+          <img src="${p.dataUrl}" alt="${p.name}">
+        </button>
+      `).join('');
+    }
+  }
+}
+window.togglePresetAvatars = togglePresetAvatars;
+
+/**
+ * Pilih Preset Avatar Siap Pakai
+ */
+function selectPresetAvatar(dataUrl) {
+  stagedProfilePhoto = dataUrl;
+  const currentName = (document.getElementById('editProfileInputNama') ? document.getElementById('editProfileInputNama').value : '') || (currentUserProfile ? currentUserProfile.nama : 'M');
+  updateEditProfileAvatarPreview(stagedProfilePhoto, currentName);
+  togglePresetAvatars(false);
+  showToast('Avatar preset dipilih! Klik "Simpan Perubahan" untuk menyimpan.', 'info');
+}
+window.selectPresetAvatar = selectPresetAvatar;
+
+/**
+ * Simpan Profil Mahasiswa & Sinkronisasi ke Database Cloud Firestore
+ */
+async function handleSaveProfile(e) {
+  if (e) e.preventDefault();
+
+  const inputNama = document.getElementById('editProfileInputNama');
+  const newName = inputNama ? inputNama.value.trim() : '';
+
+  if (!newName || newName.length < 2) {
+    showToast('Mohon masukkan nama mahasiswa yang valid (minimal 2 karakter).', 'warning');
+    if (inputNama) inputNama.focus();
+    return;
+  }
+
+  const btnSave = document.getElementById('btnSaveProfile');
+  const btnText = document.getElementById('btnSaveProfileText');
+  if (btnSave) btnSave.disabled = true;
+  if (btnText) btnText.textContent = 'Menyimpan ke Cloud... ⏳';
+
+  try {
+    const uid = (typeof getCurrentUserUID === 'function' ? getCurrentUserUID() : null) || (currentUserProfile ? currentUserProfile.uid : null) || localStorage.getItem('studysync_active_uid');
+    const targetPhotoURL = stagedProfilePhoto;
+
+    const updates = {
+      nama: newName,
+      photoURL: targetPhotoURL || null,
+      updatedAt: new Date().toISOString()
+    };
+
+    // 1. Simpan dan sinkronkan ke Firestore via updateUserProfile
+    if (uid && typeof updateUserProfile === 'function') {
+      await updateUserProfile(uid, updates);
+    }
+
+    // 2. Sinkronkan displayName ke Firebase Auth
+    if (typeof firebaseAuth !== 'undefined' && firebaseAuth && firebaseAuth.currentUser && firebaseAuth.currentUser.updateProfile) {
+      try {
+        await firebaseAuth.currentUser.updateProfile({
+          displayName: newName
+        });
+      } catch (authErr) {
+        console.warn('Gagal sinkron displayName ke Firebase Auth:', authErr);
+      }
+    }
+
+    // 3. Perbarui cache profil lokal
+    if (!currentUserProfile) currentUserProfile = {};
+    currentUserProfile.nama = newName;
+    currentUserProfile.photoURL = targetPhotoURL || null;
+
+    localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(currentUserProfile));
+
+    // 4. Perbarui seluruh UI portal secara instan
+    updateStudentProfileUI(currentUserProfile);
+
+    // 5. Tutup modal & tampilkan notifikasi sukses
+    closeEditProfileModal();
+    showToast('Profil & foto berhasil diperbarui dan tersinkron ke database! 🎉', 'success');
+
+  } catch (err) {
+    console.error('Gagal menyimpan profil:', err);
+    showToast('Gagal menyimpan profil: ' + err.message, 'danger');
+  } finally {
+    if (btnSave) btnSave.disabled = false;
+    if (btnText) btnText.textContent = 'Simpan Perubahan';
+  }
+}
+window.handleSaveProfile = handleSaveProfile;
 
 // ============================================================================
 // 11. INITIALIZATION
