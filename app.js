@@ -2899,18 +2899,6 @@ function renderMatkul() {
 
         <h3 class="course-card-name">${escapeHtml(course.nama)}</h3>
 
-        <!-- Box Kode Gabung Kelas Mata Kuliah (Google Classroom Style) -->
-        <div class="course-class-code-box">
-          <div class="code-box-left">
-            <span class="code-box-label"><i data-feather="key"></i> Kode Gabung:</span>
-            <strong class="code-box-value">${escapeHtml(classCode)}</strong>
-          </div>
-          <button type="button" class="btn-copy-code" onclick="copyCourseCode('${escapeHtml(classCode)}', '${escapeHtml(course.nama)}')" title="Salin Kode Gabung untuk dibagikan ke teman sekelas">
-            <i data-feather="copy"></i>
-            <span>Salin</span>
-          </button>
-        </div>
-
         <div class="course-detail-list">
           ${course.dosen ? `
             <div class="course-detail-item">
