@@ -15,12 +15,14 @@ const USER_PROFILE_STORAGE_KEY = 'studysync_profile_v2';
 
 // Data Mata Kuliah Default
 // Data Mata Kuliah Asli Semester Ini (10 Mata Kuliah)
+// Data Mata Kuliah Default Semester Ini (10 Mata Kuliah)
+// Kode akses mata kuliah dilindungi dengan One-Way Hash SHA-256 (aman dari inspect element)
 const DEFAULT_MATKUL = [
   {
     id: 'mk-1',
     nama: 'PRAKTIK IBADAH',
     kode: 'PK',
-    classCode: 'PI2026',
+    classCodeHash: 'c391de2fb2ee46466c4eb9ebc6da7748a32885df864e5ccc8a02af235a3a626b',
     sks: 2,
     dosen: 'Abdul Qodir',
     jadwal: 'Senin 13:00 - 14:40',
@@ -31,7 +33,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-2',
     nama: 'BIOINFORMATIKA',
     kode: 'BK',
-    classCode: 'BIO2026',
+    classCodeHash: 'f5a987e93513c1aff2be9dc54517486e3289aa1edab6baf1e09985823f74a49c',
     sks: 2,
     dosen: 'Eri Sulistiati',
     jadwal: 'Senin 08:40 - 10:20',
@@ -42,7 +44,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-3',
     nama: 'PEMROGRAMAN BERORIENTASI OBJEK',
     kode: 'PBO',
-    classCode: 'PBO2026',
+    classCodeHash: 'e15343efe81aad14ef1271eb1b78770ec1d569335f9ca5b8e64e60965d4fd07e',
     sks: 3,
     dosen: 'Maseni',
     jadwal: '10:00 - 12:30',
@@ -53,7 +55,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-4',
     nama: 'PEMROGRAMAN WEB',
     kode: 'PW',
-    classCode: 'PW2026',
+    classCodeHash: 'ba3fe3420a15355b8d65b3523d496a244846debf8f543fcdb3c0ed11412e0fc1',
     sks: 3,
     dosen: 'Wawan Setiawan',
     jadwal: 'Senin 14:40 - 17:10',
@@ -64,7 +66,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-5',
     nama: 'REKAYASA PERANGKAT LUNAK',
     kode: 'RPL',
-    classCode: 'RPL2026',
+    classCodeHash: '8f3c81dafc8164ba260f2b3670b72a4fe4651633fd25a91492ee2b7c058129d7',
     sks: 3,
     dosen: 'Reza Syafrizal',
     jadwal: '10:00 - 12:30',
@@ -75,7 +77,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-6',
     nama: 'MATEMATIKA DISKRIT',
     kode: 'MD',
-    classCode: 'MD2026',
+    classCodeHash: '74dc6d3785f41dadfc02d6a911221865514fcf8ab9160a7bdfad7e7fc5f7617c',
     sks: 2,
     dosen: 'Ayu Siska Maryoni',
     jadwal: 'Selasa 08:30 - 10:00',
@@ -86,7 +88,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-7',
     nama: 'STATISTIKA',
     kode: 'S',
-    classCode: 'STAT2026',
+    classCodeHash: 'de516dcbb30e58d9e6380c9f74e75e62b7ca2fa850eb2679e8230847e39eb15b',
     sks: 2,
     dosen: 'Eko Wahyu Wibowo',
     jadwal: '10:50 - 12:30',
@@ -97,7 +99,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-8',
     nama: 'JARINGAN KOMPUTER',
     kode: 'JK',
-    classCode: 'JK2026',
+    classCodeHash: 'fff6b0abd76da57668548ede5b21a73150225afd9c6719acff647021f0e6faf2',
     sks: 3,
     dosen: 'Ibnu Mas\'ud',
     jadwal: 'Selasa 13:00 - 15:30',
@@ -108,7 +110,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-9',
     nama: 'KEAMANAN DATA DAN INFORMASI',
     kode: 'KDI',
-    classCode: 'KDI2026',
+    classCodeHash: '8e7e30155d8020aaceabc6c4d490f32980b37a701ea32b7ad8a96fe9f8061d52',
     sks: 2,
     dosen: 'Ibnu Mas\'ud',
     jadwal: '15:30 - 17:10',
@@ -119,7 +121,7 @@ const DEFAULT_MATKUL = [
     id: 'mk-10',
     nama: 'INTERAKSI MANUSIA DAN KOMPUTER',
     kode: 'IMK',
-    classCode: 'IMK2026',
+    classCodeHash: 'f250606cbf93fcb624edc81ec931918306e06e706e4903d2f031a4ad0144ddaf',
     sks: 2,
     dosen: 'Reza Syafrizal',
     jadwal: '14:40 - 16:20',
@@ -130,29 +132,34 @@ const DEFAULT_MATKUL = [
 
 // Helper Kode Akses Mata Kuliah & Enrollment
 const COURSE_ENROLLED_STORAGE_KEY = 'studysync_enrolled_courses_v1';
+// Hash SHA-256 untuk Kode Akses Resmi Angkatan (TI2026)
+const OFFICIAL_CLASS_CODE_HASH = '171ce6ccb91caaac0b396c9673386a58340a8eb3ad93ef3727de11d0cfeab1d1';
+
+function getCourseDefaultClassCodeHash(course) {
+  if (course && course.classCodeHash) return course.classCodeHash;
+  const name = ((course && course.nama) || '').toUpperCase();
+  if (name.includes('IBADAH')) return 'c391de2fb2ee46466c4eb9ebc6da7748a32885df864e5ccc8a02af235a3a626b';
+  if (name.includes('BIO')) return 'f5a987e93513c1aff2be9dc54517486e3289aa1edab6baf1e09985823f74a49c';
+  if (name.includes('BERORIENTASI') || name.includes('PBO')) return 'e15343efe81aad14ef1271eb1b78770ec1d569335f9ca5b8e64e60965d4fd07e';
+  if (name.includes('WEB') || name.includes('PW')) return 'ba3fe3420a15355b8d65b3523d496a244846debf8f543fcdb3c0ed11412e0fc1';
+  if (name.includes('REKAYASA') || name.includes('RPL')) return '8f3c81dafc8164ba260f2b3670b72a4fe4651633fd25a91492ee2b7c058129d7';
+  if (name.includes('DISKRIT') || name.includes('MD')) return '74dc6d3785f41dadfc02d6a911221865514fcf8ab9160a7bdfad7e7fc5f7617c';
+  if (name.includes('STATISTIK')) return 'de516dcbb30e58d9e6380c9f74e75e62b7ca2fa850eb2679e8230847e39eb15b';
+  if (name.includes('JARINGAN') || name.includes('JK')) return 'fff6b0abd76da57668548ede5b21a73150225afd9c6719acff647021f0e6faf2';
+  if (name.includes('KEAMANAN') || name.includes('KDI')) return '8e7e30155d8020aaceabc6c4d490f32980b37a701ea32b7ad8a96fe9f8061d52';
+  if (name.includes('INTERAKSI') || name.includes('IMK')) return 'f250606cbf93fcb624edc81ec931918306e06e706e4903d2f031a4ad0144ddaf';
+  return '';
+}
 
 function getCourseDefaultClassCode(course) {
-  if (course && course.classCode) return course.classCode.trim().toUpperCase();
-  const name = ((course && course.nama) || '').toUpperCase();
-  if (name.includes('IBADAH')) return 'PI2026';
-  if (name.includes('BIO')) return 'BIO2026';
-  if (name.includes('BERORIENTASI') || name.includes('PBO')) return 'PBO2026';
-  if (name.includes('WEB') || name.includes('PW')) return 'PW2026';
-  if (name.includes('REKAYASA') || name.includes('RPL')) return 'RPL2026';
-  if (name.includes('DISKRIT') || name.includes('MD')) return 'MD2026';
-  if (name.includes('STATISTIK')) return 'STAT2026';
-  if (name.includes('JARINGAN') || name.includes('JK')) return 'JK2026';
-  if (name.includes('KEAMANAN') || name.includes('KDI')) return 'KDI2026';
-  if (name.includes('INTERAKSI') || name.includes('IMK')) return 'IMK2026';
-  const cleanKode = ((course && course.kode) || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-  return (cleanKode || 'MK') + '2026';
+  return (course && course.classCode) || '';
 }
 
 function ensureCourseClassCodes(list) {
   if (!Array.isArray(list)) return [];
   list.forEach(item => {
-    if (item && !item.classCode) {
-      item.classCode = getCourseDefaultClassCode(item);
+    if (item && !item.classCodeHash) {
+      item.classCodeHash = getCourseDefaultClassCodeHash(item);
     }
   });
   return list;
@@ -303,11 +310,12 @@ function isCourseEnrolledByName(courseName) {
 }
 
 /**
- * Daftarkan mahasiswa ke mata kuliah menggunakan kode gabung unik
+ * Daftarkan mahasiswa ke mata kuliah menggunakan kode gabung (diverifikasi via SHA-256 Hash)
  */
 async function enrollCourseByCode(enteredCode) {
   if (!enteredCode) throw new Error('Mohon masukkan Kode Gabung Mata Kuliah.');
   const cleanCode = enteredCode.trim().toUpperCase();
+  const inputHash = await getLocalSHA256(cleanCode);
 
   // Pastikan matkulList selalu terisi dari DEFAULT_MATKUL jika kosong
   if (!matkulList || matkulList.length === 0) {
@@ -317,8 +325,7 @@ async function enrollCourseByCode(enteredCode) {
   }
 
   // 1. Cek jika menggunakan Kode Akses Resmi Angkatan (TI2026) -> Daftarkan ke SELURUH mata kuliah sekaligus
-  const officialClassCode = (typeof getOfficialClassCode === 'function' ? getOfficialClassCode() : 'TI2026').toUpperCase();
-  if (cleanCode === officialClassCode || cleanCode === 'TI2026') {
+  if (inputHash === OFFICIAL_CLASS_CODE_HASH) {
     const allCourseIds = matkulList.map(m => m.id);
     const enrolled = getEnrolledCourses();
     const newEnrolled = Array.from(new Set([...enrolled, ...allCourseIds]));
@@ -341,40 +348,27 @@ async function enrollCourseByCode(enteredCode) {
     return { allCourses: true, count: matkulList.length };
   }
 
-  // 2. Cari mata kuliah spesifik yang memiliki kode ini
+  // 2. Cari mata kuliah spesifik yang cocok dengan hash kode ini
   let course = matkulList.find(m => {
     if (!m) return false;
-    const directCode = (m.classCode || '').trim().toUpperCase();
-    const defaultCode = (typeof getCourseDefaultClassCode === 'function' ? getCourseDefaultClassCode(m) : '').trim().toUpperCase();
-    const kCode = (m.kode || '').trim().toUpperCase();
-    const mNama = (m.nama || '').trim().toUpperCase();
-
-    return (
-      (directCode && directCode === cleanCode) ||
-      (defaultCode && defaultCode === cleanCode) ||
-      (kCode && (kCode === cleanCode || (kCode + '2026') === cleanCode)) ||
-      mNama === cleanCode
-    );
+    const directHash = m.classCodeHash || '';
+    const defaultHash = typeof getCourseDefaultClassCodeHash === 'function' ? getCourseDefaultClassCodeHash(m) : '';
+    return (directHash && directHash === inputHash) || (defaultHash && defaultHash === inputHash);
   });
 
   // Jika belum ada di matkulList lokal, cari di DEFAULT_MATKUL
   if (!course && typeof DEFAULT_MATKUL !== 'undefined' && Array.isArray(DEFAULT_MATKUL)) {
     course = DEFAULT_MATKUL.find(m => {
       if (!m) return false;
-      const directCode = (m.classCode || '').trim().toUpperCase();
-      const defaultCode = (typeof getCourseDefaultClassCode === 'function' ? getCourseDefaultClassCode(m) : '').trim().toUpperCase();
-      const kCode = (m.kode || '').trim().toUpperCase();
-      return (
-        (directCode && directCode === cleanCode) ||
-        (defaultCode && defaultCode === cleanCode) ||
-        (kCode && (kCode === cleanCode || (kCode + '2026') === cleanCode))
-      );
+      const directHash = m.classCodeHash || '';
+      const defaultHash = typeof getCourseDefaultClassCodeHash === 'function' ? getCourseDefaultClassCodeHash(m) : '';
+      return (directHash && directHash === inputHash) || (defaultHash && defaultHash === inputHash);
     });
 
     if (course) {
       const exists = matkulList.some(m => m.id === course.id);
       if (!exists) {
-        matkulList.push({ ...course, classCode: course.classCode || getCourseDefaultClassCode(course) });
+        matkulList.push({ ...course, classCodeHash: course.classCodeHash || getCourseDefaultClassCodeHash(course) });
         saveStorage();
       }
     }
@@ -384,8 +378,8 @@ async function enrollCourseByCode(enteredCode) {
     throw new Error(`Mata kuliah dengan kode "${cleanCode}" tidak ditemukan! Periksa kembali kode atau tanyakan ke PJ Mata Kuliah.`);
   }
 
-  if (!course.classCode && typeof getCourseDefaultClassCode === 'function') {
-    course.classCode = getCourseDefaultClassCode(course);
+  if (!course.classCodeHash && typeof getCourseDefaultClassCodeHash === 'function') {
+    course.classCodeHash = getCourseDefaultClassCodeHash(course);
   }
 
   const enrolled = getEnrolledCourses().slice();
@@ -2356,7 +2350,7 @@ function openEditMatkulModal(id) {
   document.getElementById('matkulNama').value = course.nama;
   document.getElementById('matkulKode').value = course.kode || '';
   const classCodeInput = document.getElementById('matkulClassCode');
-  if (classCodeInput) classCodeInput.value = course.classCode || getCourseDefaultClassCode(course);
+  if (classCodeInput) classCodeInput.value = course.classCode || '';
   document.getElementById('matkulSks').value = course.sks || 3;
   document.getElementById('matkulDosen').value = course.dosen || '';
   const pjInput = document.getElementById('matkulPj');
@@ -2751,7 +2745,7 @@ materiForm.addEventListener('submit', async (e) => {
 
 // SUBMIT MATA KULIAH (ADD & EDIT DENGAN CASCADE UPDATE)
 if (matkulForm) {
-  matkulForm.addEventListener('submit', (e) => {
+  matkulForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     if (!isCurrentUserAdmin) {
@@ -2762,7 +2756,15 @@ if (matkulForm) {
     const nama = document.getElementById('matkulNama').value.trim();
     const kode = document.getElementById('matkulKode').value.trim();
     const classCodeInput = document.getElementById('matkulClassCode');
-    const classCode = (classCodeInput ? classCodeInput.value.trim().toUpperCase() : '') || getCourseDefaultClassCode({ nama, kode });
+    const classCode = (classCodeInput ? classCodeInput.value.trim().toUpperCase() : '');
+    let computedHash = '';
+    if (classCode && typeof getLocalSHA256 === 'function') {
+      try {
+        computedHash = await getLocalSHA256(classCode);
+      } catch (hErr) {
+        console.warn('Gagal hash classCode:', hErr);
+      }
+    }
     const sks = Number(document.getElementById('matkulSks').value) || 0;
     const dosen = document.getElementById('matkulDosen').value.trim();
     const pj = document.getElementById('matkulPj') ? document.getElementById('matkulPj').value.trim() : '';
@@ -2781,12 +2783,15 @@ if (matkulForm) {
       // Mode Edit
       const courseIndex = matkulList.findIndex(m => m.id === editId);
       if (courseIndex !== -1) {
-        const oldName = matkulList[courseIndex].nama;
+        const oldCourse = matkulList[courseIndex];
+        const oldName = oldCourse.nama;
+        const finalHash = computedHash || oldCourse.classCodeHash || (typeof getCourseDefaultClassCodeHash === 'function' ? getCourseDefaultClassCodeHash(oldCourse) : '');
         matkulList[courseIndex] = {
-          ...matkulList[courseIndex],
+          ...oldCourse,
           nama,
           kode,
-          classCode,
+          classCode: classCode || oldCourse.classCode || '',
+          classCodeHash: finalHash,
           sks,
           dosen,
           pj,
@@ -2818,16 +2823,19 @@ if (matkulForm) {
           }
         }
 
-        showToast(`Mata kuliah "${nama}" (${classCode}) berhasil diperbarui! ✏️`, 'success');
+        showToast(`Mata kuliah "${nama}" berhasil diperbarui! ✏️`, 'success');
       }
     } else {
       // Mode Tambah Baru
       const existingIndex = matkulList.findIndex(m => m.nama.toLowerCase().trim() === nama.toLowerCase().trim());
       if (existingIndex !== -1) {
+        const existingCourse = matkulList[existingIndex];
+        const finalHash = computedHash || existingCourse.classCodeHash || (typeof getCourseDefaultClassCodeHash === 'function' ? getCourseDefaultClassCodeHash(existingCourse) : '');
         matkulList[existingIndex] = {
-          ...matkulList[existingIndex],
+          ...existingCourse,
           kode,
-          classCode,
+          classCode: classCode || existingCourse.classCode || '',
+          classCodeHash: finalHash,
           sks,
           dosen,
           pj,
@@ -2838,13 +2846,14 @@ if (matkulForm) {
         if (typeof syncMatkulToCloud === 'function') {
           syncMatkulToCloud(matkulList[existingIndex]);
         }
-        showToast(`Mata kuliah "${nama}" (${classCode}) diperbarui!`, 'success');
+        showToast(`Mata kuliah "${nama}" diperbarui!`, 'success');
       } else {
         const newMatkul = {
           id: 'mk-' + Date.now(),
           nama,
           kode,
-          classCode,
+          classCode: classCode || '',
+          classCodeHash: computedHash,
           sks,
           dosen,
           pj,
@@ -2856,7 +2865,7 @@ if (matkulForm) {
         if (typeof syncMatkulToCloud === 'function') {
           syncMatkulToCloud(newMatkul);
         }
-        showToast(`Mata kuliah "${nama}" (${classCode}) berhasil didaftarkan! 🎓`, 'success');
+        showToast(`Mata kuliah "${nama}" berhasil didaftarkan! 🎓`, 'success');
       }
     }
 
@@ -2897,7 +2906,6 @@ function renderMatkul() {
       const activeTasks = tugasList.filter(t => t && t.matkul && t.matkul.toLowerCase().trim() === courseName && !t.completed).length;
       const totalMaterials = materiList.filter(m => m && m.matkul && m.matkul.toLowerCase().trim() === courseName).length;
 
-      const classCode = course.classCode || getCourseDefaultClassCode(course);
       const isEnrolled = isStudentEnrolledInCourse(course);
 
       const card = document.createElement('div');
@@ -2969,9 +2977,9 @@ function renderMatkul() {
               <span>Buka Materi</span>
             </button>
           ` : `
-            <button type="button" class="btn-course-action btn-join-now" onclick="promptJoinSpecificCourse('${escapeHtml(classCode)}')" style="grid-column: 1 / -1; background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700;">
+            <button type="button" class="btn-course-action btn-join-now" onclick="openJoinCourseModal()" style="grid-column: 1 / -1; background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700;">
               <i data-feather="key"></i>
-              <span>Gabung Kelas (${escapeHtml(classCode)})</span>
+              <span>Gabung Mata Kuliah</span>
             </button>
           `}
         </div>

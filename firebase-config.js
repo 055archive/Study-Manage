@@ -730,12 +730,7 @@ async function verifyAdminCredentials(username, password) {
   return null;
 }
 
-// Fallback untuk kode lama jika diperlukan
-const VALID_ADMIN_CODES = ['AD1', 'AD2', 'AD3', 'AD4', 'AD5', 'AD6', 'AD7', 'AD8', 'AD9', 'AD10', 'AD1-AD10'];
-function isValidAdminCode(code) {
-  if (!code) return false;
-  return VALID_ADMIN_CODES.includes(code.trim().toUpperCase());
-}
+
 
 // ============================================================================
 // REAL-TIME LISTENERS (PER-USER & SHARED KELAS)
