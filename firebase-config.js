@@ -30,6 +30,7 @@ let firebaseApp = null;
 let firestoreDb = null;
 let firebaseStorage = null;
 let firebaseAuth = null;
+let firebaseMessaging = null;
 let isFirebaseConnected = false;
 
 // User yang sedang aktif login
@@ -131,6 +132,19 @@ function initFirebase() {
       firebaseAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => {
         console.warn('Gagal set auth persistence LOCAL:', err);
       });
+    }
+
+    // Firebase Cloud Messaging (Web Push Background)
+    if (firebase.messaging && typeof firebase.messaging.isSupported === 'function') {
+      try {
+        if (firebase.messaging.isSupported()) {
+          firebaseMessaging = firebase.messaging();
+          console.log('📡 Firebase Cloud Messaging (FCM) siap digunakan.');
+        }
+      } catch (msgErr) {
+        console.warn('Firebase Messaging belum didukung browser ini:', msgErr);
+        firebaseMessaging = null;
+      }
     }
 
     isFirebaseConnected = true;
@@ -1321,5 +1335,50 @@ async function deleteStudentAccount(uid, nim) {
 window.fetchAllStudentsData = fetchAllStudentsData;
 window.fetchStudentTaskStatus = fetchStudentTaskStatus;
 window.deleteStudentAccount = deleteStudentAccount;
+
+// ============================================================================
+// FIREBASE CLOUD MESSAGING (FCM) & BACKGROUND PUSH TOKEN
+// ============================================================================
+/**
+ * Registrasi Token FCM perangkat ke profil mahasiswa di Cloud Firestore
+ */
+async function initFCMNotification() {
+  if (!firebaseMessaging) return null;
+  if (!('Notification' in window)) return null;
+
+  try {
+    if (Notification.permission !== 'granted') return null;
+
+    let swReg = undefined;
+    if ('serviceWorker' in navigator) {
+      try {
+        swReg = await navigator.serviceWorker.ready;
+      } catch (e) {}
+    }
+
+    const token = await firebaseMessaging.getToken({
+      serviceWorkerRegistration: swReg
+    });
+
+    if (token) {
+      console.log('🔔 Token FCM aktif:', token);
+      const uid = getCurrentUserUID();
+      if (firestoreDb && uid) {
+        await firestoreDb.collection('users').doc(uid).set({
+          fcmToken: token,
+          fcmDevice: navigator.userAgent || 'Web Device',
+          fcmUpdatedAt: new Date().toISOString()
+        }, { merge: true });
+      }
+      return token;
+    }
+  } catch (err) {
+    console.warn('FCM Token belum dapat diambil:', err.message);
+  }
+  return null;
+}
+
+window.initFCMNotification = initFCMNotification;
+
 
 

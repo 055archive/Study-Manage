@@ -208,17 +208,26 @@ let activeMatkulFilter = 'ALL';
 let currentUserProfile = null;
 let isCurrentUserAdmin = false;
 
+function isDesignerWeb() {
+  if (!isCurrentUserAdmin || !currentUserProfile) return false;
+  const u = (currentUserProfile.adminUsername || '').toLowerCase().trim();
+  const r = (currentUserProfile.role || '').toLowerCase().trim();
+  return u === 'designerweb' || r === 'designer web';
+}
+window.isDesignerWeb = isDesignerWeb;
+
+function canAccessStudentsData() {
+  if (!isCurrentUserAdmin || !currentUserProfile) return false;
+  const u = (currentUserProfile.adminUsername || '').toLowerCase().trim();
+  const r = (currentUserProfile.role || '').toLowerCase().trim();
+  return u === 'kosma' || u === 'designerweb' || r === 'ketua kelas' || r === 'designer web';
+}
+window.canAccessStudentsData = canAccessStudentsData;
+
 function canUserEditOrDelete(item) {
   if (!item) return false;
-  // Jika tugas/materi pribadi, selalu boleh diedit & dihapus
-  if (!item.isKelas) return true;
-  // Jika pengguna adalah pengurus/admin aktif, boleh menghapus tugas & materi kelas
+  // Hanya pengurus kelas aktif yang berwenang mengedit atau menghapus tugas & materi kelas
   if (isCurrentUserAdmin) return true;
-  // Jika pengguna adalah pembuat/pengunggah item tersebut
-  if (currentUserProfile) {
-    if (item.authorUid && currentUserProfile.uid && item.authorUid === currentUserProfile.uid) return true;
-    if (item.authorNama && currentUserProfile.nama && item.authorNama.toLowerCase().trim() === currentUserProfile.nama.toLowerCase().trim()) return true;
-  }
   return false;
 }
 window.canUserEditOrDelete = canUserEditOrDelete;
@@ -1635,11 +1644,30 @@ function renderTugas() {
   updateOverview();
 }
 
-window.toggleTugasComplete = function(id) {
+let pendingCompleteTaskId = null;
+
+window.closeConfirmCompleteModal = function() {
+  const modal = document.getElementById('confirmCompleteModal');
+  if (modal) modal.close();
+  pendingCompleteTaskId = null;
+  // Kembalikan status checkbox di DOM jika sebelumnya sempat tercentang
+  renderTugas();
+  renderOverviewUrgent();
+};
+
+window.executeConfirmCompleteTask = function() {
+  if (!pendingCompleteTaskId) return;
+  const id = pendingCompleteTaskId;
+  const modal = document.getElementById('confirmCompleteModal');
+  if (modal) modal.close();
+  pendingCompleteTaskId = null;
+  applyTugasCompleteStatus(id, true);
+};
+
+function applyTugasCompleteStatus(id, newStatus) {
   const task = tugasList.find(t => t.id === id);
   if (!task) return;
 
-  const newStatus = !task.completed;
   task.completed = newStatus;
 
   if (task.isKelas) {
@@ -1663,7 +1691,39 @@ window.toggleTugasComplete = function(id) {
   saveStorage();
   renderTugas();
   renderOverviewUrgent();
-  showToast(newStatus ? 'Tugas ditandai selesai! 🎉' : 'Tugas dikembalikan ke belum selesai', 'success');
+  showToast(newStatus ? 'Selamat! Tugas berhasil diselesaikan! 🎉' : 'Tugas dikembalikan ke belum selesai', 'success');
+}
+
+window.toggleTugasComplete = function(id) {
+  const task = tugasList.find(t => t.id === id);
+  if (!task) return;
+
+  // Jika tugas saat ini BELUM selesai dan pengguna ingin menandai selesai -> Tampilkan dialog konfirmasi pencegah salah klik!
+  if (!task.completed) {
+    pendingCompleteTaskId = id;
+    const modal = document.getElementById('confirmCompleteModal');
+    const titleEl = document.getElementById('confirmCompleteTaskTitle');
+    const matkulEl = document.getElementById('confirmCompleteTaskMatkul');
+    if (titleEl) titleEl.textContent = task.judul || 'Tugas Perkuliahan';
+    if (matkulEl) matkulEl.textContent = `Mata Kuliah: ${task.matkul || '-'}`;
+    
+    if (modal) {
+      modal.showModal();
+      if (window.feather) feather.replace();
+    } else {
+      // Fallback dialog jika modal belum tersedia
+      if (confirm(`Apakah Anda yakin sudah menyelesaikan tugas "${task.judul}"?`)) {
+        applyTugasCompleteStatus(id, true);
+      } else {
+        renderTugas();
+        renderOverviewUrgent();
+      }
+    }
+    return;
+  }
+
+  // Jika tugas SUDAH selesai dan ingin dikembalikan ke belum selesai
+  applyTugasCompleteStatus(id, false);
 };
 
 window.deleteTugas = async function(id) {
@@ -2184,6 +2244,11 @@ window.closeTugasModal = closeTugasModal;
 
 // MATERI MODAL
 function openAddMateriModal() {
+  if (!isCurrentUserAdmin) {
+    showToast('⚠️ Akses Ditolak: Hanya Pengurus Kelas yang dapat menambahkan materi perkuliahan!', 'warning');
+    return;
+  }
+
   materiForm.reset();
   if (editMateriId) editMateriId.value = '';
   if (materiModalTitle) materiModalTitle.textContent = 'Tambah Materi Kuliah';
@@ -2396,6 +2461,11 @@ if (btnOpenModalMatkul) {
 tugasForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
+  if (!isCurrentUserAdmin) {
+    showToast('⚠️ Akses Ditolak: Hanya Pengurus Kelas yang dapat menambahkan atau mengedit tugas perkuliahan!', 'danger');
+    return;
+  }
+
   let judul = document.getElementById('tugasJudul').value.trim();
   const matkul = document.getElementById('tugasMatkul').value.trim();
   const prioritas = document.getElementById('tugasPrioritas').value || 'Sedang';
@@ -2573,6 +2643,11 @@ tugasForm.addEventListener('submit', async (e) => {
 // SUBMIT MATERI (ADD & EDIT)
 materiForm.addEventListener('submit', async (e) => {
   e.preventDefault();
+
+  if (!isCurrentUserAdmin) {
+    showToast('⚠️ Akses Ditolak: Hanya Pengurus Kelas yang dapat mengunggah atau mengedit materi perkuliahan!', 'danger');
+    return;
+  }
 
   let judul = document.getElementById('materiJudul').value.trim();
   const matkul = document.getElementById('materiMatkul').value.trim();
@@ -3265,6 +3340,10 @@ const firebaseConfigInput = document.getElementById('firebaseConfigInput');
 
 function openCloudModal() {
   if (!cloudModal) return;
+  if (!isDesignerWeb()) {
+    showToast('⚠️ Akses Ditolak: Pengaturan CloudSync hanya dapat diakses oleh Designer Web.', 'danger');
+    return;
+  }
   const currentConfig = typeof getActiveFirebaseConfig === 'function' ? getActiveFirebaseConfig() : null;
   if (currentConfig && currentConfig.apiKey && firebaseConfigInput) {
     firebaseConfigInput.value = JSON.stringify(currentConfig, null, 2);
@@ -3288,12 +3367,12 @@ const adminSecretInput = document.getElementById('adminSecretInput');
 const adminAuthErrorMsg = document.getElementById('adminAuthErrorMsg');
 
 function triggerAdminSecretDoor() {
-  if (!isCurrentUserAdmin) {
-    showToast('⚠️ Akses Ditolak: Fitur Cloud & Administrator hanya dapat diakses oleh akun Pengurus / Admin terdaftar.', 'danger');
+  if (!isDesignerWeb()) {
+    showToast('⚠️ Akses Ditolak: Pengaturan CloudSync hanya dapat diakses oleh Designer Web.', 'danger');
     return;
   }
   openCloudModal();
-  showToast('Pengaturan Cloud Administrator dibuka. 🛡️', 'info');
+  showToast('Pengaturan CloudSync Designer Web dibuka. 🛡️', 'info');
 }
 
 window.closeAdminAuthModal = function() {
@@ -3303,10 +3382,10 @@ window.closeAdminAuthModal = function() {
 if (adminAuthForm) {
   adminAuthForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    if (isCurrentUserAdmin) {
+    if (isDesignerWeb()) {
       closeAdminAuthModal();
       openCloudModal();
-      showToast('Akses Administrator diberikan! 🛡️', 'success');
+      showToast('Akses Cloud Administrator diberikan! 🛡️', 'success');
     } else {
       if (adminAuthErrorMsg) {
         adminAuthErrorMsg.style.display = 'flex';
@@ -3314,7 +3393,7 @@ if (adminAuthForm) {
         void adminAuthErrorMsg.offsetWidth;
         adminAuthErrorMsg.style.animation = 'shakeError 0.35s ease';
       }
-      showToast('Akses ditolak: Akun Anda bukan Pengurus/Administrator.', 'danger');
+      showToast('Akses ditolak: Pengaturan CloudSync hanya untuk Designer Web.', 'danger');
     }
   });
 }
@@ -3365,6 +3444,10 @@ if (cloudModal) {
 
 if (btnSaveFirebaseConfig) {
   btnSaveFirebaseConfig.addEventListener('click', () => {
+    if (!isDesignerWeb()) {
+      showToast('⚠️ Akses Ditolak: Hanya Designer Web yang dapat mengubah konfigurasi Firebase.', 'danger');
+      return;
+    }
     const rawVal = firebaseConfigInput.value.trim();
     if (!rawVal) {
       showToast('Tempelkan kode konfigurasi Firebase terlebih dahulu.', 'warning');
@@ -3739,6 +3822,11 @@ function setupAuthObserver() {
 
       // Hubungkan real-time listeners untuk user ini
       setupRealtimeListeners(effectiveUid);
+
+      // Inisialisasi token push FCM jika izin notifikasi aktif
+      if (typeof initFCMNotification === 'function') {
+        try { initFCMNotification(); } catch (e) {}
+      }
     } else {
       console.log('🔒 Auth state: Belum login / Sesi berakhir');
       localStorage.removeItem(USER_PROFILE_STORAGE_KEY);
@@ -4264,14 +4352,35 @@ function addNotification({ type, title, message, time, taskId }) {
   triggerBrowserPushNotification(title, message);
 }
 
-function triggerBrowserPushNotification(title, body) {
+function triggerBrowserPushNotification(title, body, url = '/') {
   if ('vibrate' in navigator) {
     try { navigator.vibrate([200, 100, 200]); } catch (e) {}
   }
 
   if (!('Notification' in window)) return;
 
-  if (Notification.permission === 'granted') {
+  const showSystemNotif = async () => {
+    // 1. Prioritaskan Service Worker showNotification (PWA standard, aman di Android Chrome & Background)
+    if ('serviceWorker' in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg && reg.showNotification) {
+          return reg.showNotification(title, {
+            body: body,
+            icon: 'icons/icon-192.png',
+            badge: 'icons/icon-192.png',
+            tag: 'study-' + Date.now(),
+            renotify: true,
+            vibrate: [200, 100, 200],
+            data: { url: url }
+          });
+        }
+      } catch (swErr) {
+        console.warn('Fallback notifikasi dari SW ke Notification API:', swErr);
+      }
+    }
+
+    // 2. Fallback Notification desktop klasik
     try {
       new Notification(title, {
         body: body,
@@ -4281,19 +4390,16 @@ function triggerBrowserPushNotification(title, body) {
         renotify: true
       });
     } catch (e) {}
+  };
+
+  if (Notification.permission === 'granted') {
+    showSystemNotif();
   } else if (Notification.permission === 'default') {
     try {
       Notification.requestPermission().then(permission => {
         if (permission === 'granted') {
-          try {
-            new Notification(title, {
-              body: body,
-              icon: 'icons/icon-192.png',
-              badge: 'icons/icon-192.png',
-              tag: 'study-' + Date.now(),
-              renotify: true
-            });
-          } catch (e) {}
+          showSystemNotif();
+          if (typeof initFCMNotification === 'function') initFCMNotification();
         }
       });
     } catch (e) {}
@@ -4497,15 +4603,25 @@ function updateAdminUI() {
     btnClaimSidebar.style.display = 'none';
   }
 
-  // 3. Tombol Cloud Modal (disembunyikan dari topbar/tampilan biasa, hanya diakses via pintu rahasia admin)
+  // 3. Tombol Cloud Modal (hanya ditampilkan untuk Designer Web)
   if (btnCloudModal) {
-    btnCloudModal.style.display = 'none';
+    btnCloudModal.style.display = isDesignerWeb() ? 'inline-flex' : 'none';
   }
 
-  // 4. Pembatasan Hak Akses: Tambah Tugas & Kelola Matkul (hanya untuk Pengurus Kelas)
+  // 4. Tombol Data Mahasiswa di Sidebar (hanya untuk Kosma dan Designer Web)
+  const elBtnStudentsData = document.getElementById('btnOpenStudentsData');
+  if (elBtnStudentsData) {
+    elBtnStudentsData.style.display = canAccessStudentsData() ? 'flex' : 'none';
+  }
+
+  // 5. Pembatasan Hak Akses: Tambah Tugas & Kelola Matkul (hanya untuk Pengurus Kelas)
   const elBtnOpenModalTugas = document.getElementById('btnOpenModalTugas');
   const elBtnPaneAddTugas = document.getElementById('btnPaneAddTugas');
   const elBtnEmptyAddTugas = document.getElementById('btnEmptyAddTugas');
+
+  const elBtnOpenModalMateri = document.getElementById('btnOpenModalMateri');
+  const elBtnPaneAddMateri = document.getElementById('btnPaneAddMateri');
+  const elBtnEmptyAddMateri = document.getElementById('btnEmptyAddMateri');
 
   const elBtnOpenModalMatkul = document.getElementById('btnOpenModalMatkul');
   const elBtnPaneAddMatkul = document.getElementById('btnPaneAddMatkul');
@@ -4515,6 +4631,10 @@ function updateAdminUI() {
   if (elBtnPaneAddTugas) elBtnPaneAddTugas.style.display = isPengurus ? 'inline-flex' : 'none';
   if (elBtnEmptyAddTugas) elBtnEmptyAddTugas.style.display = isPengurus ? 'inline-block' : 'none';
 
+  if (elBtnOpenModalMateri) elBtnOpenModalMateri.style.display = isPengurus ? 'inline-flex' : 'none';
+  if (elBtnPaneAddMateri) elBtnPaneAddMateri.style.display = isPengurus ? 'inline-flex' : 'none';
+  if (elBtnEmptyAddMateri) elBtnEmptyAddMateri.style.display = isPengurus ? 'inline-block' : 'none';
+
   if (elBtnOpenModalMatkul) elBtnOpenModalMatkul.style.display = isPengurus ? 'inline-flex' : 'none';
   if (elBtnPaneAddMatkul) elBtnPaneAddMatkul.style.display = isPengurus ? 'inline-flex' : 'none';
   if (elBtnEmptyAddMatkul) elBtnEmptyAddMatkul.style.display = isPengurus ? 'inline-block' : 'none';
@@ -4523,6 +4643,14 @@ function updateAdminUI() {
   const elBtnEmptyAddInfoKelas = document.getElementById('btnEmptyAddInfoKelas');
   if (elBtnPaneAddInfoKelas) elBtnPaneAddInfoKelas.style.display = isPengurus ? 'inline-flex' : 'none';
   if (elBtnEmptyAddInfoKelas) elBtnEmptyAddInfoKelas.style.display = isPengurus ? 'inline-block' : 'none';
+
+  // Sinkronkan kartu tugas & materi agar tombol Edit & Hapus muncul/hilang secara reaktif
+  if (typeof renderTugas === 'function') {
+    try { renderTugas(); } catch (e) {}
+  }
+  if (typeof renderMateri === 'function') {
+    try { renderMateri(); } catch (e) {}
+  }
 
   // Sinkronkan kartu mata kuliah agar tombol Edit & Hapus muncul/hilang secara reaktif
   if (typeof renderMatkul === 'function') {
@@ -4879,6 +5007,9 @@ window.requestNotificationPermission = async function() {
     if (permission === 'granted') {
       showToast('Notifikasi browser aktif! Anda akan menerima alarm pengingat tugas 🔔🎉', 'success');
       testBrowserNotification('StudyManage Aktif! 🔔', 'Pengingat deadline H-1 & tugas baru berhasil diaktifkan di perangkat ini.');
+      if (typeof initFCMNotification === 'function') {
+        try { initFCMNotification(); } catch (e) {}
+      }
     } else if (permission === 'denied') {
       showToast('Izin notifikasi diblokir di browser HP Anda.', 'warning');
     } else {
@@ -4891,7 +5022,7 @@ window.requestNotificationPermission = async function() {
   }
 };
 
-window.testBrowserNotification = function(title = 'Uji Notifikasi StudyManage 🔔', body = 'Pengingat deadline H-1 & tugas baru aktif di HP Anda!') {
+window.testBrowserNotification = async function(title = 'Uji Notifikasi StudyManage 🔔', body = 'Pengingat deadline H-1 & tugas baru aktif di HP Anda!') {
   if (!('Notification' in window)) {
     showToast('Browser ini tidak mendukung notifikasi sistem.', 'warning');
     return;
@@ -4900,7 +5031,29 @@ window.testBrowserNotification = function(title = 'Uji Notifikasi StudyManage �
     showToast('Notifikasi belum diizinkan. Silakan klik "Izinkan Notifikasi" terlebih dahulu.', 'warning');
     return;
   }
+
+  if ('vibrate' in navigator) {
+    try { navigator.vibrate([200, 100, 200]); } catch (e) {}
+  }
+
   try {
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg && reg.showNotification) {
+        await reg.showNotification(title, {
+          body: body,
+          icon: 'icons/icon-192.png',
+          badge: 'icons/icon-192.png',
+          tag: 'studymanage-test-' + Date.now(),
+          renotify: true,
+          vibrate: [200, 100, 200],
+          data: { url: '/' }
+        });
+        showToast('Notifikasi uji coba terkirim! Periksa bar notifikasi HP Anda 📲', 'success');
+        return;
+      }
+    }
+
     const notif = new Notification(title, {
       body: body,
       icon: 'icons/icon-192.png',
@@ -4908,9 +5061,6 @@ window.testBrowserNotification = function(title = 'Uji Notifikasi StudyManage �
       tag: 'studymanage-test-' + Date.now(),
       renotify: true
     });
-    if ('vibrate' in navigator) {
-      try { navigator.vibrate([200, 100, 200]); } catch (e) {}
-    }
     showToast('Notifikasi uji coba terkirim! Periksa bar notifikasi HP Anda 📲', 'success');
   } catch (err) {
     console.warn('Gagal memunculkan notifikasi:', err);
@@ -5261,11 +5411,11 @@ let academicBadgeTimer = null;
 
 /**
  * Handle tombol / trigger rahasia "Data Mahasiswa"
- * Memeriksa hak akses Pengurus / Administrator
+ * Memeriksa hak akses Kosma & Designer Web
  */
 window.handleOpenStudentsData = function() {
-  if (!isCurrentUserAdmin) {
-    showToast('⚠️ Akses Ditolak: Data Mahasiswa hanya dapat diakses oleh akun Pengurus / Admin terdaftar.', 'danger');
+  if (!canAccessStudentsData()) {
+    showToast('⚠️ Akses Ditolak: Data Mahasiswa hanya dapat diakses oleh Ketua Kelas (Kosma) dan Designer Web.', 'danger');
     return;
   }
   openStudentsDashboardModal();
@@ -5287,8 +5437,8 @@ window.handleAcademicBadgeClick = function(e) {
   if (academicBadgeClicks >= 5) {
     academicBadgeClicks = 0;
     clearTimeout(academicBadgeTimer);
-    if (!isCurrentUserAdmin) {
-      showToast('⚠️ Akses Ditolak: Hanya Pengurus/Admin resmi yang dapat mengakses Data Mahasiswa.', 'danger');
+    if (!canAccessStudentsData()) {
+      showToast('⚠️ Akses Ditolak: Data Mahasiswa hanya dapat diakses oleh Ketua Kelas (Kosma) dan Designer Web.', 'danger');
       return;
     }
     openStudentsDashboardModal();
@@ -5327,6 +5477,10 @@ window.closeSuperAdminAuthModal = function() {
  * Modal Dashboard Data Seluruh Mahasiswa
  */
 window.openStudentsDashboardModal = function() {
+  if (!canAccessStudentsData()) {
+    showToast('⚠️ Akses Ditolak: Data Mahasiswa hanya dapat diakses oleh Ketua Kelas (Kosma) dan Designer Web.', 'danger');
+    return;
+  }
   const modal = document.getElementById('studentsDashboardModal');
   if (modal) modal.showModal();
   loadAllStudentsData(false);
@@ -5350,6 +5504,10 @@ window.reloadStudentsDashboard = function() {
  * Ambil data seluruh mahasiswa dari cloud & hitung progres tugas
  */
 async function loadAllStudentsData(forceRefresh = false) {
+  if (!canAccessStudentsData()) {
+    showToast('⚠️ Akses Ditolak: Hanya Ketua Kelas (Kosma) dan Designer Web yang dapat melihat data mahasiswa.', 'danger');
+    return;
+  }
   const loading = document.getElementById('studentsLoadingState');
   const wrapper = document.getElementById('studentsListWrapper');
   if (loading) loading.style.display = 'flex';
@@ -5610,6 +5768,11 @@ window.closeStudentProgressDetailModal = function() {
  * Ekspor Data Mahasiswa & Status Tugas ke Berkas CSV
  */
 window.exportStudentsToCSV = function() {
+  if (!canAccessStudentsData()) {
+    showToast('⚠️ Akses Ditolak: Hanya Ketua Kelas (Kosma) dan Designer Web yang dapat mengunduh data mahasiswa.', 'danger');
+    return;
+  }
+
   if (!cachedAllStudents || cachedAllStudents.length === 0) {
     showToast('Tidak ada data mahasiswa untuk diekspor.', 'warning');
     return;
@@ -5664,7 +5827,7 @@ const superAdminAuthErrorMsg = document.getElementById('superAdminAuthErrorMsg')
 if (superAdminAuthForm) {
   superAdminAuthForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    if (isCurrentUserAdmin) {
+    if (canAccessStudentsData()) {
       if (superAdminAuthErrorMsg) superAdminAuthErrorMsg.style.display = 'none';
       sessionStorage.setItem(SUPER_ADMIN_SESSION_KEY, 'true');
       closeSuperAdminAuthModal();
@@ -5674,7 +5837,7 @@ if (superAdminAuthForm) {
       if (superAdminAuthErrorMsg) {
         superAdminAuthErrorMsg.style.display = 'flex';
       }
-      showToast('Akses ditolak: Akun Anda bukan Pengurus/Administrator resmi.', 'danger');
+      showToast('Akses ditolak: Data Mahasiswa hanya dapat diakses oleh Ketua Kelas (Kosma) dan Designer Web.', 'danger');
     }
   });
 }
@@ -5695,6 +5858,10 @@ if (btnToggleSuperAdminPwd && superAdminSecretInput) {
  * Buka modal konfirmasi hapus akun mahasiswa
  */
 window.promptDeleteStudent = function(uid) {
+  if (!canAccessStudentsData()) {
+    showToast('⚠️ Akses Ditolak: Hanya Ketua Kelas (Kosma) dan Designer Web yang dapat mengelola data mahasiswa.', 'danger');
+    return;
+  }
   const student = cachedAllStudents.find(s => s.uid === uid);
   if (!student) return;
 
@@ -5727,6 +5894,10 @@ window.closeConfirmDeleteStudentModal = function() {
  * Eksekusi penghapusan akun mahasiswa dari Cloud Firestore & nim_index
  */
 window.executeDeleteStudent = async function() {
+  if (!canAccessStudentsData()) {
+    showToast('⚠️ Akses Ditolak: Hanya Ketua Kelas (Kosma) dan Designer Web yang dapat menghapus akun mahasiswa.', 'danger');
+    return;
+  }
   if (!pendingDeleteStudentTarget) return;
 
   const target = pendingDeleteStudentTarget;

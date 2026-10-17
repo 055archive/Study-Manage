@@ -388,7 +388,7 @@
           </div>
         </div>
         <div class="security-actions-group" style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
-          <button type="button" class="backup-btn btn-students-data" id="btnOpenStudentsData" onclick="handleOpenStudentsData()" title="Akses Master Admin: Pantau Data Seluruh Mahasiswa" style="display: none !important; width: 100%; justify-content: center; background: rgba(79, 70, 229, 0.08); border-color: rgba(99, 102, 241, 0.35); color: var(--primary);">
+          <button type="button" class="backup-btn btn-students-data" id="btnOpenStudentsData" onclick="handleOpenStudentsData()" title="Akses Master Admin: Pantau Data Seluruh Mahasiswa" style="display: none; width: 100%; justify-content: center; background: rgba(79, 70, 229, 0.08); border-color: rgba(99, 102, 241, 0.35); color: var(--primary);">
             <i data-feather="users"></i>
             <span>Data Mahasiswa</span>
           </button>
@@ -483,17 +483,17 @@
             <span class="topbar-profile-edit-badge"><i data-feather="camera"></i></span>
           </button>
 
-          <!-- Tombol Aksi Cepat -->
+          <!-- Tombol Aksi Cepat (Khusus Pengurus Kelas) -->
           <div class="quick-add-group">
-            <button class="btn btn-secondary" id="btnOpenModalMatkul" title="Tambah Mata Kuliah Baru">
+            <button class="btn btn-secondary" id="btnOpenModalMatkul" title="Tambah Mata Kuliah Baru" style="display: none;">
               <i data-feather="book-open"></i>
               <span>Matkul</span>
             </button>
-            <button class="btn btn-secondary" id="btnOpenModalMateri" title="Tambah Materi Baru">
+            <button class="btn btn-secondary" id="btnOpenModalMateri" title="Tambah Materi Baru" style="display: none;">
               <i data-feather="file-plus"></i>
               <span>Materi</span>
             </button>
-            <button class="btn btn-primary" id="btnOpenModalTugas" title="Tambah Tugas Baru">
+            <button class="btn btn-primary" id="btnOpenModalTugas" title="Tambah Tugas Baru" style="display: none;">
               <i data-feather="plus-circle"></i>
               <span>Tugas</span>
             </button>
@@ -652,7 +652,7 @@
               <h1 class="pane-title">Daftar Tugas Kuliah</h1>
               <p class="pane-sub">Lacak tugas, mata kuliah, deadline, dan status penyelesaian tugasmu.</p>
             </div>
-            <button class="btn btn-primary" id="btnPaneAddTugas" onclick="openAddTugasModal()">
+            <button class="btn btn-primary" id="btnPaneAddTugas" onclick="openAddTugasModal()" style="display: none;">
               <i data-feather="plus"></i>
               <span>Tambah Tugas</span>
             </button>
@@ -706,7 +706,7 @@
             <i data-feather="check-circle" class="empty-icon-lg"></i>
             <h3>Tidak Ada Tugas</h3>
             <p>Tidak ada tugas yang cocok dengan filter atau semua tugas sudah kamu selesaikan!</p>
-            <button class="btn btn-secondary mt-3" id="btnEmptyAddTugas" onclick="openAddTugasModal()">+ Tambah Tugas Baru</button>
+            <button class="btn btn-secondary mt-3" id="btnEmptyAddTugas" onclick="openAddTugasModal()" style="display: none;">+ Tambah Tugas Baru</button>
           </div>
         </section>
 
@@ -719,7 +719,7 @@
               <h1 class="pane-title">Arsip Materi & Catatan Kuliah</h1>
               <p class="pane-sub">Koleksi materi kuliah lengkap dengan mata kuliah, pertemuan ke, dan tanggal.</p>
             </div>
-            <button class="btn btn-primary" onclick="openAddMateriModal()">
+            <button class="btn btn-primary" id="btnPaneAddMateri" onclick="openAddMateriModal()" style="display: none;">
               <i data-feather="plus"></i>
               <span>Tambah Materi</span>
             </button>
@@ -764,7 +764,7 @@
             <i data-feather="folder" class="empty-icon-lg"></i>
             <h3>Belum Ada Materi Tersimpan</h3>
             <p>Simpan rangkuman perkuliahan, slide, atau link Google Drive materi di sini.</p>
-            <button class="btn btn-secondary mt-3" onclick="openAddMateriModal()">+ Tambah Materi Baru</button>
+            <button class="btn btn-secondary mt-3" id="btnEmptyAddMateri" onclick="openAddMateriModal()" style="display: none;">+ Tambah Materi Baru</button>
           </div>
         </section>
 
@@ -1784,6 +1784,49 @@
   </dialog>
 
   <!-- ========================================================
+       MODAL: KONFIRMASI TUGAS SELESAI (PENCEGAH SALAH KLIK)
+       ======================================================== -->
+  <dialog class="app-dialog" id="confirmCompleteModal">
+    <div class="dialog-box" style="max-width: 420px;">
+      <div class="dialog-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(16, 185, 129, 0.15); color: #10b981; display: flex; align-items: center; justify-content: center;">
+            <i data-feather="check-circle"></i>
+          </div>
+          <h3 class="dialog-title">Konfirmasi Tugas Selesai</h3>
+        </div>
+        <button type="button" class="icon-btn btn-close-dialog" onclick="closeConfirmCompleteModal()">
+          <i data-feather="x"></i>
+        </button>
+      </div>
+
+      <div class="dialog-form" style="padding: 20px;">
+        <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px;">
+          Apakah Anda yakin sudah menyelesaikan tugas ini?
+        </p>
+
+        <!-- Box Identitas Tugas -->
+        <div style="background: var(--bg-surface-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 14px; margin-bottom: 14px;">
+          <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main); margin-bottom: 4px;" id="confirmCompleteTaskTitle">-</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);" id="confirmCompleteTaskMatkul">-</div>
+        </div>
+
+        <div style="padding: 10px 12px; background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; border-radius: 4px; font-size: 0.8rem; color: #10b981; line-height: 1.4;">
+          <strong>Info:</strong> Status tugas akan dicatat selesai di akun Anda dan disinkronkan ke Cloud.
+        </div>
+      </div>
+
+      <div class="dialog-footer" style="display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px;">
+        <button type="button" class="btn btn-secondary" onclick="closeConfirmCompleteModal()">Batal</button>
+        <button type="button" class="btn btn-primary" id="btnExecuteConfirmComplete" onclick="executeConfirmCompleteTask()" style="background: #10b981; border-color: #10b981; color: #ffffff; display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
+          <i data-feather="check"></i>
+          <span>Ya, Tandai Selesai</span>
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ========================================================
        MODAL: TAMBAH / EDIT INFORMASI KELAS
        ======================================================== -->
   <dialog class="app-dialog" id="infoKelasModal">
@@ -1992,11 +2035,12 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=8.2"></script>
+  <script src="firebase-config.js?v=8.3"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=8.2"></script>
+  <script src="app.js?v=8.3"></script>
 </body>
 </html>
