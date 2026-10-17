@@ -4554,16 +4554,25 @@ try {
 function openClaimAdminModal() {
   const modal = document.getElementById('claimAdminModal');
   const form = document.getElementById('claimAdminForm');
-  const roleSelect = document.getElementById('adminRoleSelect');
-  const codeInput = document.getElementById('adminAccessCode');
+  const userInput = document.getElementById('adminUsernameInput');
+  const passInput = document.getElementById('adminPasswordInput');
   const activeBox = document.getElementById('activeAdminStatusBox');
   const activeRoleText = document.getElementById('activeAdminRoleText');
   const errorMsg = document.getElementById('claimAdminErrorMsg');
   const submitText = document.getElementById('btnSubmitClaimAdminText');
   const modalDesc = document.getElementById('claimAdminModalDesc');
+  const toggleIcon = document.getElementById('toggleAdminPwIcon');
 
   if (form) form.reset();
-  if (codeInput) codeInput.value = '';
+  if (userInput) userInput.value = '';
+  if (passInput) {
+    passInput.value = '';
+    passInput.type = 'password';
+  }
+  if (toggleIcon) {
+    toggleIcon.setAttribute('data-feather', 'eye');
+    if (typeof feather !== 'undefined') feather.replace();
+  }
   if (errorMsg) errorMsg.style.display = 'none';
 
   if (isCurrentUserAdmin) {
@@ -4572,16 +4581,16 @@ function openClaimAdminModal() {
       : 'Pengurus Kelas';
     if (activeBox) activeBox.style.display = 'flex';
     if (activeRoleText) activeRoleText.textContent = `Jabatan: ${activeRole}`;
-    if (roleSelect) roleSelect.value = activeRole;
-    if (submitText) submitText.textContent = 'Perbarui Jabatan / Kode';
-    if (modalDesc) modalDesc.textContent = 'Anda saat ini memegang akses pengurus. Anda dapat mengganti jabatan di bawah atau keluar dari mode pengurus.';
+    if (submitText) submitText.textContent = 'Ganti Akun Pengurus';
+    if (modalDesc) modalDesc.textContent = 'Anda saat ini memegang akses pengurus. Anda dapat beralih akun pengurus dengan memasukkan username & password baru di bawah, atau keluar dari mode pengurus.';
   } else {
     if (activeBox) activeBox.style.display = 'none';
     if (submitText) submitText.textContent = 'Aktifkan Hak Akses';
-    if (modalDesc) modalDesc.textContent = 'Khusus untuk Ketua Kelas, Sekretaris, PJ Mata Kuliah, dan Designer Web. Pengurus dapat mempublikasikan tugas & materi resmi yang otomatis masuk ke akun seluruh teman sekelas.';
+    if (modalDesc) modalDesc.textContent = 'Masukkan Username & Password akun pengurus Anda (Kosma, Designer Web, atau PJ Mata Kuliah). Hak akses dan label jabatan akan otomatis diaktifkan.';
   }
 
   if (modal) modal.showModal();
+  if (typeof feather !== 'undefined') feather.replace();
 }
 
 function closeClaimAdminModal() {
@@ -4591,6 +4600,23 @@ function closeClaimAdminModal() {
 
 window.openClaimAdminModal = openClaimAdminModal;
 window.closeClaimAdminModal = closeClaimAdminModal;
+
+/**
+ * Toggle visibility (intip) kata sandi pengurus
+ */
+window.toggleAdminPasswordVisibility = function() {
+  const passInput = document.getElementById('adminPasswordInput');
+  const toggleIcon = document.getElementById('toggleAdminPwIcon');
+  if (!passInput) return;
+
+  const isPassword = passInput.type === 'password';
+  passInput.type = isPassword ? 'text' : 'password';
+
+  if (toggleIcon) {
+    toggleIcon.setAttribute('data-feather', isPassword ? 'eye-off' : 'eye');
+    if (typeof feather !== 'undefined') feather.replace();
+  }
+};
 
 /**
  * Keluar dari Mode Pengurus (Kembali ke Mahasiswa Biasa)
@@ -4634,48 +4660,104 @@ window.exitAdminMode = async function() {
 };
 
 /**
- * Proses Verifikasi dan Aktivasi Hak Akses Pengurus
+ * Kamus Kredensial Pengurus Cadangan (One-Way Hash SHA-256)
+ */
+const LOCAL_ADMIN_CREDENTIALS = {
+  'designerweb': { hash: '4ffe7fa8f1ee9c7456106cfa95e12efa005ef2b9ba62fedbee1aa43123031f43', role: 'Designer Web', label: 'Designer Web' },
+  'praktikibadah': { hash: '1d36b9fecc3e562f4d6054daac5662292877cf72924149479ff2c63b6326cded', role: 'PJ Praktik Ibadah', label: 'PJ Praktik Ibadah' },
+  'kosma': { hash: '4aeba86d3da196c9da700454be6862498424715029c3139e85c51d99378cf353', role: 'Ketua Kelas', label: 'Ketua Kelas (Kosma)' },
+  'bioinformatika': { hash: '1480a93305ab7c6e4df85dd1b64e69a89b49cd4ac63ab06a092d9f6a9e13bdf9', role: 'PJ Bioinformatika', label: 'PJ Bioinformatika' },
+  'pbo': { hash: 'a87a98531309c896590a94f24d9d1b47c0810fb6806bfa45bfafe73df077ee5b', role: 'PJ PBO', label: 'PJ Pemrograman Berorientasi Objek' },
+  'pemrogramanweb': { hash: '90c89d9616dddc3e7745757f9df7dd295aefa9d6e4106929498841c78cbe69a0', role: 'PJ Pemrograman Web', label: 'PJ Pemrograman Web' },
+  'rpl': { hash: 'aa8f6d879f2e497921b3aa9cbdec283f99554dbc24a0ca9270be50b1daf59081', role: 'PJ RPL', label: 'PJ Rekayasa Perangkat Lunak' },
+  'matematikadiskrit': { hash: '28b9df11debddcbdf5c17cd89441446dbd7a5917c6ad735f3c87a35d5e37b653', role: 'PJ Matematika Diskrit', label: 'PJ Matematika Diskrit' },
+  'statistika': { hash: '1a94d021af9186a896fb052e1b75e86e13f9af3116176a72123552f87583a3da', role: 'PJ Statistika', label: 'PJ Statistika' },
+  'jaringankomputer': { hash: '858a4f9710ec6aeb4e85a4fdae663f88fa36a0728d95856ff32a7bf4e3a38441', role: 'PJ Jaringan Komputer', label: 'PJ Jaringan Komputer' },
+  'keamanandata': { hash: '1e1c0a2eb4e64181c7ebc18b92195710c0782bbf310d3a5a441d0db6063d0720', role: 'PJ Keamanan Data & Info', label: 'PJ Keamanan Data & Informasi' },
+  'imk': { hash: '05d0e39dfed30d01c1faea77c5cf3d2b3c1387a9e0ef8305971ed966beb013c5', role: 'PJ IMK', label: 'PJ Interaksi Manusia dan Komputer' },
+  'sekretaris': { hash: 'e8f585f1858dffa6a45ff31d3cb9c78c322638a9b0c69bf3695b3f635465c371', role: 'Sekretaris', label: 'Sekretaris Kelas' }
+};
+
+/**
+ * Helper lokal enkripsi SHA-256
+ */
+async function getLocalSHA256(text) {
+  if (typeof computeSHA256 === 'function') {
+    return await computeSHA256(text);
+  }
+  try {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (e) {
+    return '';
+  }
+}
+
+/**
+ * Proses Verifikasi dan Aktivasi Hak Akses Pengurus (Username & Password)
  */
 async function processClaimAdmin() {
-  const roleSelect = document.getElementById('adminRoleSelect');
-  const codeInput = document.getElementById('adminAccessCode');
+  const userInput = document.getElementById('adminUsernameInput');
+  const passInput = document.getElementById('adminPasswordInput');
   const errorMsg = document.getElementById('claimAdminErrorMsg');
   const errorText = document.getElementById('claimAdminErrorText');
   const submitBtn = document.getElementById('btnSubmitClaimAdmin');
   const submitText = document.getElementById('btnSubmitClaimAdminText');
 
-  const selectedRole = roleSelect ? roleSelect.value : 'Pengurus Kelas';
-  const enteredCode = codeInput ? codeInput.value.trim() : '';
+  const enteredUsername = userInput ? userInput.value.trim().toLowerCase() : '';
+  const enteredPassword = passInput ? passInput.value.trim() : '';
 
   if (errorMsg) errorMsg.style.display = 'none';
 
-  if (!enteredCode) {
+  if (!enteredUsername) {
     if (errorMsg && errorText) {
-      errorText.textContent = 'Mohon masukkan kode akses pengurus!';
+      errorText.textContent = 'Mohon masukkan username pengurus!';
       errorMsg.style.display = 'flex';
     }
-    showToast('Mohon masukkan kode akses pengurus!', 'warning');
-    if (codeInput) codeInput.focus();
+    showToast('Mohon masukkan username pengurus!', 'warning');
+    if (userInput) userInput.focus();
     return;
   }
 
-  const validCodes = ['AD1', 'AD2', 'AD3', 'AD4', 'AD5', 'AD6', 'AD7', 'AD8', 'AD9', 'AD10', 'AD1-AD10'];
-  const isCodeValid = (typeof isValidAdminCode === 'function')
-    ? isValidAdminCode(enteredCode)
-    : validCodes.includes(enteredCode.toUpperCase());
-
-  if (!isCodeValid) {
+  if (!enteredPassword) {
     if (errorMsg && errorText) {
-      errorText.textContent = 'Kode akses salah!';
+      errorText.textContent = 'Mohon masukkan password pengurus!';
       errorMsg.style.display = 'flex';
     }
-    showToast('Kode akses salah!', 'danger');
-    if (codeInput) {
-      codeInput.focus();
-      codeInput.select();
+    showToast('Mohon masukkan password pengurus!', 'warning');
+    if (passInput) passInput.focus();
+    return;
+  }
+
+  // Verifikasi Kredensial Pengurus dengan One-Way Hash SHA-256
+  let matchedCred = null;
+  if (typeof verifyAdminCredentials === 'function') {
+    matchedCred = await verifyAdminCredentials(enteredUsername, enteredPassword);
+  }
+  if (!matchedCred && LOCAL_ADMIN_CREDENTIALS[enteredUsername]) {
+    const cred = LOCAL_ADMIN_CREDENTIALS[enteredUsername];
+    const hash = await getLocalSHA256(enteredPassword);
+    if (cred.hash && cred.hash === hash) {
+      matchedCred = { ...cred, username: enteredUsername };
+    }
+  }
+
+  if (!matchedCred) {
+    if (errorMsg && errorText) {
+      errorText.textContent = 'Username atau Password pengurus salah!';
+      errorMsg.style.display = 'flex';
+    }
+    showToast('Username atau Password pengurus salah!', 'danger');
+    if (passInput) {
+      passInput.focus();
+      passInput.select();
     }
     return;
   }
+
+  const selectedRole = matchedCred.role || 'Pengurus Kelas';
 
   // Tampilkan loading feedback di tombol
   const originalText = submitText ? submitText.textContent : 'Aktifkan Hak Akses';
@@ -4683,10 +4765,11 @@ async function processClaimAdmin() {
   if (submitText) submitText.textContent = 'Memverifikasi... ⏳';
 
   try {
-    // Perbarui profil user
+    // Perbarui profil user saat ini
     const updatedProfile = {
       ...(currentUserProfile || {}),
       role: selectedRole,
+      adminUsername: matchedCred.username,
       isAdmin: true
     };
 
@@ -4702,7 +4785,7 @@ async function processClaimAdmin() {
     if (typeof updateUserProfile === 'function' && typeof getCurrentUserUID === 'function') {
       const uid = getCurrentUserUID();
       if (uid) {
-        await updateUserProfile(uid, { role: selectedRole, isAdmin: true });
+        await updateUserProfile(uid, { role: selectedRole, isAdmin: true, adminUsername: matchedCred.username });
       }
     }
 

@@ -620,11 +620,118 @@ function updateCloudStatusUI(connected, message) {
 }
 
 // ============================================================================
-// HAK AKSES PENGURUS KELAS (ADMIN CODES)
+// HAK AKSES PENGURUS KELAS (ADMIN CREDENTIALS)
 // ============================================================================
-// Kode akses resmi untuk: Ketua Kelas, Sekretaris, PJ Mata Kuliah, Designer Web
-const VALID_ADMIN_CODES = ['AD1', 'AD2', 'AD3', 'AD4', 'AD5', 'AD6', 'AD7', 'AD8', 'AD9', 'AD10', 'AD1-AD10'];
+// Kredensial akun resmi pengurus kelas dengan keamanan Enkripsi One-Way Hash (SHA-256)
+// Password asli TIDAK tersimpan dalam bentuk teks biasa, sehingga aman dari inspect element
+const ADMIN_CREDENTIALS = {
+  'designerweb': {
+    hash: '4ffe7fa8f1ee9c7456106cfa95e12efa005ef2b9ba62fedbee1aa43123031f43',
+    role: 'Designer Web',
+    label: 'Designer Web'
+  },
+  'praktikibadah': {
+    hash: '1d36b9fecc3e562f4d6054daac5662292877cf72924149479ff2c63b6326cded',
+    role: 'PJ Praktik Ibadah',
+    label: 'PJ Praktik Ibadah'
+  },
+  'kosma': {
+    hash: '4aeba86d3da196c9da700454be6862498424715029c3139e85c51d99378cf353',
+    role: 'Ketua Kelas',
+    label: 'Ketua Kelas (Kosma)'
+  },
+  'bioinformatika': {
+    hash: '1480a93305ab7c6e4df85dd1b64e69a89b49cd4ac63ab06a092d9f6a9e13bdf9',
+    role: 'PJ Bioinformatika',
+    label: 'PJ Bioinformatika'
+  },
+  'pbo': {
+    hash: 'a87a98531309c896590a94f24d9d1b47c0810fb6806bfa45bfafe73df077ee5b',
+    role: 'PJ PBO',
+    label: 'PJ Pemrograman Berorientasi Objek'
+  },
+  'pemrogramanweb': {
+    hash: '90c89d9616dddc3e7745757f9df7dd295aefa9d6e4106929498841c78cbe69a0',
+    role: 'PJ Pemrograman Web',
+    label: 'PJ Pemrograman Web'
+  },
+  'rpl': {
+    hash: 'aa8f6d879f2e497921b3aa9cbdec283f99554dbc24a0ca9270be50b1daf59081',
+    role: 'PJ RPL',
+    label: 'PJ Rekayasa Perangkat Lunak'
+  },
+  'matematikadiskrit': {
+    hash: '28b9df11debddcbdf5c17cd89441446dbd7a5917c6ad735f3c87a35d5e37b653',
+    role: 'PJ Matematika Diskrit',
+    label: 'PJ Matematika Diskrit'
+  },
+  'statistika': {
+    hash: '1a94d021af9186a896fb052e1b75e86e13f9af3116176a72123552f87583a3da',
+    role: 'PJ Statistika',
+    label: 'PJ Statistika'
+  },
+  'jaringankomputer': {
+    hash: '858a4f9710ec6aeb4e85a4fdae663f88fa36a0728d95856ff32a7bf4e3a38441',
+    role: 'PJ Jaringan Komputer',
+    label: 'PJ Jaringan Komputer'
+  },
+  'keamanandata': {
+    hash: '1e1c0a2eb4e64181c7ebc18b92195710c0782bbf310d3a5a441d0db6063d0720',
+    role: 'PJ Keamanan Data & Info',
+    label: 'PJ Keamanan Data & Informasi'
+  },
+  'imk': {
+    hash: '05d0e39dfed30d01c1faea77c5cf3d2b3c1387a9e0ef8305971ed966beb013c5',
+    role: 'PJ IMK',
+    label: 'PJ Interaksi Manusia dan Komputer'
+  },
+  'sekretaris': {
+    hash: 'e8f585f1858dffa6a45ff31d3cb9c78c322638a9b0c69bf3695b3f635465c371',
+    role: 'Sekretaris',
+    label: 'Sekretaris Kelas'
+  }
+};
 
+/**
+ * Fungsi enkripsi SHA-256 menggunakan Web Crypto API browser
+ * @param {string} text
+ * @returns {Promise<string>}
+ */
+async function computeSHA256(text) {
+  if (!text) return '';
+  try {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (e) {
+    console.error('Gagal menghitung SHA-256:', e);
+    return '';
+  }
+}
+
+/**
+ * Verifikasi kredensial username & password pengurus kelas dengan hash SHA-256
+ * @param {string} username
+ * @param {string} password
+ * @returns {Promise<object|null>} Objek akun pengurus jika valid, null jika salah
+ */
+async function verifyAdminCredentials(username, password) {
+  if (!username || !password) return null;
+  const cleanUser = String(username).trim().toLowerCase();
+  const cred = ADMIN_CREDENTIALS[cleanUser];
+  if (!cred) return null;
+
+  const inputHash = await computeSHA256(String(password).trim());
+  if (cred.hash && cred.hash === inputHash) {
+    return { ...cred, username: cleanUser };
+  }
+  return null;
+}
+
+// Fallback untuk kode lama jika diperlukan
+const VALID_ADMIN_CODES = ['AD1', 'AD2', 'AD3', 'AD4', 'AD5', 'AD6', 'AD7', 'AD8', 'AD9', 'AD10', 'AD1-AD10'];
 function isValidAdminCode(code) {
   if (!code) return false;
   return VALID_ADMIN_CODES.includes(code.trim().toUpperCase());
