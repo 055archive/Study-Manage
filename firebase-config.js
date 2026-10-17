@@ -415,11 +415,14 @@ async function resetPasswordWithPIN(nim, pin, newPassword) {
   }
 
   const record = doc.data() || {};
-  // PIN yang sah adalah record.pin, ATAU 4 digit terakhir NIM untuk akun lama yang belum membuat PIN
-  const validPIN = record.pin || trimmedNIM.slice(-4);
+  // Wajibkan PIN Pemulihan yang sah terdaftar (bukan turunan dari NIM publik)
+  if (!record.pin) {
+    throw new Error(`Akun NIM ${trimmedNIM} belum mengatur PIN Pemulihan mandiri. Silakan hubungi Pengurus Kelas untuk bantuan verifikasi.`);
+  }
 
+  const validPIN = String(record.pin).trim();
   if (trimmedPIN !== validPIN) {
-    throw new Error(`PIN Pemulihan salah! (💡 Catatan: untuk akun lama, PIN pemulihan adalah 4 digit terakhir NIM kamu).`);
+    throw new Error('PIN Pemulihan salah! Pastikan 4 digit angka rahasia kamu benar.');
   }
 
   // 2. PIN Cocok! Hitung Hash kata sandi baru
@@ -1069,7 +1072,7 @@ async function syncAllLocalDataToCloud() {
 }
 
 // ============================================================================
-// MASTER ADMIN: AMBIL DATA SELURUH MAHASISWA & PROGRES TUGAS KELAS (SANDI: 00000000)
+// MASTER ADMIN: AMBIL DATA SELURUH MAHASISWA & PROGRES TUGAS KELAS (ROLE-BASED)
 // ============================================================================
 async function fetchAllStudentsData() {
   if (!isFirebaseConnected || !firestoreDb) {

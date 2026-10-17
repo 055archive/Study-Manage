@@ -79,11 +79,13 @@ Dengan Firebase, Anda bisa membuka website ini di **Laptop** dan **HP** sekaligu
 ### Langkah 3: Aktifkan Cloud Firestore & Cloud Storage
 1. **Cloud Firestore (Database Tugas & Materi)**:
    * Di menu sebelah kiri, klik **Build** > **Firestore Database**.
-   * Klik **Create database**, pilih lokasi (misal: `asia-southeast2` Jakarta atau Singapore).
-   * Pilih **Start in test mode** (Mode uji coba), lalu klik **Create**.
+   * Klik **Create database**, pilih lokasi (misal: `asia-southeast2` Jakarta).
+   * Buka tab **Rules**, lalu ganti aturan default dengan isi berkas `firestore.rules`.
+   * Klik **Publish** (agar database aman dan tidak bisa dihapus sembarangan).
 2. **Cloud Storage (Penyimpanan Berkas Lampiran)**:
    * Di menu sebelah kiri, klik **Build** > **Storage**.
-   * Klik **Get started**, pilih **Start in test mode**, lalu klik **Done**.
+   * Buka tab **Rules**, lalu ganti aturan default dengan isi berkas `storage.rules`.
+   * Klik **Publish**.
 
 ### Langkah 4: Hubungkan ke StudySync
 Anda bisa memilih salah satu cara berikut:

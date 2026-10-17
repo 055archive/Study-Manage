@@ -1295,6 +1295,35 @@ function escapeHtml(str) {
   return d.innerHTML;
 }
 
+/**
+ * Sanitasi URL untuk mencegah XSS via skema berbahaya (javascript:, data:, vbscript:)
+ * Hanya menerima protokol resmi http:// dan https://
+ */
+function sanitizeSafeUrl(url) {
+  if (!url) return '#';
+  const clean = String(url).trim();
+  // Validasi ketat hanya skema http dan https
+  if (/^https?:\/\/[^\s<>"']+$/i.test(clean)) {
+    return escapeHtml(clean);
+  }
+  return '#';
+}
+
+/**
+ * Escape string khusus saat disisipkan ke dalam atribut JavaScript inline seperti onclick="..."
+ */
+function escapeJsStr(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/</g, '\\x3c')
+    .replace(/>/g, '\\x3e');
+}
+
 function showToast(message, type = 'info') {
   const container = document.getElementById('toastWrapper');
   if (!container) return;
@@ -1567,13 +1596,13 @@ function renderTugas() {
 
         ${task.file ? `
           <div class="card-attachment-area">
-            <button type="button" class="file-attachment-chip" onclick="handleOpenFile('${task.file.id}', '${escapeHtml(task.file.name)}', '${escapeHtml(task.file.downloadUrl || '')}')" title="Lihat Pratinjau Berkas: ${escapeHtml(task.file.name)}">
+            <button type="button" class="file-attachment-chip" onclick="handleOpenFile('${escapeJsStr(task.file.id)}', '${escapeJsStr(task.file.name)}', '${escapeJsStr(task.file.downloadUrl || '')}')" title="Lihat Pratinjau Berkas: ${escapeHtml(task.file.name)}">
               <i data-feather="${getFileIconName(task.file.name, task.file.type)}"></i>
               <span class="chip-filename">${escapeHtml(task.file.name)}</span>
               <span class="chip-filesize">(${formatFileSize(task.file.size)})</span>
               <i data-feather="eye" class="chip-action-icon"></i>
             </button>
-            <button type="button" class="btn-download-direct" onclick="downloadAttachment('${task.file.id}', '${escapeHtml(task.file.name)}', '${escapeHtml(task.file.downloadUrl || '')}', event)" title="Unduh Berkas Tugas Langsung">
+            <button type="button" class="btn-download-direct" onclick="downloadAttachment('${escapeJsStr(task.file.id)}', '${escapeJsStr(task.file.name)}', '${escapeJsStr(task.file.downloadUrl || '')}', event)" title="Unduh Berkas Tugas Langsung">
               <i data-feather="download"></i>
               <span>Unduh</span>
             </button>
@@ -1754,20 +1783,20 @@ function renderMateri() {
         <div class="materi-card-footer">
           <div class="card-attachment-area">
             ${m.file ? `
-              <button type="button" class="file-attachment-chip" onclick="handleOpenFile('${m.file.id}', '${escapeHtml(m.file.name)}', '${escapeHtml(m.file.downloadUrl || '')}')" title="Lihat Pratinjau Berkas: ${escapeHtml(m.file.name)}">
+              <button type="button" class="file-attachment-chip" onclick="handleOpenFile('${escapeJsStr(m.file.id)}', '${escapeJsStr(m.file.name)}', '${escapeJsStr(m.file.downloadUrl || '')}')" title="Lihat Pratinjau Berkas: ${escapeHtml(m.file.name)}">
                 <i data-feather="${getFileIconName(m.file.name, m.file.type)}"></i>
                 <span class="chip-filename">${escapeHtml(m.file.name)}</span>
                 <span class="chip-filesize">(${formatFileSize(m.file.size)})</span>
                 <i data-feather="eye" class="chip-action-icon"></i>
               </button>
-              <button type="button" class="btn-download-direct" onclick="downloadAttachment('${m.file.id}', '${escapeHtml(m.file.name)}', '${escapeHtml(m.file.downloadUrl || '')}', event)" title="Unduh Berkas Materi Langsung">
+              <button type="button" class="btn-download-direct" onclick="downloadAttachment('${escapeJsStr(m.file.id)}', '${escapeJsStr(m.file.name)}', '${escapeJsStr(m.file.downloadUrl || '')}', event)" title="Unduh Berkas Materi Langsung">
                 <i data-feather="download"></i>
                 <span>Unduh</span>
               </button>
             ` : ''}
 
             ${m.link ? `
-              <a href="${escapeHtml(m.link)}" target="_blank" rel="noopener noreferrer" class="materi-link-btn" title="Buka Tautan Eksternal">
+              <a href="${sanitizeSafeUrl(m.link)}" target="_blank" rel="noopener noreferrer" class="materi-link-btn" title="Buka Tautan Eksternal">
                 <i data-feather="external-link"></i>
                 <span>Tautan Drive / Web</span>
               </a>
@@ -1902,13 +1931,13 @@ function renderOverviewUrgent() {
 
       ${task.file ? `
         <div class="card-attachment-area" style="margin: 8px 0;">
-          <button type="button" class="file-attachment-chip" onclick="handleOpenFile('${task.file.id}', '${escapeHtml(task.file.name)}', '${escapeHtml(task.file.downloadUrl || '')}')" title="Lihat Pratinjau Berkas: ${escapeHtml(task.file.name)}">
+          <button type="button" class="file-attachment-chip" onclick="handleOpenFile('${escapeJsStr(task.file.id)}', '${escapeJsStr(task.file.name)}', '${escapeJsStr(task.file.downloadUrl || '')}')" title="Lihat Pratinjau Berkas: ${escapeHtml(task.file.name)}">
             <i data-feather="${getFileIconName(task.file.name, task.file.type)}"></i>
             <span class="chip-filename">${escapeHtml(task.file.name)}</span>
             <span class="chip-filesize">(${formatFileSize(task.file.size)})</span>
             <i data-feather="eye" class="chip-action-icon"></i>
           </button>
-          <button type="button" class="btn-download-direct" onclick="downloadAttachment('${task.file.id}', '${escapeHtml(task.file.name)}', '${escapeHtml(task.file.downloadUrl || '')}', event)" title="Unduh Berkas Tugas Langsung">
+          <button type="button" class="btn-download-direct" onclick="downloadAttachment('${escapeJsStr(task.file.id)}', '${escapeJsStr(task.file.name)}', '${escapeJsStr(task.file.downloadUrl || '')}', event)" title="Unduh Berkas Tugas Langsung">
             <i data-feather="download"></i>
             <span>Unduh</span>
           </button>
@@ -1975,20 +2004,20 @@ function renderOverviewRecentMaterials() {
       <div class="materi-card-footer" style="border-top: none; padding-top: 6px;">
         <div class="card-attachment-area">
           ${m.file ? `
-            <button type="button" class="file-attachment-chip" onclick="handleOpenFile('${m.file.id}', '${escapeHtml(m.file.name)}', '${escapeHtml(m.file.downloadUrl || '')}')" title="Lihat Pratinjau Berkas: ${escapeHtml(m.file.name)}">
+            <button type="button" class="file-attachment-chip" onclick="handleOpenFile('${escapeJsStr(m.file.id)}', '${escapeJsStr(m.file.name)}', '${escapeJsStr(m.file.downloadUrl || '')}')" title="Lihat Pratinjau Berkas: ${escapeHtml(m.file.name)}">
               <i data-feather="${getFileIconName(m.file.name, m.file.type)}"></i>
               <span class="chip-filename">${escapeHtml(m.file.name)}</span>
               <span class="chip-filesize">(${formatFileSize(m.file.size)})</span>
               <i data-feather="eye" class="chip-action-icon"></i>
             </button>
-            <button type="button" class="btn-download-direct" onclick="downloadAttachment('${m.file.id}', '${escapeHtml(m.file.name)}', '${escapeHtml(m.file.downloadUrl || '')}', event)" title="Unduh Berkas Materi Langsung">
+            <button type="button" class="btn-download-direct" onclick="downloadAttachment('${escapeJsStr(m.file.id)}', '${escapeJsStr(m.file.name)}', '${escapeJsStr(m.file.downloadUrl || '')}', event)" title="Unduh Berkas Materi Langsung">
               <i data-feather="download"></i>
               <span>Unduh</span>
             </button>
           ` : ''}
 
           ${m.link ? `
-            <a href="${escapeHtml(m.link)}" target="_blank" rel="noopener noreferrer" class="materi-link-btn" title="Buka Tautan Eksternal">
+            <a href="${sanitizeSafeUrl(m.link)}" target="_blank" rel="noopener noreferrer" class="materi-link-btn" title="Buka Tautan Eksternal">
               <i data-feather="external-link"></i>
               <span>Tautan Web</span>
             </a>
@@ -3243,7 +3272,7 @@ window.openCloudModal = openCloudModal;
 window.closeCloudModal = closeCloudModal;
 
 // ----------------------------------------------------------------------------
-// SISTEM VERIFIKASI AKSES ADMINISTRATOR (SECRET GATE & PASSWORD: @Mikasa262728)
+// SISTEM VERIFIKASI AKSES ADMINISTRATOR (ROLE-BASED AUTHORIZATION)
 // ----------------------------------------------------------------------------
 const adminAuthModal = document.getElementById('adminAuthModal');
 const adminAuthForm = document.getElementById('adminAuthForm');
@@ -3251,11 +3280,12 @@ const adminSecretInput = document.getElementById('adminSecretInput');
 const adminAuthErrorMsg = document.getElementById('adminAuthErrorMsg');
 
 function triggerAdminSecretDoor() {
-  if (!adminAuthModal) return;
-  if (adminSecretInput) adminSecretInput.value = '';
-  if (adminAuthErrorMsg) adminAuthErrorMsg.style.display = 'none';
-  adminAuthModal.showModal();
-  setTimeout(() => { if (adminSecretInput) adminSecretInput.focus(); }, 150);
+  if (!isCurrentUserAdmin) {
+    showToast('⚠️ Akses Ditolak: Fitur Cloud & Administrator hanya dapat diakses oleh akun Pengurus / Admin terdaftar.', 'danger');
+    return;
+  }
+  openCloudModal();
+  showToast('Pengaturan Cloud Administrator dibuka. 🛡️', 'info');
 }
 
 window.closeAdminAuthModal = function() {
@@ -3265,8 +3295,7 @@ window.closeAdminAuthModal = function() {
 if (adminAuthForm) {
   adminAuthForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const entered = adminSecretInput ? adminSecretInput.value.trim() : '';
-    if (entered === '@Mikasa262728') {
+    if (isCurrentUserAdmin) {
       closeAdminAuthModal();
       openCloudModal();
       showToast('Akses Administrator diberikan! 🛡️', 'success');
@@ -3277,6 +3306,7 @@ if (adminAuthForm) {
         void adminAuthErrorMsg.offsetWidth;
         adminAuthErrorMsg.style.animation = 'shakeError 0.35s ease';
       }
+      showToast('Akses ditolak: Akun Anda bukan Pengurus/Administrator.', 'danger');
     }
   });
 }
@@ -5128,9 +5158,8 @@ if (btnMarkAllNotifsRead) {
 }
 
 // ============================================================================
-// 10. MASTER ADMIN: AKSES SEMUA DATA MAHASISWA & PROGRES TUGAS (SANDI: 00000000)
+// 10. MASTER ADMIN: AKSES SEMUA DATA MAHASISWA & PROGRES TUGAS (ROLE-BASED)
 // ============================================================================
-const SUPER_ADMIN_SECRET = '00000000';
 const SUPER_ADMIN_SESSION_KEY = 'studymanage_super_admin_verified';
 
 let cachedAllStudents = [];
@@ -5141,10 +5170,14 @@ let academicBadgeTimer = null;
 
 /**
  * Handle tombol / trigger rahasia "Data Mahasiswa"
- * SELALU meminta kata sandi Master Admin (00000000) setiap kali dipanggil!
+ * Memeriksa hak akses Pengurus / Administrator
  */
 window.handleOpenStudentsData = function() {
-  window.openSuperAdminAuthModal();
+  if (!isCurrentUserAdmin) {
+    showToast('⚠️ Akses Ditolak: Data Mahasiswa hanya dapat diakses oleh akun Pengurus / Admin terdaftar.', 'danger');
+    return;
+  }
+  openStudentsDashboardModal();
 };
 
 /**
@@ -5163,11 +5196,11 @@ window.handleAcademicBadgeClick = function(e) {
   if (academicBadgeClicks >= 5) {
     academicBadgeClicks = 0;
     clearTimeout(academicBadgeTimer);
-    // Hapus sesi lama agar SELALU meminta sandi 00000000!
-    try {
-      sessionStorage.removeItem(SUPER_ADMIN_SESSION_KEY);
-    } catch (err) {}
-    window.openSuperAdminAuthModal();
+    if (!isCurrentUserAdmin) {
+      showToast('⚠️ Akses Ditolak: Hanya Pengurus/Admin resmi yang dapat mengakses Data Mahasiswa.', 'danger');
+      return;
+    }
+    openStudentsDashboardModal();
   }
 };
 
@@ -5540,22 +5573,17 @@ const superAdminAuthErrorMsg = document.getElementById('superAdminAuthErrorMsg')
 if (superAdminAuthForm) {
   superAdminAuthForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const entered = (superAdminSecretInput ? superAdminSecretInput.value : '').trim();
-    if (entered === SUPER_ADMIN_SECRET) {
+    if (isCurrentUserAdmin) {
       if (superAdminAuthErrorMsg) superAdminAuthErrorMsg.style.display = 'none';
       sessionStorage.setItem(SUPER_ADMIN_SESSION_KEY, 'true');
       closeSuperAdminAuthModal();
-      showToast('Akses Master Admin diverifikasi! Selamat datang. 🛡️', 'success');
+      showToast('Akses Administrator diverifikasi! Selamat datang. 🛡️', 'success');
       openStudentsDashboardModal();
     } else {
       if (superAdminAuthErrorMsg) {
         superAdminAuthErrorMsg.style.display = 'flex';
       }
-      showToast('Kata sandi salah! Akses ditolak.', 'danger');
-      if (superAdminSecretInput) {
-        superAdminSecretInput.focus();
-        superAdminSecretInput.select();
-      }
+      showToast('Akses ditolak: Akun Anda bukan Pengurus/Administrator resmi.', 'danger');
     }
   });
 }
