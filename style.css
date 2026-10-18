@@ -2760,21 +2760,28 @@ html.has-auth-session .login-overlay {
 }
 
 /* ==========================================================================
-   OPTIMASI KHUSUS LAYAR HP / SMARTPHONE (<= 640px)
+   OPTIMASI KHUSUS LAYAR HP / SMARTPHONE (<= 768px)
    ========================================================================== */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .topbar {
-    padding: 0 12px;
-    height: 64px;
-    gap: 8px;
+    padding: 0 12px !important;
+    height: 64px !important;
+    gap: 8px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    overflow: hidden !important;
   }
 
+  /* Kunci sisi kiri topbar (hamburger) agar tidak pernah bisa tertimpa */
   .topbar-left {
     display: flex !important;
     align-items: center !important;
     gap: 8px !important;
-    flex-shrink: 0 !important;
+    flex: 0 0 44px !important;
     min-width: 44px !important;
+    max-width: 44px !important;
+    z-index: 15 !important;
   }
 
   .menu-toggle {
@@ -2784,6 +2791,7 @@ html.has-auth-session .login-overlay {
     height: 38px !important;
     visibility: visible !important;
     opacity: 1 !important;
+    z-index: 16 !important;
   }
 
   /* Sembunyikan searchbox topbar di HP agar muat tombol aksi */
@@ -2796,28 +2804,82 @@ html.has-auth-session .login-overlay {
     align-items: center !important;
     justify-content: flex-end !important;
     gap: 6px !important;
-    flex: 1 1 auto !important;
+    flex: 0 1 auto !important;
     min-width: 0 !important;
+    max-width: calc(100% - 52px) !important;
+    overflow-x: visible !important;
   }
 
   .cloud-sync-btn {
-    padding: 6px 8px;
+    display: none !important;
   }
 
   .icon-btn {
-    width: 36px;
-    height: 36px;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Lencana Pengurus di HP: Icon Perisai Emas Bulat (36x36px) Ramah Sentuhan Tanpa Teks Panjang */
+  .btn-topbar-admin-badge {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    max-width: 36px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+  }
+
+  .btn-topbar-admin-badge span {
+    display: none !important;
+  }
+
+  .btn-topbar-admin-badge i {
+    width: 16px !important;
+    height: 16px !important;
+    margin: 0 !important;
+  }
+
+  /* Tombol Klaim Pengurus di HP */
+  .btn-claim-admin-topbar {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    max-width: 36px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+  }
+
+  .btn-claim-admin-topbar span {
+    display: none !important;
+  }
+
+  .btn-claim-admin-topbar i {
+    width: 16px !important;
+    height: 16px !important;
+    margin: 0 !important;
   }
 
   .quick-add-group {
-    gap: 4px;
-    flex-shrink: 0;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
   }
 
   .quick-add-group .btn {
-    padding: 7px 11px;
-    font-size: 0.8rem;
-    gap: 4px;
+    padding: 6px 10px !important;
+    font-size: 0.78rem !important;
+    gap: 4px !important;
+    height: 36px !important;
+    border-radius: var(--radius-full) !important;
   }
 
   /* Sembunyikan tombol Matkul & Materi cepat dan tombol gembok dari topbar HP */
@@ -2851,11 +2913,44 @@ html.has-auth-session .login-overlay {
     touch-action: manipulation;
     cursor: pointer;
   }
+}
 
-  .btn-topbar-admin-badge {
-    padding: 6px 10px;
-    font-size: 0.74rem;
+/* Sembunyikan teks label Tugas di layar HP sangat sempit (<= 440px) */
+@media (max-width: 440px) {
+  .quick-add-group #btnOpenModalTugas span {
+    display: none !important;
   }
+  .quick-add-group #btnOpenModalTugas {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+  }
+  .quick-add-group #btnOpenModalTugas i {
+    margin: 0 !important;
+  }
+}
+
+/* ==========================================================================
+   HILANGKAN TOMBOL FISIK DATA MAHASISWA & CLOUD SYNC (100% VIA SHORTCUT RAHASIA)
+   ========================================================================== */
+.cloud-sync-btn,
+#btnOpenCloudModal,
+#btnOpenCloudModalSidebar,
+.btn-students-data,
+#btnOpenStudentsData {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  opacity: 0 !important;
+  position: absolute !important;
+}
 
   /* Lenyapkan tombol keluar dari topbar secara permanen */
   .btn-topbar-exit-admin,

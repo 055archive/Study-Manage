@@ -16,7 +16,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="apple-touch-icon" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=7.0">
+  <link rel="stylesheet" href="style.css?v=8.4">
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -44,7 +44,11 @@
     }
     /* PERBAIKAN DARURAT: Hilangkan tombol keluar topbar & pastikan menu garis 3 selalu muncul */
     .btn-topbar-exit-admin,
-    .topbar-admin-group .btn-topbar-exit-admin {
+    .topbar-admin-group .btn-topbar-exit-admin,
+    .cloud-sync-btn,
+    #btnOpenCloudModal,
+    .btn-students-data,
+    #btnOpenStudentsData {
       display: none !important;
       visibility: hidden !important;
       width: 0 !important;
@@ -66,6 +70,12 @@
         flex-shrink: 0 !important;
         visibility: visible !important;
         opacity: 1 !important;
+      }
+    }
+    @media (max-width: 768px) {
+      .btn-topbar-admin-badge span,
+      .btn-claim-admin-topbar span {
+        display: none !important;
       }
     }
   </style>
@@ -388,10 +398,6 @@
           </div>
         </div>
         <div class="security-actions-group" style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
-          <button type="button" class="backup-btn btn-students-data" id="btnOpenStudentsData" onclick="handleOpenStudentsData()" title="Akses Master Admin: Pantau Data Seluruh Mahasiswa" style="display: none; width: 100%; justify-content: center; background: rgba(79, 70, 229, 0.08); border-color: rgba(99, 102, 241, 0.35); color: var(--primary);">
-            <i data-feather="users"></i>
-            <span>Data Mahasiswa</span>
-          </button>
           <button type="button" class="backup-btn btn-exit-admin-sidebar" id="btnExitAdminSidebar" onclick="exitAdminMode()" title="Keluar dari Mode Pengurus" style="width: 100%; justify-content: center; display: none;">
             <i data-feather="shield-off"></i>
             <span>Keluar Mode Pengurus</span>
@@ -422,13 +428,6 @@
         </div>
 
         <div class="topbar-right">
-          <!-- Tombol Status Cloud Sync (Tersembunyi - Hanya untuk Admin) -->
-          <button class="cloud-sync-btn" id="btnOpenCloudModal" title="Pengaturan & Status Cloud Sync Firebase" style="display: none;">
-            <span class="cloud-status-dot offline" id="cloudStatusDot"></span>
-            <i data-feather="cloud" id="cloudIcon"></i>
-            <span class="cloud-status-text" id="cloudStatusText">Lokal</span>
-          </button>
-
           <!-- Notifikasi & Pengingat (Lonceng) -->
           <div class="notif-wrapper" id="notifWrapper">
             <button type="button" class="icon-btn notif-bell-btn" id="btnNotifBell" title="Notifikasi Tugas & Materi Kelas" aria-label="Notifikasi">
@@ -2038,9 +2037,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 
   <!-- Konfigurasi & Inisialisasi Firebase Cloud Sync -->
-  <script src="firebase-config.js?v=8.3"></script>
+  <script src="firebase-config.js?v=8.4"></script>
 
   <!-- JavaScript Logika Aplikasi -->
-  <script src="app.js?v=8.3"></script>
+  <script src="app.js?v=8.4"></script>
 </body>
 </html>

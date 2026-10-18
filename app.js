@@ -4603,15 +4603,13 @@ function updateAdminUI() {
     btnClaimSidebar.style.display = 'none';
   }
 
-  // 3. Tombol Cloud Modal (hanya ditampilkan untuk Designer Web)
+  // 3 & 4. Tombol Cloud Modal & Data Mahasiswa (Dihilangkan fisik - Akses 100% via shortcut rahasia)
   if (btnCloudModal) {
-    btnCloudModal.style.display = isDesignerWeb() ? 'inline-flex' : 'none';
+    btnCloudModal.style.display = 'none';
   }
-
-  // 4. Tombol Data Mahasiswa di Sidebar (hanya untuk Kosma dan Designer Web)
   const elBtnStudentsData = document.getElementById('btnOpenStudentsData');
   if (elBtnStudentsData) {
-    elBtnStudentsData.style.display = canAccessStudentsData() ? 'flex' : 'none';
+    elBtnStudentsData.style.display = 'none';
   }
 
   // 5. Pembatasan Hak Akses: Tambah Tugas & Kelola Matkul (hanya untuk Pengurus Kelas)
