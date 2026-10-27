@@ -1,0 +1,2432 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TEKS HOUSE Netflix &amp; Chill — Buku Kas Sewa Apartemen</title>
+  
+  <!-- Firebase Compat SDK (Compatible with file://, HTTP, & HTTPS) -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+  
+  <!-- Tailwind CSS CDN with forms and container queries -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            mocha: {
+              canvas: '#211B1A',
+              card: '#382A28',
+              surface: '#2B2120',
+              border: '#60433D',
+              glass: 'rgba(56, 42, 40, 0.65)',
+              glassBorder: 'rgba(193, 160, 148, 0.18)',
+              darker: '#191413'
+            },
+            terra: {
+              300: '#C1A094',
+              400: '#A57D71',
+              500: '#916B60',
+              600: '#7B574E',
+              700: '#60433D',
+              glow: 'rgba(145, 107, 96, 0.35)'
+            },
+            linen: {
+              primary: '#E8D8CE',
+              muted: '#C1A094',
+              dimmed: '#8D7269'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Font: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@1,500;1,600&display=swap" rel="stylesheet">
+  
+  <style>
+    /* =========================================================
+       Design System: Luxury Warm Earthy Mocha & Specular Liquid Glass
+       As specified in design.md
+       ========================================================= */
+    :root {
+      /* Surface & Canvas Tokens */
+      --bg-canvas: #211B1A;         /* Deep Obsidian Espresso */
+      --surface-card: #382A28;      /* Roasted Mocha */
+      --border-subtle: #60433D;     /* Warm Chestnut */
+      --border-glass: rgba(193, 160, 148, 0.18); /* Specular frosted glass border */
+      
+      /* Accent & Interactive Tokens */
+      --accent-primary: #916B60;    /* Warm Terra / Dusty Clay */
+      --accent-hover: #A57D71;      /* Hover state */
+      --accent-glow: rgba(145, 107, 96, 0.35); /* Outer glow */
+
+      /* Typography & Foreground Tokens */
+      --text-primary: #E8D8CE;      /* Pale Linen Ivory */
+      --text-muted: #C1A094;        /* Soft Almond Cashmere */
+      --text-dimmed: #8D7269;       /* Deep Muted Mocha */
+
+      /* Semantic Status Tokens */
+      --color-income: #34D399;      /* Emerald Green */
+      --color-expense: #FB7185;     /* Rose Terracotta */
+      --color-vip: #F59E0B;         /* Amber Gold */
+      --color-reguler: #38BDF8;     /* Sky Muted Blue */
+    }
+
+    /* Light Mode Palette Override */
+    html:not(.dark) {
+      --bg-canvas: #FAF6F3;
+      --surface-card: #FFFFFF;
+      --border-subtle: #E6D9D2;
+      --border-glass: rgba(145, 107, 96, 0.16);
+      --accent-primary: #85594E;
+      --accent-hover: #6E453B;
+      --text-primary: #2D2321;
+      --text-muted: #6B554E;
+      --text-dimmed: #968179;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #171211;
+      background-image: 
+        radial-gradient(ellipse at 50% 0%, rgba(145, 107, 96, 0.25) 0%, transparent 60%),
+        linear-gradient(180deg, rgba(20, 15, 14, 0.68) 0%, rgba(16, 12, 11, 0.82) 100%),
+        url('screenshots/apartment_bg.jpg'),
+        url('https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1920&q=80');
+      background-size: cover;
+      background-position: center center;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+      color: var(--text-primary);
+      -webkit-tap-highlight-color: transparent;
+      min-height: 100vh;
+    }
+
+    .font-brand-italic {
+      font-family: 'Playfair Display', Georgia, serif;
+    }
+
+    /* Glass Card Container (Ultra Glassmorphism matching Glassy Dashboard V4) */
+    .liquid-card {
+      background: rgba(35, 26, 24, 0.52);
+      backdrop-filter: blur(26px) saturate(175%);
+      -webkit-backdrop-filter: blur(26px) saturate(175%);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 16px 40px 0 rgba(0, 0, 0, 0.45), inset 0 1px 1px 0 rgba(255, 255, 255, 0.22);
+      border-radius: 24px;
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease, background 0.3s ease;
+    }
+    html:not(.dark) .liquid-card {
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      border: 1px solid rgba(145, 107, 96, 0.22);
+      box-shadow: 0 12px 35px rgba(96, 67, 61, 0.12), inset 0 1px 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    /* === Ultra-Smooth Spring Lift Micro-interactions (Framer Motion Physics) === */
+    .kpi-card {
+      cursor: pointer;
+      position: relative;
+      transform: translate3d(0, 0, 0);
+      transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), 
+                  box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1), 
+                  border-color 0.35s ease,
+                  background 0.35s ease;
+      will-change: transform, box-shadow;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      overflow: hidden;
+    }
+    @media (hover: hover) {
+      .kpi-card:hover {
+        transform: translate3d(0, -8px, 0) scale(1.02);
+        box-shadow: 0 24px 60px -10px rgba(0, 0, 0, 0.65), 
+                    0 0 35px rgba(145, 107, 96, 0.25), 
+                    inset 0 1px 2px rgba(255, 255, 255, 0.35);
+        border-color: rgba(255, 255, 255, 0.3) !important;
+      }
+    }
+    .kpi-card:active {
+      transform: translate3d(0, -2px, 0) scale(0.985);
+      transition-duration: 0.15s;
+    }
+
+    /* Interactive Specular Glare following mouse */
+    .kpi-card::after, .unit-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.14), transparent 45%);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    .kpi-card:hover::after, .unit-card:hover::after {
+      opacity: 1;
+    }
+
+    /* Unit breakdown card smooth spring lift */
+    .unit-card {
+      cursor: pointer;
+      position: relative;
+      transform: translate3d(0, 0, 0);
+      transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), 
+                  box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1), 
+                  border-color 0.35s ease;
+      will-change: transform, box-shadow;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      overflow: hidden;
+    }
+    @media (hover: hover) {
+      .unit-card:hover {
+        transform: translate3d(0, -6px, 0) scale(1.018);
+        box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.55), 
+                    inset 0 1px 2px rgba(255, 255, 255, 0.28);
+        border-color: rgba(255, 255, 255, 0.3) !important;
+      }
+    }
+    .unit-card:active {
+      transform: translate3d(0, -2px, 0) scale(0.985);
+      transition-duration: 0.15s;
+    }
+
+    /* Fluid Tab Gliding Animation */
+    @keyframes tabGlideIn {
+      0% {
+        opacity: 0;
+        transform: translate3d(0, 16px, 0) scale(0.99);
+      }
+      100% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+    }
+
+    /* Floating Navigation Island */
+    .liquid-navbar {
+      background: rgba(28, 20, 19, 0.70);
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 16px 45px -10px rgba(0, 0, 0, 0.65), inset 0 1px 2px rgba(255, 255, 255, 0.2);
+      border-radius: 9999px;
+    }
+    html:not(.dark) .liquid-navbar {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      border: 1px solid rgba(145, 107, 96, 0.22);
+      box-shadow: 0 10px 30px -10px rgba(96, 67, 61, 0.15);
+    }
+
+    /* Specular Primary Button */
+    .btn-liquid-primary {
+      background: linear-gradient(135deg, rgba(145, 107, 96, 0.95) 0%, rgba(96, 67, 61, 0.95) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      box-shadow: 0 4px 15px rgba(145, 107, 96, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+      color: #E8D8CE;
+      font-weight: 700;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-liquid-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(145, 107, 96, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+      background: linear-gradient(135deg, rgba(165, 125, 113, 0.95) 0%, rgba(112, 78, 71, 0.95) 100%);
+    }
+
+    /* Secondary Liquid Button */
+    .btn-liquid-secondary {
+      background: rgba(45, 33, 30, 0.5);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: var(--text-muted);
+      transition: all 0.2s ease;
+    }
+    .btn-liquid-secondary:hover {
+      background: rgba(70, 50, 46, 0.65);
+      color: var(--text-primary);
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+    html:not(.dark) .btn-liquid-secondary {
+      background: rgba(230, 217, 210, 0.6);
+      border: 1px solid rgba(145, 107, 96, 0.2);
+    }
+
+    /* Custom Form Fields with Frosted Glass */
+    .liquid-input {
+      background: rgba(24, 18, 17, 0.58) !important;
+      backdrop-filter: blur(16px) !important;
+      -webkit-backdrop-filter: blur(16px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      color: #FFFFFF !important;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25) !important;
+      transition: all 0.2s ease;
+    }
+    html:not(.dark) .liquid-input {
+      background: rgba(255, 255, 255, 0.85) !important;
+      border-color: #D6C4BC !important;
+      color: #2D2321 !important;
+    }
+    .liquid-input:focus {
+      outline: none;
+      background: rgba(35, 25, 23, 0.85) !important;
+      border-color: rgba(232, 216, 206, 0.45) !important;
+      box-shadow: 0 0 0 3px rgba(145, 107, 96, 0.35) !important;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(33, 27, 26, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #60433D;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #916B60;
+    }
+
+    /* Background Ambient Mesh Orbs */
+    .ambient-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .orb-1 {
+      position: absolute;
+      top: -150px;
+      right: -100px;
+      width: 550px;
+      height: 550px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(145, 107, 96, 0.22) 0%, rgba(96, 67, 61, 0.08) 50%, transparent 70%);
+      filter: blur(80px);
+      animation: orbFloat1 18s ease-in-out infinite alternate;
+    }
+    .orb-2 {
+      position: absolute;
+      bottom: 5%;
+      left: -120px;
+      width: 650px;
+      height: 650px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(56, 42, 40, 0.4) 0%, rgba(33, 27, 26, 0.1) 60%, transparent 80%);
+      filter: blur(90px);
+      animation: orbFloat2 22s ease-in-out infinite alternate;
+    }
+    .orb-3 {
+      position: absolute;
+      top: 40%;
+      right: 15%;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(165, 125, 113, 0.12) 0%, transparent 70%);
+      filter: blur(70px);
+      animation: orbFloat3 15s ease-in-out infinite alternate;
+    }
+
+    @keyframes orbFloat1 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-40px, 30px) scale(1.08); }
+    }
+    @keyframes orbFloat2 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(50px, -25px) scale(1.05); }
+    }
+    @keyframes orbFloat3 {
+      0% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+      100% { transform: translate(-30px, 20px) scale(1.12); opacity: 1; }
+    }
+
+    /* === Mobile-First Responsive Improvements === */
+    @media (max-width: 640px) {
+      .kpi-card {
+        border-radius: 16px;
+      }
+      .kpi-card .kpi-value {
+        font-size: 1.5rem;
+      }
+      .liquid-card {
+        border-radius: 16px;
+      }
+    }
+
+    /* Smooth page entrance */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-entrance {
+      animation: fadeInUp 0.5s ease-out both;
+    }
+    .animate-entrance-delay-1 { animation-delay: 0.08s; }
+    .animate-entrance-delay-2 { animation-delay: 0.16s; }
+    .animate-entrance-delay-3 { animation-delay: 0.24s; }
+    .animate-entrance-delay-4 { animation-delay: 0.32s; }
+
+    /* Print Stylesheet */
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+      }
+      .no-print, header, nav, #bottomNav, .btn-action, button, #toast-container, .ambient-bg {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      .liquid-card {
+        border: 1px solid #94a3b8 !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        background: white !important;
+        color: black !important;
+      }
+      table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+      }
+      th, td {
+        border: 1px solid #cbd5e1 !important;
+        padding: 6px 8px !important;
+        color: black !important;
+      }
+    }
+  </style>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#211B1A">
+</head>
+<body class="antialiased min-h-screen flex flex-col pb-24 md:pb-12 transition-colors relative selection:bg-[#916B60] selection:text-[#E8D8CE]">
+
+  <!-- Ambient Specular Glow Elements -->
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="orb-1"></div>
+    <div class="orb-2"></div>
+    <div class="orb-3"></div>
+  </div>
+
+  <!-- ==================== TOP HEADER ==================== -->
+  <header class="relative z-30 sticky top-0 border-b border-white/10 bg-[#1e1514]/65 backdrop-blur-2xl shadow-xl transition-colors">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
+      
+      <!-- Brand & Title -->
+      <div class="flex items-center space-x-3">
+        <!-- Luxury Clapperboard Logo -->
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#916B60] to-[#4A342F] text-[#E8D8CE] flex items-center justify-center font-bold shadow-md shadow-[#916B60]/20 border border-white/20">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-[#E8D8CE]">
+              TEKS HOUSE <span class="font-brand-italic italic text-sm sm:text-base font-normal text-[#C1A094]">Netflix &amp; Chill</span>
+            </h1>
+            <span class="text-[10px] bg-[#382A28]/80 text-[#C1A094] font-bold px-2 py-0.5 rounded-full border border-white/10">Serang Kota</span>
+          </div>
+          <p class="text-xs text-[#8D7269] font-medium">Buku Kas &amp; Keuangan Sewa Apartemen Per Jam</p>
+        </div>
+      </div>
+
+      <!-- Cloud Sync & Status Info + Dark Mode Toggle -->
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <!-- Cloud Sync Badge -->
+        <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-[#2B2120]/70 text-[#C1A094] text-xs font-semibold border border-white/10 shadow-xs backdrop-blur-md">
+          <span id="cloudSyncStatusBadge" class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+          <span id="cloudSyncStatusText" class="hidden sm:inline">Penyimpanan Lokal (Offline)</span>
+        </div>
+
+        <!-- Dark Mode Toggle Button -->
+        <button id="themeToggleBtn" onclick="toggleTheme()" type="button" title="Ganti Mode Terang / Gelap" class="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-[#2B2120]/70 hover:bg-[#382A28] text-[#E8D8CE] border border-white/10 transition shadow-xs">
+          <span id="themeIcon" class="text-sm">☀️</span>
+          <span id="themeText" class="hidden sm:inline">Light Mode</span>
+        </button>
+
+        <!-- Quick Settings Shortcut -->
+        <button onclick="switchTab('tab-pengaturan')" class="hidden md:inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-[#2B2120]/70 hover:bg-[#382A28] text-[#C1A094] hover:text-[#E8D8CE] border border-white/10 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          <span>Pricelist &amp; Cloud</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- DESKTOP NAVIGATION TABS -->
+    <div class="border-t border-white/10 hidden md:block bg-[#150f0e]/50 backdrop-blur-xl">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-2 flex items-center space-x-2 overflow-x-auto">
+        <button data-tab="tab-rekap" class="nav-tab-btn px-4 py-2 text-xs font-bold rounded-xl btn-liquid-primary flex items-center space-x-2 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+          <span>Rekap Keuangan</span>
+        </button>
+        <button data-tab="tab-pemasukan" class="nav-tab-btn px-4 py-2 text-xs font-semibold rounded-xl text-[#C1A094] hover:text-[#E8D8CE] hover:bg-[#382A28]/50 transition flex items-center space-x-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+          <span>Catat Customer &amp; Pemasukan</span>
+        </button>
+        <button data-tab="tab-pengeluaran" class="nav-tab-btn px-4 py-2 text-xs font-semibold rounded-xl text-[#C1A094] hover:text-[#E8D8CE] hover:bg-[#382A28]/50 transition flex items-center space-x-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+          <span>Catat Pengeluaran</span>
+        </button>
+        <button data-tab="tab-pengaturan" class="nav-tab-btn px-4 py-2 text-xs font-semibold rounded-xl text-[#C1A094] hover:text-[#E8D8CE] hover:bg-[#382A28]/50 transition flex items-center space-x-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          <span>Pricelist &amp; Cloud</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT ==================== -->
+  <main class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full space-y-6">
+
+    <!-- =========================================================
+         TAB 1: REKAPITULASI KEUANGAN & KPI DASHBOARD
+         ========================================================= -->
+    <section id="tab-rekap" class="space-y-6">
+      
+      <!-- FILTER PERIODE BAR -->
+      <div class="liquid-card p-4 sm:p-5 md:p-6 border border-[#60433D]/60 animate-entrance">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <div>
+            <div class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#8D7269]">Periode Rekapitulasi</div>
+            <h2 id="recapPeriodTitle" class="text-lg sm:text-xl md:text-2xl font-black text-[#E8D8CE] mt-0.5 tracking-tight">Memuat Data...</h2>
+          </div>
+
+          <!-- Pilihan Jenis Filter -->
+          <div class="flex flex-wrap items-center gap-1 sm:gap-1.5 p-1 sm:p-1.5 bg-[#2B2120]/80 rounded-xl sm:rounded-2xl border border-[#60433D]/60">
+            <button data-filter="daily" class="filter-type-btn px-2.5 sm:px-3.5 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg sm:rounded-xl btn-liquid-primary shadow-xs transition">
+              📅 Harian
+            </button>
+            <button data-filter="weekly" class="filter-type-btn px-2.5 sm:px-3.5 py-1.5 text-[10px] sm:text-xs font-semibold rounded-lg sm:rounded-xl text-[#C1A094] hover:text-[#E8D8CE] hover:bg-[#382A28] transition">
+              📊 7 Hari
+            </button>
+            <button data-filter="monthly" class="filter-type-btn px-2.5 sm:px-3.5 py-1.5 text-[10px] sm:text-xs font-semibold rounded-lg sm:rounded-xl text-[#C1A094] hover:text-[#E8D8CE] hover:bg-[#382A28] transition">
+              🗓️ Bulanan
+            </button>
+            <button data-filter="custom" class="filter-type-btn px-2.5 sm:px-3.5 py-1.5 text-[10px] sm:text-xs font-semibold rounded-lg sm:rounded-xl text-[#C1A094] hover:text-[#E8D8CE] hover:bg-[#382A28] transition">
+              ⚙️ Kustom
+            </button>
+          </div>
+        </div>
+
+        <!-- Controls Tanggal & Export Actions -->
+        <div class="mt-4 pt-3.5 border-t border-[#60433D]/40 flex flex-wrap items-center justify-between gap-3">
+          
+          <!-- Control Harian -->
+          <div id="filterControlDaily" class="flex items-center space-x-2">
+            <span class="text-xs font-semibold text-[#C1A094]">Pilih Tanggal:</span>
+            <input type="date" id="filterDailyDate" class="liquid-input px-3 py-1.5 text-xs font-semibold rounded-xl focus:outline-none">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+              ● Live Data Terkini
+            </span>
+          </div>
+
+          <!-- Control Mingguan -->
+          <div id="filterControlWeekly" class="hidden text-xs text-[#C1A094] font-medium">
+            ℹ️ Menampilkan rekap transaksi 7 hari terakhir hingga hari ini.
+          </div>
+
+          <!-- Control Bulanan -->
+          <div id="filterControlMonthly" class="hidden flex items-center space-x-2">
+            <span class="text-xs font-semibold text-[#C1A094]">Pilih Bulan:</span>
+            <input type="month" id="filterMonth" class="liquid-input px-3 py-1.5 text-xs font-semibold rounded-xl focus:outline-none">
+          </div>
+
+          <!-- Control Custom -->
+          <div id="filterControlCustom" class="hidden flex flex-wrap items-center gap-2">
+            <span class="text-xs font-semibold text-[#C1A094]">Dari:</span>
+            <input type="date" id="filterCustomStart" class="liquid-input px-2.5 py-1.5 text-xs rounded-xl focus:outline-none">
+            <span class="text-xs font-semibold text-[#C1A094]">Sampai:</span>
+            <input type="date" id="filterCustomEnd" class="liquid-input px-2.5 py-1.5 text-xs rounded-xl focus:outline-none">
+          </div>
+
+          <!-- Tombol Ekspor & Cetak -->
+          <div class="flex items-center space-x-2 ml-auto">
+            <button onclick="exportToExcelCSV()" class="px-2.5 sm:px-3.5 py-1.5 text-[10px] sm:text-xs font-bold rounded-xl bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30 transition flex items-center space-x-1 sm:space-x-1.5 shadow-xs">
+              <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+              <span class="hidden sm:inline">Export CSV</span>
+              <span class="sm:hidden">CSV</span>
+            </button>
+            <button onclick="printReport()" class="btn-liquid-secondary px-2.5 sm:px-3.5 py-1.5 text-[10px] sm:text-xs font-bold rounded-xl transition flex items-center space-x-1 sm:space-x-1.5 shadow-xs">
+              <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+              <span class="hidden sm:inline">Cetak / PDF</span>
+              <span class="sm:hidden">Print</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 KARTU STATISTIK UTAMA (KPI) -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        
+        <!-- 1. Customer Masuk -->
+        <div class="liquid-card kpi-card p-4 sm:p-5 border border-[#60433D]/60 relative overflow-hidden group animate-entrance">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#C1A094]">Customer Masuk</span>
+            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#916B60]/20 text-[#E8D8CE] flex items-center justify-center font-bold border border-[#916B60]/30 text-sm sm:text-base">
+              👥
+            </div>
+          </div>
+          <div id="statTotalCustomers" class="kpi-value text-xl sm:text-2xl md:text-3xl font-black text-[#E8D8CE] mt-1.5 sm:mt-2 tracking-tight">0 Orang</div>
+          <div class="text-[10px] sm:text-xs text-[#8D7269] mt-1 flex items-center space-x-1">
+            <span>⏱️ Total Jam:</span>
+            <span id="statTotalHours" class="font-bold text-[#C1A094]">0 Jam</span>
+          </div>
+        </div>
+
+        <!-- 2. Total Pemasukan -->
+        <div class="liquid-card kpi-card p-4 sm:p-5 border border-emerald-500/30 bg-gradient-to-br from-[#382A28]/80 to-emerald-950/20 relative overflow-hidden animate-entrance animate-entrance-delay-1">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-400">Total Pemasukan</span>
+            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold border border-emerald-500/30 text-sm sm:text-base">
+              💰
+            </div>
+          </div>
+          <div id="statTotalIncome" class="kpi-value text-xl sm:text-2xl md:text-3xl font-black text-emerald-400 mt-1.5 sm:mt-2 tracking-tight">Rp 0</div>
+          <div class="flex items-center justify-between mt-1 gap-1">
+            <div class="text-[10px] sm:text-[11px] text-emerald-500/80 truncate font-medium">
+              Tarif resmi TEKS HOUSE
+            </div>
+            <span class="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20 shrink-0">
+              <svg class="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 17L17 7m0 0H7m10 0v10"></path></svg>
+              <span>Kas Masuk</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- 3. Total Pengeluaran -->
+        <div class="liquid-card kpi-card p-4 sm:p-5 border border-rose-500/30 bg-gradient-to-br from-[#382A28]/80 to-rose-950/20 relative overflow-hidden animate-entrance animate-entrance-delay-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-rose-400">Total Pengeluaran</span>
+            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold border border-rose-500/30 text-sm sm:text-base">
+              📉
+            </div>
+          </div>
+          <div id="statTotalExpense" class="kpi-value text-xl sm:text-2xl md:text-3xl font-black text-rose-400 mt-1.5 sm:mt-2 tracking-tight">Rp 0</div>
+          <div class="text-[10px] sm:text-[11px] text-rose-400/80 mt-1 truncate">
+            Biaya operasional &amp; unit
+          </div>
+        </div>
+
+        <!-- 4. Laba Bersih (Net Profit) -->
+        <div class="liquid-card kpi-card p-4 sm:p-5 border border-[#916B60]/40 bg-gradient-to-br from-[#382A28]/80 to-[#916B60]/15 relative overflow-hidden animate-entrance animate-entrance-delay-3">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#C1A094]">Laba Bersih</span>
+            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#916B60]/20 text-[#E8D8CE] flex items-center justify-center font-bold border border-[#916B60]/30 text-sm sm:text-base">
+              📈
+            </div>
+          </div>
+          <div id="statNetProfit" class="kpi-value text-xl sm:text-2xl md:text-3xl font-black text-[#E8D8CE] mt-1.5 sm:mt-2 tracking-tight">Rp 0</div>
+          <div class="flex items-center justify-between mt-1 gap-1">
+            <div class="text-[10px] sm:text-[11px] text-[#8D7269] truncate">
+              Pemasukan - Pengeluaran
+            </div>
+            <span id="statNetProfitBadge" class="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20 shrink-0">
+              <svg class="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 17L17 7m0 0H7m10 0v10"></path></svg>
+              <span>Net Profit</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 KARTU BREAKDOWN PER UNIT -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        
+        <!-- Unit B-24 (VIP) -->
+        <div class="liquid-card unit-card p-3.5 sm:p-4.5 border border-amber-500/30 bg-gradient-to-r from-[#382A28]/80 to-amber-950/15 flex items-center justify-between animate-entrance animate-entrance-delay-1">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-extrabold text-[#E8D8CE] text-xs sm:text-sm">Unit B-24</span>
+              <span class="text-[9px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">VIP</span>
+            </div>
+            <p id="breakdownB24" class="text-[10px] sm:text-xs text-[#C1A094] mt-0.5 sm:mt-1 font-medium">0 Cust (0 Jam) • Rp 0</p>
+          </div>
+          <div class="text-lg sm:text-xl">✨</div>
+        </div>
+
+        <!-- Unit B-32 (REGULER) -->
+        <div class="liquid-card unit-card p-3.5 sm:p-4.5 border border-sky-500/30 bg-gradient-to-r from-[#382A28]/80 to-sky-950/15 flex items-center justify-between animate-entrance animate-entrance-delay-2">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-extrabold text-[#E8D8CE] text-xs sm:text-sm">Unit B-32</span>
+              <span class="text-[9px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/40">REGULER</span>
+            </div>
+            <p id="breakdownB32" class="text-[10px] sm:text-xs text-[#C1A094] mt-0.5 sm:mt-1 font-medium">0 Cust (0 Jam) • Rp 0</p>
+          </div>
+          <div class="text-lg sm:text-xl">🛋️</div>
+        </div>
+
+        <!-- Unit C-34 (REGULER) -->
+        <div class="liquid-card unit-card p-3.5 sm:p-4.5 border border-sky-500/30 bg-gradient-to-r from-[#382A28]/80 to-sky-950/15 flex items-center justify-between animate-entrance animate-entrance-delay-3">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-extrabold text-[#E8D8CE] text-xs sm:text-sm">Unit C-34</span>
+              <span class="text-[9px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/40">REGULER</span>
+            </div>
+            <p id="breakdownC34" class="text-[10px] sm:text-xs text-[#C1A094] mt-0.5 sm:mt-1 font-medium">0 Cust (0 Jam) • Rp 0</p>
+          </div>
+          <div class="text-lg sm:text-xl">🛏️</div>
+        </div>
+      </div>
+
+      <!-- TABEL 1: DATA CUSTOMER & PEMASUKAN -->
+      <div class="liquid-card border border-[#60433D]/60 overflow-hidden shadow-xl animate-entrance animate-entrance-delay-4">
+        <div class="px-4 sm:px-5 py-3 sm:py-4 border-b border-[#60433D]/40 flex items-center justify-between bg-[#2B2120]/40">
+          <div class="flex items-center space-x-2 min-w-0">
+            <h3 class="text-xs sm:text-sm font-extrabold text-[#E8D8CE] tracking-tight truncate">Data Customer &amp; Pemasukan</h3>
+            <span class="text-[9px] sm:text-[10px] bg-emerald-500/15 text-emerald-400 px-1.5 sm:px-2 py-0.5 rounded-full font-bold border border-emerald-500/30 shrink-0">Masuk</span>
+          </div>
+          <button onclick="switchTab('tab-pemasukan')" class="text-[10px] sm:text-xs font-bold text-[#E8D8CE] hover:text-[#C1A094] bg-[#916B60]/30 hover:bg-[#916B60]/50 border border-[#916B60]/40 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition flex items-center space-x-1 shrink-0">
+            <span>+ Catat</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto -webkit-overflow-scrolling-touch">
+          <table class="w-full text-left border-collapse text-[10px] sm:text-xs">
+            <thead>
+              <tr class="bg-[#2B2120]/70 text-[#C1A094] uppercase font-bold tracking-wider border-b border-[#60433D]/40">
+                <th class="py-2.5 px-3 sm:px-4">No</th>
+                <th class="py-2.5 px-3 sm:px-4">Waktu Masuk</th>
+                <th class="py-2.5 px-3 sm:px-4">Unit</th>
+                <th class="py-2.5 px-3 sm:px-4">Paket / Durasi</th>
+                <th class="py-2.5 px-3 sm:px-4">Pemasukan</th>
+                <th class="py-2.5 px-3 sm:px-4">Bayar</th>
+                <th class="py-2.5 px-3 sm:px-4">Catatan</th>
+                <th class="py-2.5 px-3 sm:px-4 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tableIncomesBody" class="divide-y divide-[#60433D]/30 font-medium">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="emptyIncomesState" class="hidden py-12 text-center text-[#8D7269]">
+          <div class="text-3xl mb-2">📭</div>
+          <p class="text-sm font-medium">Belum ada transaksi customer pada periode ini</p>
+        </div>
+      </div>
+
+      <!-- TABEL 2: DATA PENGELUARAN -->
+      <div class="liquid-card border border-[#60433D]/60 overflow-hidden shadow-xl animate-entrance animate-entrance-delay-4">
+        <div class="px-4 sm:px-5 py-3 sm:py-4 border-b border-[#60433D]/40 flex items-center justify-between bg-[#2B2120]/40">
+          <div class="flex items-center space-x-2 min-w-0">
+            <h3 class="text-xs sm:text-sm font-extrabold text-[#E8D8CE] tracking-tight truncate">Data Pengeluaran Operasional</h3>
+            <span class="text-[9px] sm:text-[10px] bg-rose-500/15 text-rose-400 px-1.5 sm:px-2 py-0.5 rounded-full font-bold border border-rose-500/30 shrink-0">Keluar</span>
+          </div>
+          <button onclick="switchTab('tab-pengeluaran')" class="text-[10px] sm:text-xs font-bold text-[#E8D8CE] hover:text-[#C1A094] bg-[#916B60]/30 hover:bg-[#916B60]/50 border border-[#916B60]/40 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition flex items-center space-x-1 shrink-0">
+            <span>+ Catat</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto -webkit-overflow-scrolling-touch">
+          <table class="w-full text-left border-collapse text-[10px] sm:text-xs">
+            <thead>
+              <tr class="bg-[#2B2120]/70 text-[#C1A094] uppercase font-bold tracking-wider border-b border-[#60433D]/40">
+                <th class="py-2.5 px-3 sm:px-4">No</th>
+                <th class="py-2.5 px-3 sm:px-4">Tanggal</th>
+                <th class="py-2.5 px-3 sm:px-4">Kategori</th>
+                <th class="py-2.5 px-3 sm:px-4">Unit</th>
+                <th class="py-2.5 px-3 sm:px-4">Nominal</th>
+                <th class="py-2.5 px-3 sm:px-4">Catatan</th>
+                <th class="py-2.5 px-3 sm:px-4 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tableExpensesBody" class="divide-y divide-[#60433D]/30 font-medium">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="emptyExpensesState" class="hidden py-12 text-center text-[#8D7269]">
+          <div class="text-3xl mb-2">🍃</div>
+          <p class="text-sm font-medium">Belum ada catatan pengeluaran pada periode ini</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         TAB 2: FORM CATAT CUSTOMER & PEMASUKAN
+         ========================================================= -->
+    <section id="tab-pemasukan" class="hidden max-w-2xl mx-auto">
+      <div class="liquid-card p-6 sm:p-8 border border-[#60433D]/70 shadow-2xl">
+        
+        <!-- Header Form -->
+        <div class="flex items-center space-x-3 mb-6 pb-4 border-b border-[#60433D]/40">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#916B60] to-[#60433D] text-[#E8D8CE] flex items-center justify-center text-xl font-black shadow-md shadow-[#916B60]/20 border border-[#C1A094]/30">
+            ➕
+          </div>
+          <div>
+            <h2 class="text-lg sm:text-xl font-black text-[#E8D8CE] tracking-tight">Catat Customer Masuk &amp; Pemasukan</h2>
+            <p class="text-xs text-[#C1A094]">Pilih unit dan durasi sewa resmi TEKS HOUSE (tanpa perlu mencatat nama tamu)</p>
+          </div>
+        </div>
+
+        <form id="formIncome" class="space-y-5">
+          
+          <!-- Tanggal & Jam Masuk -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="incomeDateTime" class="block text-xs font-bold text-[#E8D8CE] uppercase tracking-wider">Tanggal &amp; Waktu Masuk</label>
+              <span id="incomeDayBadge" class="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-[#382A28] text-[#C1A094] border border-[#60433D]">
+                WEEKDAY (Senin - Kamis)
+              </span>
+            </div>
+            <input type="datetime-local" id="incomeDateTime" required class="liquid-input w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl font-medium">
+          </div>
+
+          <!-- Kategori Hari (Auto-detect + Manual Override) -->
+          <div>
+            <label class="block text-xs font-bold text-[#E8D8CE] uppercase tracking-wider mb-1.5">Kategori Hari Sewa</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" id="btnDayWeekday" onclick="setManualDayType('weekday')" class="px-3 py-2.5 text-xs font-bold rounded-xl btn-liquid-primary shadow-xs transition text-center">
+                📅 Weekday (Senin - Kamis)
+              </button>
+              <button type="button" id="btnDayWeekend" onclick="setManualDayType('weekend')" class="btn-liquid-secondary px-3 py-2.5 text-xs font-semibold rounded-xl transition text-center">
+                🎉 Weekend (Jumat - Minggu)
+              </button>
+            </div>
+          </div>
+
+          <!-- Pilihan Unit Apartemen -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="incomeUnit" class="block text-xs font-bold text-[#E8D8CE] uppercase tracking-wider">Pilih Unit Apartemen</label>
+              <span id="incomeUnitTypeBadge" class="text-xs px-2.5 py-0.5 rounded-full font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">VIP</span>
+            </div>
+            <select id="incomeUnit" class="liquid-input w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl font-semibold">
+              <option value="B-24" class="bg-[#2B2120] text-[#E8D8CE]">Unit B-24 (VIP) — Netflix &amp; Smart TV 4K</option>
+              <option value="B-32" class="bg-[#2B2120] text-[#E8D8CE]">Unit B-32 (REGULER)</option>
+              <option value="C-34" class="bg-[#2B2120] text-[#E8D8CE]">Unit C-34 (REGULER)</option>
+            </select>
+          </div>
+
+          <!-- Pilihan Paket Durasi Sewa TEKS HOUSE -->
+          <div>
+            <label class="block text-xs font-bold text-[#E8D8CE] uppercase tracking-wider mb-2">Pilih Paket Durasi Sewa</label>
+            
+            <div class="grid grid-cols-4 gap-1.5 sm:gap-2 mb-2.5">
+              <button type="button" data-pkg="1" onclick="setPackageSelection('1')" class="pkg-btn py-2 sm:py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-bold rounded-xl btn-liquid-secondary transition">1 Jam</button>
+              <button type="button" data-pkg="2" onclick="setPackageSelection('2')" class="pkg-btn py-2 sm:py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-extrabold rounded-xl btn-liquid-primary transition">2 Jam</button>
+              <button type="button" data-pkg="3" onclick="setPackageSelection('3')" class="pkg-btn py-2 sm:py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-bold rounded-xl btn-liquid-secondary transition">3 Jam</button>
+              <button type="button" data-pkg="4" onclick="setPackageSelection('4')" class="pkg-btn py-2 sm:py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-bold rounded-xl btn-liquid-secondary transition">4 Jam</button>
+              <button type="button" data-pkg="5" onclick="setPackageSelection('5')" class="pkg-btn py-2 sm:py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-bold rounded-xl btn-liquid-secondary transition">5 Jam</button>
+              <button type="button" data-pkg="6" onclick="setPackageSelection('6')" class="pkg-btn py-2 sm:py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-bold rounded-xl btn-liquid-secondary transition">6 Jam</button>
+              <button type="button" data-pkg="12" onclick="setPackageSelection('12')" class="pkg-btn py-2 sm:py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-bold rounded-xl btn-liquid-secondary transition">12 Jam</button>
+              <button type="button" data-pkg="malam" onclick="setPackageSelection('malam')" class="pkg-btn py-2 sm:py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-extrabold rounded-xl bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 border border-amber-500/40 transition">🌙 Malam</button>
+            </div>
+
+            <div class="flex items-center space-x-2 text-xs text-[#C1A094]">
+              <span>Atau durasi khusus:</span>
+              <input type="number" id="incomeCustomHours" min="1" step="0.5" value="2" class="liquid-input w-20 px-2.5 py-1 text-xs rounded-lg font-bold text-center">
+              <span>Jam</span>
+            </div>
+          </div>
+
+          <!-- Banner Tarif Pemasukan Otomatis -->
+          <div class="bg-[#2B2120]/90 p-4.5 rounded-2xl border border-[#60433D]/60 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <div>
+                <label for="incomeRent" class="text-xs font-bold text-[#E8D8CE]">Nominal Tarif Sewa (Rp)</label>
+                <div id="incomePackageNotes" class="text-[11px] text-[#C1A094] font-medium">Tarif resmi TEKS HOUSE</div>
+              </div>
+              <input type="number" id="incomeRent" min="0" required class="liquid-input w-36 px-3 py-1.5 text-sm font-extrabold rounded-xl text-emerald-400 text-right">
+            </div>
+
+            <div class="pt-2 border-t border-[#60433D]/40 flex items-center justify-between">
+              <span class="text-xs sm:text-sm font-bold text-[#E8D8CE]">Total Pemasukan Tamu:</span>
+              <span id="incomeTotalDisplay" class="text-2xl font-black text-emerald-400">Rp 0</span>
+            </div>
+          </div>
+
+          <!-- Metode Pembayaran -->
+          <div>
+            <label for="incomePaymentMethod" class="block text-xs font-bold text-[#E8D8CE] uppercase tracking-wider mb-1.5">Metode Pembayaran</label>
+            <select id="incomePaymentMethod" class="liquid-input w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl font-medium">
+              <option value="Tunai (Cash)" class="bg-[#2B2120] text-[#E8D8CE]">Tunai (Cash)</option>
+              <option value="Transfer BCA" class="bg-[#2B2120] text-[#E8D8CE]">Transfer BCA</option>
+              <option value="Transfer Mandiri" class="bg-[#2B2120] text-[#E8D8CE]">Transfer Mandiri</option>
+              <option value="Transfer BRI" class="bg-[#2B2120] text-[#E8D8CE]">Transfer BRI</option>
+              <option value="QRIS" class="bg-[#2B2120] text-[#E8D8CE]">QRIS</option>
+              <option value="E-Wallet (GoPay/OVO/Dana)" class="bg-[#2B2120] text-[#E8D8CE]">E-Wallet (GoPay/OVO/Dana)</option>
+            </select>
+          </div>
+
+          <!-- Catatan Tambahan -->
+          <div>
+            <label for="incomeNotes" class="block text-xs font-bold text-[#E8D8CE] uppercase tracking-wider mb-1.5">Catatan Tambahan (Opsional)</label>
+            <input type="text" id="incomeNotes" placeholder="Contoh: Tamu langganan, sewa sore hari..." class="liquid-input w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl placeholder-[#8D7269]">
+          </div>
+
+          <!-- Tombol Simpan -->
+          <div class="pt-3">
+            <button type="submit" class="w-full py-4 px-4 rounded-2xl btn-liquid-primary font-black text-sm sm:text-base transition flex items-center justify-center space-x-2 shadow-lg">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+              <span>Simpan Pemasukan Customer</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         TAB 3: FORM CATAT PENGELUARAN
+         ========================================================= -->
+    <section id="tab-pengeluaran" class="hidden max-w-2xl mx-auto">
+      <div class="liquid-card p-6 sm:p-8 border border-[#60433D]/70 shadow-2xl">
+        
+        <!-- Header Form -->
+        <div class="flex items-center space-x-3 mb-6 pb-4 border-b border-[#60433D]/40">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-rose-700 to-[#60433D] text-[#E8D8CE] flex items-center justify-center text-xl font-black shadow-md border border-rose-500/30">
+            📉
+          </div>
+          <div>
+            <h2 class="text-lg sm:text-xl font-black text-[#E8D8CE] tracking-tight">Catat Pengeluaran Operasional</h2>
+            <p class="text-xs text-[#C1A094]">Biaya token PLN, laundry, amenities, kebersihan &amp; langganan WiFi</p>
+          </div>
+        </div>
+
+        <form id="formExpense" class="space-y-5">
+          
+          <!-- Tanggal Pengeluaran -->
+          <div>
+            <label for="expenseDate" class="block text-xs font-bold text-[#E8D8CE] uppercase tracking-wider mb-1.5">Tanggal Pengeluaran</label>
+            <input type="date" id="expenseDate" required class="liquid-input w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl font-medium">
+          </div>
+
+          <!-- Kategori Pengeluaran -->
+          <div>
+            <label for="expenseCategory" class="block text-xs font-bold text-[#E8D8CE] uppercase tracking-wider mb-1.5">Kategori Pengeluaran</label>
+            <select id="expenseCategory" class="liquid-input w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl font-medium">
+              <option value="Token Listrik PLN" class="bg-[#2B2120] text-[#E8D8CE]">⚡ Token Listrik PLN</option>
+              <option value="Laundry Sprei/Handuk" class="bg-[#2B2120] text-[#E8D8CE]">🧺 Laundry Sprei &amp; Handuk</option>
+              <option value="Perlengkapan/Amenities" class="bg-[#2B2120] text-[#E8D8CE]">🧼 Perlengkapan (Sabun, Sampo, Tisu)</option>
+              <option value="Kebersihan/Cleaning" class="bg-[#2B2120] text-[#E8D8CE]">🧹 Kebersihan &amp; Desinfektan</option>
+              <option value="Langganan Netflix &amp; WiFi" class="bg-[#2B2120] text-[#E8D8CE]">📶 Langganan Netflix &amp; Tagihan WiFi</option>
+              <option value="IPL &amp; Service Charge" class="bg-[#2B2120] text-[#E8D8CE]">🏢 IPL &amp; Service Charge Gedung</option>
+              <option value="Maintenance/Perbaikan" class="bg-[#2B2120] text-[#E8D8CE]">🔧 Maintenance &amp; Perbaikan Unit</option>
+              <option value="Lain-lain" class="bg-[#2B2120] text-[#E8D8CE]">📦 Lain-lain</option>
+            </select>
+          </div>
+
+          <!-- Unit Terkait -->
+          <div>
+            <label for="expenseUnit" class="block text-xs font-bold text-[#E8D8CE] uppercase tracking-wider mb-1.5">Unit Terkait</label>
+            <select id="expenseUnit" class="liquid-input w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl font-medium">
+              <option value="Umum" class="bg-[#2B2120] text-[#E8D8CE]">Umum / Semua Unit</option>
+              <option value="B-24" class="bg-[#2B2120] text-[#E8D8CE]">Unit B-24 (VIP)</option>
+              <option value="B-32" class="bg-[#2B2120] text-[#E8D8CE]">Unit B-32 (REGULER)</option>
+              <option value="C-34" class="bg-[#2B2120] text-[#E8D8CE]">Unit C-34 (REGULER)</option>
+            </select>
+          </div>
+
+          <!-- Nominal Pengeluaran -->
+          <div>
+            <label for="expenseAmount" class="block text-xs font-bold text-[#E8D8CE] uppercase tracking-wider mb-1.5">Nominal Biaya (Rp)</label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-2.5 text-[#C1A094] text-xs sm:text-sm font-bold">Rp</span>
+              <input type="number" id="expenseAmount" min="1000" step="500" required placeholder="Contoh: 100000" class="liquid-input w-full pl-11 pr-3.5 py-2.5 text-xs sm:text-sm rounded-xl font-bold text-rose-400">
+            </div>
+          </div>
+
+          <!-- Catatan Pengeluaran -->
+          <div>
+            <label for="expenseNotes" class="block text-xs font-bold text-[#E8D8CE] uppercase tracking-wider mb-1.5">Keterangan / Catatan</label>
+            <input type="text" id="expenseNotes" placeholder="Contoh: Beli token PLN 100rb di Tokopedia" class="liquid-input w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl placeholder-[#8D7269]">
+          </div>
+
+          <!-- Tombol Simpan -->
+          <div class="pt-3">
+            <button type="submit" class="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-rose-700 to-[#60433D] hover:from-rose-600 hover:to-[#7B574E] text-[#E8D8CE] border border-rose-500/40 font-black text-sm sm:text-base transition flex items-center justify-center space-x-2 shadow-lg">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+              <span>Simpan Pengeluaran</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         TAB 4: PRICELIST RESMI & PENGATURAN CLOUD
+         ========================================================= -->
+    <section id="tab-pengaturan" class="hidden max-w-2xl mx-auto space-y-6">
+      
+      <!-- Tabel Pricelist Resmi TEKS HOUSE -->
+      <div class="liquid-card p-5 sm:p-7 border border-[#60433D]/60 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-base font-extrabold text-[#E8D8CE] tracking-tight">📋 Pricelist Resmi TEKS HOUSE</h2>
+            <p class="text-xs text-[#C1A094]">Paket sewa per jam Unit Reguler &amp; VIP (Serang Kota)</p>
+          </div>
+          <a href="screenshots/pricelist_teks_house.jpg" target="_blank" class="px-3 py-1.5 text-xs font-bold rounded-xl btn-liquid-secondary border border-[#C1A094]/30 hover:text-[#E8D8CE] transition">
+            Lihat Brosur ↗
+          </a>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left border-collapse">
+            <thead>
+              <tr class="bg-[#2B2120]/80 text-[#C1A094] uppercase font-bold border-b border-[#60433D]/60">
+                <th class="py-2.5 px-3">Durasi</th>
+                <th class="py-2.5 px-3 text-sky-400">Reguler (Weekday)</th>
+                <th class="py-2.5 px-3 text-sky-400">Reguler (Weekend)</th>
+                <th class="py-2.5 px-3 text-amber-400">VIP (Weekday)</th>
+                <th class="py-2.5 px-3 text-amber-400">VIP (Weekend)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#60433D]/30 font-medium">
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-[#E8D8CE]">1 Jam</td>
+                <td class="py-2.5 px-3">Rp 50.000</td>
+                <td class="py-2.5 px-3">Rp 60.000</td>
+                <td class="py-2.5 px-3">Rp 60.000</td>
+                <td class="py-2.5 px-3">Rp 70.000</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-[#E8D8CE]">2 Jam</td>
+                <td class="py-2.5 px-3">Rp 70.000</td>
+                <td class="py-2.5 px-3">Rp 80.000</td>
+                <td class="py-2.5 px-3">Rp 80.000</td>
+                <td class="py-2.5 px-3">Rp 100.000</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-[#E8D8CE]">3 Jam</td>
+                <td class="py-2.5 px-3">Rp 90.000</td>
+                <td class="py-2.5 px-3">Rp 100.000</td>
+                <td class="py-2.5 px-3">Rp 100.000</td>
+                <td class="py-2.5 px-3">Rp 130.000</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-[#E8D8CE]">4 Jam</td>
+                <td class="py-2.5 px-3">Rp 110.000</td>
+                <td class="py-2.5 px-3">Rp 120.000</td>
+                <td class="py-2.5 px-3">Rp 120.000</td>
+                <td class="py-2.5 px-3">Rp 150.000</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-[#E8D8CE]">5 Jam</td>
+                <td class="py-2.5 px-3">Rp 130.000</td>
+                <td class="py-2.5 px-3">Rp 150.000</td>
+                <td class="py-2.5 px-3">Rp 150.000</td>
+                <td class="py-2.5 px-3">Rp 180.000</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-[#E8D8CE]">6 Jam</td>
+                <td class="py-2.5 px-3">Rp 150.000</td>
+                <td class="py-2.5 px-3">Rp 170.000</td>
+                <td class="py-2.5 px-3">Rp 180.000</td>
+                <td class="py-2.5 px-3">Rp 210.000</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-[#E8D8CE]">12 Jam</td>
+                <td class="py-2.5 px-3">Rp 200.000</td>
+                <td class="py-2.5 px-3">Rp 220.000</td>
+                <td class="py-2.5 px-3">Rp 300.000</td>
+                <td class="py-2.5 px-3">Rp 330.000</td>
+              </tr>
+              <tr class="bg-amber-500/10 font-bold border-t border-amber-500/30">
+                <td class="py-2.5 px-3 text-amber-300">🌙 Paket Malam</td>
+                <td class="py-2.5 px-3 text-amber-300">Rp 150.000</td>
+                <td class="py-2.5 px-3 text-amber-300">Rp 150.000</td>
+                <td class="py-2.5 px-3 text-amber-300">Rp 180.000</td>
+                <td class="py-2.5 px-3 text-amber-300">Rp 180.000</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sinkronisasi Cloud (Firebase) -->
+      <div class="liquid-card p-5 sm:p-7 border border-[#60433D]/60 shadow-xl">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-base font-extrabold text-[#E8D8CE] tracking-tight">☁️ Sinkronisasi Cloud (Multi-Device)</h2>
+          <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">Tersambung</span>
+        </div>
+
+        <!-- Banner Status Terhubung Otomatis -->
+        <div class="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-2.5">
+            <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+            <div>
+              <div class="text-xs font-bold text-emerald-300">Firebase Sudah Terhubung Otomatis!</div>
+              <div class="text-[11px] text-emerald-400/80">Project: <b class="font-bold">teks-house</b> • Realtime Sync Aktif</div>
+            </div>
+          </div>
+          <span class="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Online</span>
+        </div>
+
+        <p class="text-xs text-[#C1A094] mb-4 leading-relaxed">
+          Kredensial Firebase project <b>teks-house</b> sudah tertanam di sistem aplikasi ini. Sinkronisasi antar HP &amp; laptop berjalan otomatis.
+        </p>
+
+        <div class="space-y-3">
+          <div>
+            <label for="firebaseConfigJson" class="block text-xs font-bold text-[#E8D8CE] uppercase tracking-wider mb-1">Firebase Config JSON / JS Snippet (Aktif)</label>
+            <textarea id="firebaseConfigJson" rows="6" class="liquid-input w-full p-3 text-xs font-mono rounded-xl focus:outline-none">{
+  "apiKey": "AIzaSyAW1PNK1Vs_4w02xYNVFfTuDBJN_rbCHa4",
+  "authDomain": "teks-house.firebaseapp.com",
+  "projectId": "teks-house",
+  "storageBucket": "teks-house.firebasestorage.app",
+  "messagingSenderId": "416910541898",
+  "appId": "1:416910541898:web:a70407dccfddeae14212b3",
+  "measurementId": "G-MFQFFKCSR0"
+}</textarea>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <button onclick="handleSaveFirebaseConfig()" class="flex-1 py-3 px-4 rounded-xl btn-liquid-primary text-xs font-bold transition shadow-md">
+              Perbarui Konfigurasi Cloud
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backup & Reset Data -->
+      <div class="liquid-card p-5 sm:p-7 border border-[#60433D]/60 shadow-xl">
+        <h2 class="text-base font-extrabold text-[#E8D8CE] mb-1">📦 Cadangan &amp; Riwayat Data</h2>
+        <p class="text-xs text-[#C1A094] mb-4">Unduh salinan data keuangan atau muat data demo</p>
+
+        <div class="flex flex-wrap items-center gap-2.5">
+          <button onclick="exportToExcelCSV()" class="px-4 py-2 text-xs font-bold rounded-xl bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30 transition flex items-center space-x-1.5 shadow-xs">
+            <span>📥 Unduh Rekap Excel (CSV)</span>
+          </button>
+          <button onclick="loadInitialDemoData(); renderAll(); showToast('Data demo berhasil dimuat ulang!');" class="btn-liquid-secondary px-4 py-2 text-xs font-bold rounded-xl transition flex items-center space-x-1.5 shadow-xs">
+            <span>🔄 Muat Contoh Data Demo</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== MOBILE FLOATING BOTTOM NAV ==================== -->
+  <nav id="bottomNav" class="md:hidden fixed bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 max-w-md mx-auto liquid-navbar py-2 px-2.5 sm:px-3 z-40 flex items-center justify-around shadow-2xl pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+    <button data-tab="tab-rekap" class="mobile-nav-btn flex flex-col items-center px-3 py-1.5 rounded-xl text-[#E8D8CE] bg-[#916B60]/30 transition">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+      <span class="text-[10px] font-bold mt-0.5">Rekap</span>
+    </button>
+    <button data-tab="tab-pemasukan" class="mobile-nav-btn flex flex-col items-center px-3 py-1.5 rounded-xl text-[#8D7269] hover:text-[#C1A094] transition">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+      <span class="text-[10px] font-bold mt-0.5">Masuk</span>
+    </button>
+    <button data-tab="tab-pengeluaran" class="mobile-nav-btn flex flex-col items-center px-3 py-1.5 rounded-xl text-[#8D7269] hover:text-[#C1A094] transition">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+      <span class="text-[10px] font-bold mt-0.5">Keluar</span>
+    </button>
+    <button type="button" onclick="toggleTheme()" class="flex flex-col items-center px-3 py-1.5 rounded-xl text-[#8D7269] hover:text-[#C1A094] transition">
+      <span id="mobileThemeIcon" class="text-base leading-5">☀️</span>
+      <span class="text-[10px] font-bold mt-0.5">Tema</span>
+    </button>
+    <button data-tab="tab-pengaturan" class="mobile-nav-btn flex flex-col items-center px-3 py-1.5 rounded-xl text-[#8D7269] hover:text-[#C1A094] transition">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+      <span class="text-[10px] font-bold mt-0.5">Tarif</span>
+    </button>
+  </nav>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="fixed bottom-20 md:bottom-6 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+  <script>
+// ==================== FIREBASE SYNC MODULE ====================
+/**
+ * Firebase Firestore Synchronization Module
+ * TEKS HOUSE Netflix & Chill - Sewa Apartemen Per Jam
+ * Menggunakan Firebase Compat SDK yang 100% kompatibel dengan file://, HTTP, dan HTTPS
+ */
+
+// Konfigurasi Resmi Firebase Project "teks-house"
+const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAW1PNK1Vs_4w02xYNVFfTuDBJN_rbCHa4",
+  authDomain: "teks-house.firebaseapp.com",
+  projectId: "teks-house",
+  storageBucket: "teks-house.firebasestorage.app",
+  messagingSenderId: "416910541898",
+  appId: "1:416910541898:web:a70407dccfddeae14212b3",
+  measurementId: "G-MFQFFKCSR0"
+};
+
+let firestoreDb = null;
+let isCloudSyncActive = false;
+let unsubscribers = [];
+
+const FIREBASE_CONFIG_KEY = 'sewa_apartemen_firebase_config';
+
+// Mengambil konfigurasi tersimpan atau default
+function getSavedFirebaseConfig() {
+  try {
+    const raw = localStorage.getItem(FIREBASE_CONFIG_KEY);
+    return raw ? JSON.parse(raw) : DEFAULT_FIREBASE_CONFIG;
+  } catch (e) {
+    console.error("Gagal membaca firebase config:", e);
+    return DEFAULT_FIREBASE_CONFIG;
+  }
+}
+
+// Menyimpan konfigurasi Firebase baru
+function saveFirebaseConfig(configObj) {
+  try {
+    localStorage.setItem(FIREBASE_CONFIG_KEY, JSON.stringify(configObj));
+    return true;
+  } catch (e) {
+    console.error("Gagal menyimpan firebase config:", e);
+    return false;
+  }
+}
+
+// Inisialisasi Firebase
+function initFirebaseSync(onDataChangedCallback) {
+  const config = getSavedFirebaseConfig();
+
+  if (!config || !config.apiKey || !config.projectId) {
+    updateCloudStatusUI('local', 'Penyimpanan Lokal (Offline)');
+    return false;
+  }
+
+  try {
+    if (!window.firebase) {
+      console.warn("Pustaka Firebase SDK belum dimuat di browser.");
+      updateCloudStatusUI('local', 'Penyimpanan Lokal (Offline)');
+      return false;
+    }
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(config);
+    }
+
+    firestoreDb = firebase.firestore();
+    isCloudSyncActive = true;
+
+    updateCloudStatusUI('cloud', 'Tersambung Cloud (teks-house)');
+    console.log("Firebase Firestore berhasil terhubung ke project:", config.projectId);
+
+    // Listen real-time ke koleksi incomes
+    listenToCloudCollection('incomes', (items) => {
+      console.log(`Cloud update: ${items.length} transaksi pemasukan diterima.`);
+      if (onDataChangedCallback) {
+        onDataChangedCallback('incomes', items);
+      }
+    });
+
+    // Listen real-time ke koleksi expenses
+    listenToCloudCollection('expenses', (items) => {
+      console.log(`Cloud update: ${items.length} data pengeluaran diterima.`);
+      if (onDataChangedCallback) {
+        onDataChangedCallback('expenses', items);
+      }
+    });
+
+    return true;
+  } catch (err) {
+    console.error("Gagal inisialisasi Firebase:", err);
+    updateCloudStatusUI('local', 'Penyimpanan Lokal (Offline)');
+    isCloudSyncActive = false;
+    return false;
+  }
+}
+
+function updateCloudStatusUI(type, text) {
+  const badge = document.getElementById('cloudSyncStatusBadge');
+  const label = document.getElementById('cloudSyncStatusText');
+  if (!badge || !label) return;
+
+  label.innerText = text;
+  badge.className = 'w-2.5 h-2.5 rounded-full';
+  
+  if (type === 'cloud') {
+    badge.classList.add('bg-emerald-400', 'animate-pulse');
+  } else if (type === 'connecting') {
+    badge.classList.add('bg-sky-400', 'animate-ping');
+  } else if (type === 'local') {
+    badge.classList.add('bg-amber-400');
+  } else {
+    badge.classList.add('bg-rose-400');
+  }
+}
+
+// Subscribe real-time
+function listenToCloudCollection(collectionName, callback) {
+  if (!isCloudSyncActive || !firestoreDb) return;
+
+  try {
+    const unsub = firestoreDb.collection(collectionName).onSnapshot((snapshot) => {
+      const items = [];
+      snapshot.forEach(docSnap => {
+        items.push({ id: docSnap.id, ...docSnap.data() });
+      });
+
+      // Sort tanggal terbaru di atas
+      items.sort((a, b) => {
+        const dateA = a.dateTime || a.date || '';
+        const dateB = b.dateTime || b.date || '';
+        return dateB.localeCompare(dateA);
+      });
+
+      callback(items);
+    }, (error) => {
+      console.warn(`Firestore listener error pada ${collectionName}:`, error.message);
+    });
+
+    unsubscribers.push(unsub);
+  } catch (e) {
+    console.error(`Error setting listener pada ${collectionName}:`, e);
+  }
+}
+
+// Simpan dokumen ke Cloud
+async function syncSaveDocument(collectionName, id, data) {
+  if (isCloudSyncActive && firestoreDb) {
+    try {
+      await firestoreDb.collection(collectionName).doc(String(id)).set(data, { merge: true });
+      console.log(`Berhasil sync ke cloud [${collectionName}]:`, id);
+    } catch (e) {
+      console.error(`Gagal sync ke cloud [${collectionName}]:`, e);
+    }
+  }
+}
+
+// Hapus dokumen di Cloud
+async function syncDeleteDocument(collectionName, id) {
+  if (isCloudSyncActive && firestoreDb) {
+    try {
+      await firestoreDb.collection(collectionName).doc(String(id)).delete();
+      console.log(`Berhasil hapus di cloud [${collectionName}]:`, id);
+    } catch (e) {
+      console.error(`Gagal hapus di cloud [${collectionName}]:`, e);
+    }
+  }
+}
+
+
+// ==================== MAIN APP LOGIC ====================
+/**
+ * TEKS HOUSE Netflix & Chill - Apartemen Sewa Per Jam
+ * Aplikasi Buku Kas & Keuangan Apartemen
+ * Sesuai Pricelist Resmi TEKS HOUSE (Serang Kota)
+ */
+
+// Pricelist Resmi TEKS HOUSE
+const TEKS_HOUSE_PRICELIST = {
+  REGULER: {
+    weekday: { '1': 50000, '2': 70000, '3': 90000, '4': 110000, '5': 130000, '6': 150000, '12': 200000, 'malam': 150000 },
+    weekend: { '1': 60000, '2': 80000, '3': 100000, '4': 120000, '5': 150000, '6': 170000, '12': 220000, 'malam': 150000 }
+  },
+  VIP: {
+    weekday: { '1': 60000, '2': 80000, '3': 100000, '4': 120000, '5': 150000, '6': 180000, '12': 300000, 'malam': 180000 },
+    weekend: { '1': 70000, '2': 100000, '3': 130000, '4': 150000, '5': 180000, '6': 210000, '12': 330000, 'malam': 180000 }
+  }
+};
+
+const UNITS_DATA = [
+  { id: 'B-24', name: 'Unit B-24', type: 'VIP', color: 'amber' },
+  { id: 'B-32', name: 'Unit B-32', type: 'REGULER', color: 'sky' },
+  { id: 'C-34', name: 'Unit C-34', type: 'REGULER', color: 'sky' }
+];
+
+// State Aplikasi
+let appData = {
+  incomes: [],
+  expenses: [],
+  pricelist: { ...TEKS_HOUSE_PRICELIST }
+};
+
+let currentFilter = {
+  type: 'daily',
+  startDate: getTodayDateString(),
+  endDate: getTodayDateString(),
+  month: getCurrentMonthString()
+};
+
+// State Form Pemasukan
+let selectedPackage = '2'; // default 2 Jam
+let selectedDayType = 'auto'; // 'auto', 'weekday', 'weekend'
+
+// Helper Format Uang Rupiah
+function formatRupiah(number) {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0
+  }).format(number || 0);
+}
+
+// Helper Format Tanggal & Jam Indonesia
+function formatDateIndo(dateStr) {
+  if (!dateStr) return '-';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+}
+
+function formatDateTimeIndo(dateTimeStr) {
+  if (!dateTimeStr) return '-';
+  const d = new Date(dateTimeStr);
+  return d.toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function getTodayDateString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getCurrentMonthString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+function getNowDateTimeLocalString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const mins = String(now.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${mins}`;
+}
+
+// Cek apakah tanggal adalah Weekend (Jumat, Sabtu, Minggu)
+function isWeekend(dateTimeStr) {
+  if (!dateTimeStr) return false;
+  const d = new Date(dateTimeStr);
+  const day = d.getDay(); // 0: Minggu, 5: Jumat, 6: Sabtu
+  return day === 0 || day === 5 || day === 6;
+}
+
+// Inisialisasi Aplikasi saat Dokumen Dimuat
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  loadLocalData();
+  setupEventListeners();
+  initDateInputs();
+  renderAll();
+
+  // Inisialisasi Firebase Cloud Sync
+  if (typeof initFirebaseSync === 'function') {
+    initFirebaseSync((collectionName, items) => {
+      if (collectionName === 'incomes') {
+        appData.incomes = items;
+        saveLocalOnly();
+        renderAll();
+      } else if (collectionName === 'expenses') {
+        appData.expenses = items;
+        saveLocalOnly();
+        renderAll();
+      }
+    });
+  }
+});
+
+// Theme Management
+function updateThemeUI(isDark) {
+  const htmlEl = document.documentElement;
+  const themeIcon = document.getElementById('themeIcon');
+  const themeText = document.getElementById('themeText');
+  const mobileThemeIcon = document.getElementById('mobileThemeIcon');
+
+  if (isDark) {
+    htmlEl.classList.add('dark');
+    if (themeIcon) themeIcon.textContent = '☀️';
+    if (themeText) themeText.textContent = 'Light Mode';
+    if (mobileThemeIcon) mobileThemeIcon.textContent = '☀️';
+  } else {
+    htmlEl.classList.remove('dark');
+    if (themeIcon) themeIcon.textContent = '🌙';
+    if (themeText) themeText.textContent = 'Dark Mode';
+    if (mobileThemeIcon) mobileThemeIcon.textContent = '🌙';
+  }
+}
+
+function toggleTheme() {
+  const isDark = document.documentElement.classList.contains('dark');
+  const newTheme = !isDark;
+  updateThemeUI(newTheme);
+  try {
+    localStorage.setItem('theme', newTheme ? 'dark' : 'light');
+  } catch (e) {}
+}
+
+function initTheme() {
+  let savedTheme = 'dark';
+  try {
+    const stored = localStorage.getItem('theme');
+    if (stored) {
+      savedTheme = stored;
+    }
+  } catch (e) {}
+  updateThemeUI(savedTheme === 'dark');
+}
+
+// Setup Form Defaults
+function initDateInputs() {
+  const incomeDateInput = document.getElementById('incomeDateTime');
+  const expenseDateInput = document.getElementById('expenseDate');
+  const filterDailyDateInput = document.getElementById('filterDailyDate');
+  const filterMonthInput = document.getElementById('filterMonth');
+
+  if (incomeDateInput) {
+    incomeDateInput.value = getNowDateTimeLocalString();
+    updateDayTypeFromDate();
+  }
+  if (expenseDateInput) expenseDateInput.value = getTodayDateString();
+  if (filterDailyDateInput) filterDailyDateInput.value = getTodayDateString();
+  if (filterMonthInput) filterMonthInput.value = getCurrentMonthString();
+  
+  updateCalculatedRent();
+}
+
+// Load & Simpan Data Lokal
+function loadLocalData() {
+  try {
+    const savedIncomes = localStorage.getItem('sewa_apartemen_incomes');
+    const savedExpenses = localStorage.getItem('sewa_apartemen_expenses');
+
+    if (savedIncomes) appData.incomes = JSON.parse(savedIncomes);
+    if (savedExpenses) appData.expenses = JSON.parse(savedExpenses);
+
+    if (appData.incomes.length === 0 && appData.expenses.length === 0) {
+      loadInitialDemoData();
+    }
+  } catch (e) {
+    console.error("Gagal membaca local storage:", e);
+  }
+}
+
+function saveLocalOnly() {
+  try {
+    localStorage.setItem('sewa_apartemen_incomes', JSON.stringify(appData.incomes));
+    localStorage.setItem('sewa_apartemen_expenses', JSON.stringify(appData.expenses));
+  } catch (e) {
+    console.error("Gagal simpan local storage:", e);
+  }
+}
+
+function saveData(type, item) {
+  saveLocalOnly();
+  if (typeof syncSaveDocument === 'function') {
+    syncSaveDocument(type, item.id, item);
+  }
+}
+
+function deleteData(type, id) {
+  saveLocalOnly();
+  if (typeof syncDeleteDocument === 'function') {
+    syncDeleteDocument(type, id);
+  }
+}
+
+// Data Contoh Awal (Demo sesuai Pricelist TEKS HOUSE)
+function loadInitialDemoData() {
+  const today = getTodayDateString();
+  appData.incomes = [
+    {
+      id: 'inc-1',
+      dateTime: `${today}T10:00`,
+      unitId: 'B-24',
+      unitType: 'VIP',
+      dayType: 'weekday',
+      packageType: '3',
+      durationLabel: '3 Jam',
+      hours: 3,
+      totalAmount: 100000,
+      paymentMethod: 'Transfer BCA',
+      notes: ''
+    },
+    {
+      id: 'inc-2',
+      dateTime: `${today}T14:30`,
+      unitId: 'B-32',
+      unitType: 'REGULER',
+      dayType: 'weekday',
+      packageType: '2',
+      durationLabel: '2 Jam',
+      hours: 2,
+      totalAmount: 70000,
+      paymentMethod: 'QRIS',
+      notes: ''
+    },
+    {
+      id: 'inc-3',
+      dateTime: `${today}T21:00`,
+      unitId: 'C-34',
+      unitType: 'REGULER',
+      dayType: 'weekday',
+      packageType: 'malam',
+      durationLabel: 'Paket Malam',
+      hours: 10,
+      totalAmount: 150000,
+      paymentMethod: 'Cash',
+      notes: 'Check-in malam'
+    }
+  ];
+
+  appData.expenses = [
+    {
+      id: 'exp-1',
+      date: today,
+      category: 'Token Listrik PLN',
+      unitId: 'B-24',
+      amount: 100000,
+      notes: 'Beli token PLN 100rb di Tokopedia'
+    },
+    {
+      id: 'exp-2',
+      date: today,
+      category: 'Laundry Sprei/Handuk',
+      unitId: 'Umum',
+      amount: 45000,
+      notes: 'Laundry 3 set sprei dan handuk'
+    }
+  ];
+
+  saveLocalOnly();
+}
+
+// Navigasi Tab
+function switchTab(tabId) {
+  const tabs = ['tab-rekap', 'tab-pemasukan', 'tab-pengeluaran', 'tab-pengaturan'];
+  tabs.forEach(t => {
+    const el = document.getElementById(t);
+    if (el) el.classList.add('hidden');
+  });
+
+  const activeTabEl = document.getElementById(tabId);
+  if (activeTabEl) {
+    activeTabEl.classList.remove('hidden');
+    activeTabEl.style.animation = 'none';
+    activeTabEl.offsetHeight; // trigger reflow
+    activeTabEl.style.animation = 'tabGlideIn 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+  }
+
+  // Update styling tombol tab desktop
+  document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+    if (btn.dataset.tab === tabId) {
+      btn.className = 'nav-tab-btn px-4 py-2 text-xs font-bold rounded-xl btn-liquid-primary flex items-center space-x-2 transition';
+    } else {
+      btn.className = 'nav-tab-btn px-4 py-2 text-xs font-semibold rounded-xl text-[#C1A094] hover:text-[#E8D8CE] hover:bg-[#382A28]/60 transition flex items-center space-x-2';
+    }
+  });
+
+  // Update styling tombol navigasi mobile
+  document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+    if (btn.dataset.tab === tabId) {
+      btn.className = 'mobile-nav-btn flex flex-col items-center px-3 py-1.5 rounded-xl text-[#E8D8CE] bg-[#916B60]/30 transition';
+    } else {
+      btn.className = 'mobile-nav-btn flex flex-col items-center px-3 py-1.5 rounded-xl text-[#8D7269] hover:text-[#C1A094] transition';
+    }
+  });
+
+  if (tabId === 'tab-rekap') {
+    renderRecap();
+  } else if (tabId === 'tab-pengaturan') {
+    renderSettingsValues();
+  }
+}
+
+// Update Deteksi Hari Weekday / Weekend berdasarkan tanggal transaksi
+function updateDayTypeFromDate() {
+  const dateInput = document.getElementById('incomeDateTime');
+  if (!dateInput) return;
+
+  const currentVal = dateInput.value;
+  const weekend = isWeekend(currentVal);
+
+  if (selectedDayType === 'auto') {
+    const activeType = weekend ? 'weekend' : 'weekday';
+    updateDayTypeUI(activeType);
+  }
+}
+
+function setManualDayType(type) {
+  selectedDayType = type;
+  updateDayTypeUI(type);
+  updateCalculatedRent();
+}
+
+function updateDayTypeUI(type) {
+  const btnWeekday = document.getElementById('btnDayWeekday');
+  const btnWeekend = document.getElementById('btnDayWeekend');
+  const dayBadge = document.getElementById('incomeDayBadge');
+
+  if (type === 'weekend') {
+    if (btnWeekend) {
+      btnWeekend.className = 'px-3 py-2.5 text-xs font-bold rounded-xl btn-liquid-primary shadow-xs transition text-center';
+    }
+    if (btnWeekday) {
+      btnWeekday.className = 'btn-liquid-secondary px-3 py-2.5 text-xs font-semibold rounded-xl transition text-center';
+    }
+    if (dayBadge) {
+      dayBadge.innerText = 'WEEKEND (Jumat - Minggu)';
+      dayBadge.className = 'text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-[#A57D71]/20 text-[#E8D8CE] border border-[#A57D71]/40';
+    }
+  } else {
+    if (btnWeekday) {
+      btnWeekday.className = 'px-3 py-2.5 text-xs font-bold rounded-xl btn-liquid-primary shadow-xs transition text-center';
+    }
+    if (btnWeekend) {
+      btnWeekend.className = 'btn-liquid-secondary px-3 py-2.5 text-xs font-semibold rounded-xl transition text-center';
+    }
+    if (dayBadge) {
+      dayBadge.innerText = 'WEEKDAY (Senin - Kamis)';
+      dayBadge.className = 'text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-[#382A28] text-[#C1A094] border border-[#60433D]';
+    }
+  }
+}
+
+function getActiveDayType() {
+  if (selectedDayType === 'weekday' || selectedDayType === 'weekend') {
+    return selectedDayType;
+  }
+  const dateInput = document.getElementById('incomeDateTime');
+  return isWeekend(dateInput?.value) ? 'weekend' : 'weekday';
+}
+
+// Set Tombol Paket Durasi
+function setPackageSelection(pkg) {
+  selectedPackage = String(pkg);
+
+  document.querySelectorAll('.pkg-btn').forEach(btn => {
+    if (btn.dataset.pkg === String(pkg)) {
+      if (pkg === 'malam') {
+        btn.className = 'pkg-btn py-2 sm:py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-black rounded-xl bg-amber-500/30 text-amber-300 border border-amber-400/60 shadow-md transition';
+      } else {
+        btn.className = 'pkg-btn py-2 sm:py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-black rounded-xl btn-liquid-primary transition';
+      }
+    } else {
+      if (btn.dataset.pkg === 'malam') {
+        btn.className = 'pkg-btn py-2 sm:py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-bold rounded-xl bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 border border-amber-500/40 transition';
+      } else {
+        btn.className = 'pkg-btn py-2 sm:py-2.5 px-1 sm:px-2 text-[11px] sm:text-xs font-bold rounded-xl btn-liquid-secondary transition';
+      }
+    }
+  });
+
+  const customHoursInput = document.getElementById('incomeCustomHours');
+  if (pkg !== 'custom' && customHoursInput) {
+    customHoursInput.value = pkg === 'malam' ? 10 : pkg;
+  }
+
+  updateCalculatedRent();
+}
+
+// Kalkulasi Tarif Sewa Berdasarkan Pricelist Resmi TEKS HOUSE
+function updateCalculatedRent() {
+  const unitSelect = document.getElementById('incomeUnit');
+  const rentInput = document.getElementById('incomeRent');
+  const totalDisplay = document.getElementById('incomeTotalDisplay');
+  const unitTypeBadge = document.getElementById('incomeUnitTypeBadge');
+  const pkgNotes = document.getElementById('incomePackageNotes');
+
+  if (!unitSelect || !rentInput) return;
+
+  const unitId = unitSelect.value;
+  const unitInfo = UNITS_DATA.find(u => u.id === unitId) || UNITS_DATA[0];
+  const unitType = unitInfo.type; // 'VIP' or 'REGULER'
+
+  if (unitTypeBadge) {
+    unitTypeBadge.innerText = unitType;
+    unitTypeBadge.className = `text-xs px-2.5 py-0.5 rounded-full font-black border ${
+      unitType === 'VIP' 
+        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' 
+        : 'bg-sky-500/20 text-sky-300 border-sky-500/40'
+    }`;
+  }
+
+  const dayType = getActiveDayType();
+  const ratesTable = TEKS_HOUSE_PRICELIST[unitType][dayType];
+
+  let price = 0;
+  let label = '';
+
+  if (selectedPackage === 'malam') {
+    price = ratesTable['malam'] || (unitType === 'VIP' ? 180000 : 150000);
+    label = `Paket Malam (${unitType} - ${dayType.toUpperCase()})`;
+  } else if (ratesTable[selectedPackage]) {
+    price = ratesTable[selectedPackage];
+    label = `Paket ${selectedPackage} Jam (${unitType} - ${dayType.toUpperCase()})`;
+  } else {
+    const customHoursInput = document.getElementById('incomeCustomHours');
+    const customH = parseFloat(customHoursInput?.value) || 1;
+    price = Math.round(customH * (unitType === 'VIP' ? 50000 : 35000));
+    label = `${customH} Jam (Custom)`;
+  }
+
+  rentInput.value = price;
+  if (totalDisplay) {
+    totalDisplay.innerText = formatRupiah(price);
+  }
+  if (pkgNotes) {
+    pkgNotes.innerText = `Tarif resmi: ${label}`;
+  }
+}
+
+// Event Listeners
+function setupEventListeners() {
+  // Tab Navigasi Desktop
+  document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  // Tab Navigasi Mobile
+  document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  // Perubahan Unit & Tanggal
+  const unitSelect = document.getElementById('incomeUnit');
+  const dateInput = document.getElementById('incomeDateTime');
+  const rentInput = document.getElementById('incomeRent');
+  const customHoursInput = document.getElementById('incomeCustomHours');
+
+  if (unitSelect) unitSelect.addEventListener('change', updateCalculatedRent);
+  if (dateInput) {
+    dateInput.addEventListener('change', () => {
+      updateDayTypeFromDate();
+      updateCalculatedRent();
+    });
+  }
+  if (rentInput) {
+    rentInput.addEventListener('input', () => {
+      const totalDisplay = document.getElementById('incomeTotalDisplay');
+      const val = parseFloat(rentInput.value) || 0;
+      if (totalDisplay) totalDisplay.innerText = formatRupiah(val);
+    });
+  }
+  if (customHoursInput) {
+    customHoursInput.addEventListener('input', () => {
+      selectedPackage = 'custom';
+      updateCalculatedRent();
+    });
+  }
+
+  // Form Submit Pemasukan (Customer Masuk)
+  const incomeForm = document.getElementById('formIncome');
+  if (incomeForm) {
+    incomeForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      handleSaveIncome();
+    });
+  }
+
+  // Form Submit Pengeluaran
+  const expenseForm = document.getElementById('formExpense');
+  if (expenseForm) {
+    expenseForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      handleSaveExpense();
+    });
+  }
+
+  // Filter Rekapitulasi
+  setupFilterListeners();
+
+  // Interactive Glass Spotlight Glare
+  document.querySelectorAll('.kpi-card, .unit-card').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      card.style.setProperty('--mouse-x', `${x}px`);
+      card.style.setProperty('--mouse-y', `${y}px`);
+    });
+  });
+}
+
+// Smooth Number Counter Transition (Framer Motion feel)
+function animateCounter(elementId, targetValue, formatFn, duration = 450) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  const prevVal = el._currentValue || 0;
+  el._currentValue = targetValue;
+  if (prevVal === targetValue) {
+    el.innerText = formatFn ? formatFn(targetValue) : targetValue;
+    return;
+  }
+  const startTime = performance.now();
+  function step(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    // Easing: cubic-bezier(0.16, 1, 0.3, 1) -> 1 - Math.pow(1 - progress, 3)
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(prevVal + (targetValue - prevVal) * eased);
+    el.innerText = formatFn ? formatFn(current) : current;
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    } else {
+      el.innerText = formatFn ? formatFn(targetValue) : targetValue;
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+function setupFilterListeners() {
+  const filterTypeBtns = document.querySelectorAll('.filter-type-btn');
+  filterTypeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterTypeBtns.forEach(b => {
+        b.className = 'filter-type-btn px-3.5 py-1.5 text-xs font-semibold rounded-xl text-[#C1A094] hover:text-[#E8D8CE] hover:bg-[#382A28] transition';
+      });
+      btn.className = 'filter-type-btn px-3.5 py-1.5 text-xs font-bold rounded-xl btn-liquid-primary shadow-xs transition';
+
+      currentFilter.type = btn.dataset.filter;
+      updateFilterControlsUI();
+      renderRecap();
+    });
+  });
+
+  // Input Perubahan Tanggal Harian
+  const dailyInput = document.getElementById('filterDailyDate');
+  if (dailyInput) {
+    dailyInput.addEventListener('change', () => {
+      currentFilter.startDate = dailyInput.value;
+      currentFilter.endDate = dailyInput.value;
+      renderRecap();
+    });
+  }
+
+  // Input Perubahan Bulan
+  const monthInput = document.getElementById('filterMonth');
+  if (monthInput) {
+    monthInput.addEventListener('change', () => {
+      currentFilter.month = monthInput.value;
+      renderRecap();
+    });
+  }
+
+  // Input Perubahan Custom Range
+  const customStart = document.getElementById('filterCustomStart');
+  const customEnd = document.getElementById('filterCustomEnd');
+  if (customStart && customEnd) {
+    const handleCustomChange = () => {
+      if (customStart.value && customEnd.value) {
+        currentFilter.startDate = customStart.value;
+        currentFilter.endDate = customEnd.value;
+        renderRecap();
+      }
+    };
+    customStart.addEventListener('change', handleCustomChange);
+    customEnd.addEventListener('change', handleCustomChange);
+  }
+}
+
+function updateFilterControlsUI() {
+  const dailyBox = document.getElementById('filterControlDaily');
+  const weeklyBox = document.getElementById('filterControlWeekly');
+  const monthlyBox = document.getElementById('filterControlMonthly');
+  const customBox = document.getElementById('filterControlCustom');
+
+  if (dailyBox) dailyBox.classList.add('hidden');
+  if (weeklyBox) weeklyBox.classList.add('hidden');
+  if (monthlyBox) monthlyBox.classList.add('hidden');
+  if (customBox) customBox.classList.add('hidden');
+
+  if (currentFilter.type === 'daily' && dailyBox) dailyBox.classList.remove('hidden');
+  if (currentFilter.type === 'weekly' && weeklyBox) weeklyBox.classList.remove('hidden');
+  if (currentFilter.type === 'monthly' && monthlyBox) monthlyBox.classList.remove('hidden');
+  if (currentFilter.type === 'custom' && customBox) customBox.classList.remove('hidden');
+}
+
+// Handler Simpan Transaksi Pemasukan (Customer Masuk)
+function handleSaveIncome() {
+  const dateTimeInput = document.getElementById('incomeDateTime');
+  const unitSelect = document.getElementById('incomeUnit');
+  const rentInput = document.getElementById('incomeRent');
+  const paymentMethodSelect = document.getElementById('incomePaymentMethod');
+  const notesInput = document.getElementById('incomeNotes');
+  const customHoursInput = document.getElementById('incomeCustomHours');
+
+  const unitId = unitSelect.value;
+  const unitInfo = UNITS_DATA.find(u => u.id === unitId);
+  const dayType = getActiveDayType();
+  const rentAmount = parseFloat(rentInput.value) || 0;
+
+  let durationLabel = '';
+  let hoursCount = 2;
+
+  if (selectedPackage === 'malam') {
+    durationLabel = '🌙 Paket Malam';
+    hoursCount = 10;
+  } else if (selectedPackage === 'custom') {
+    hoursCount = parseFloat(customHoursInput?.value) || 1;
+    durationLabel = `${hoursCount} Jam`;
+  } else {
+    hoursCount = parseFloat(selectedPackage) || 2;
+    durationLabel = `${selectedPackage} Jam`;
+  }
+
+  const newIncome = {
+    id: 'inc-' + Date.now(),
+    dateTime: dateTimeInput.value || getNowDateTimeLocalString(),
+    unitId: unitId,
+    unitType: unitInfo ? unitInfo.type : 'REGULER',
+    dayType: dayType,
+    packageType: selectedPackage,
+    durationLabel: durationLabel,
+    hours: hoursCount,
+    totalAmount: rentAmount,
+    paymentMethod: paymentMethodSelect.value,
+    notes: notesInput.value.trim(),
+    createdAt: new Date().toISOString()
+  };
+
+  appData.incomes.unshift(newIncome);
+  saveData('incomes', newIncome);
+
+  showToast(`✅ Customer masuk tercatat! Pemasukan ${formatRupiah(rentAmount)} tersimpan.`);
+  
+  // Reset Form
+  document.getElementById('formIncome').reset();
+  initDateInputs();
+  setPackageSelection('2');
+
+  switchTab('tab-rekap');
+  renderAll();
+}
+
+// Handler Simpan Transaksi Pengeluaran
+function handleSaveExpense() {
+  const dateInput = document.getElementById('expenseDate');
+  const categorySelect = document.getElementById('expenseCategory');
+  const unitSelect = document.getElementById('expenseUnit');
+  const amountInput = document.getElementById('expenseAmount');
+  const notesInput = document.getElementById('expenseNotes');
+
+  const amount = parseFloat(amountInput.value) || 0;
+  if (amount <= 0) {
+    alert("Silakan masukkan nominal pengeluaran yang valid.");
+    return;
+  }
+
+  const newExpense = {
+    id: 'exp-' + Date.now(),
+    date: dateInput.value || getTodayDateString(),
+    category: categorySelect.value,
+    unitId: unitSelect.value,
+    amount: amount,
+    notes: notesInput.value.trim(),
+    createdAt: new Date().toISOString()
+  };
+
+  appData.expenses.unshift(newExpense);
+  saveData('expenses', newExpense);
+
+  showToast(`✅ Pengeluaran ${formatRupiah(amount)} (${newExpense.category}) tersimpan.`);
+
+  // Reset form
+  document.getElementById('formExpense').reset();
+  if (dateInput) dateInput.value = getTodayDateString();
+
+  switchTab('tab-rekap');
+  renderAll();
+}
+
+// Hapus Data
+function removeIncomeItem(id) {
+  if (confirm("Apakah Anda yakin ingin menghapus catatan transaksi customer ini?")) {
+    appData.incomes = appData.incomes.filter(i => i.id !== id);
+    deleteData('incomes', id);
+    renderAll();
+    showToast("Transaksi customer telah dihapus.");
+  }
+}
+
+function removeExpenseItem(id) {
+  if (confirm("Apakah Anda yakin ingin menghapus catatan pengeluaran ini?")) {
+    appData.expenses = appData.expenses.filter(e => e.id !== id);
+    deleteData('expenses', id);
+    renderAll();
+    showToast("Catatan pengeluaran telah dihapus.");
+  }
+}
+
+// Render Keseluruhan
+function renderAll() {
+  renderRecap();
+  renderSettingsValues();
+}
+
+// Filter Data Helper
+function getFilteredData() {
+  let filteredIncomes = [];
+  let filteredExpenses = [];
+  let periodLabel = '';
+
+  if (currentFilter.type === 'daily') {
+    const targetDate = currentFilter.startDate || getTodayDateString();
+    periodLabel = `Hari: ${formatDateIndo(targetDate)}`;
+
+    filteredIncomes = appData.incomes.filter(item => {
+      const itemDate = (item.dateTime || '').split('T')[0];
+      return itemDate === targetDate;
+    });
+
+    filteredExpenses = appData.expenses.filter(item => {
+      return item.date === targetDate;
+    });
+
+  } else if (currentFilter.type === 'weekly') {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - 6);
+    start.setHours(0,0,0,0);
+    end.setHours(23,59,59,999);
+
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = end.toISOString().split('T')[0];
+    periodLabel = `Minggu Ini (${formatDateIndo(startStr)} s/d ${formatDateIndo(endStr)})`;
+
+    filteredIncomes = appData.incomes.filter(item => {
+      const d = (item.dateTime || '').split('T')[0];
+      return d >= startStr && d <= endStr;
+    });
+
+    filteredExpenses = appData.expenses.filter(item => {
+      return item.date >= startStr && item.date <= endStr;
+    });
+
+  } else if (currentFilter.type === 'monthly') {
+    const targetMonth = currentFilter.month || getCurrentMonthString();
+    const [y, m] = targetMonth.split('-');
+    const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    const monthIndex = parseInt(m, 10) - 1;
+    periodLabel = `Bulan: ${monthNames[monthIndex] || m} ${y}`;
+
+    filteredIncomes = appData.incomes.filter(item => {
+      const d = (item.dateTime || '').substring(0, 7);
+      return d === targetMonth;
+    });
+
+    filteredExpenses = appData.expenses.filter(item => {
+      const d = (item.date || '').substring(0, 7);
+      return d === targetMonth;
+    });
+
+  } else if (currentFilter.type === 'custom') {
+    const startStr = currentFilter.startDate;
+    const endStr = currentFilter.endDate;
+    periodLabel = `${formatDateIndo(startStr)} s/d ${formatDateIndo(endStr)}`;
+
+    filteredIncomes = appData.incomes.filter(item => {
+      const d = (item.dateTime || '').split('T')[0];
+      return d >= startStr && d <= endStr;
+    });
+
+    filteredExpenses = appData.expenses.filter(item => {
+      return item.date >= startStr && item.date <= endStr;
+    });
+  }
+
+  return {
+    incomes: filteredIncomes,
+    expenses: filteredExpenses,
+    periodLabel: periodLabel
+  };
+}
+
+// Render Dashboard & Rekapitulasi
+function renderRecap() {
+  const { incomes, expenses, periodLabel } = getFilteredData();
+
+  const totalCustomers = incomes.length;
+  let totalHours = 0;
+  let totalIncome = 0;
+
+  const unitBreakdown = {
+    'B-24': { count: 0, hours: 0, income: 0 },
+    'B-32': { count: 0, hours: 0, income: 0 },
+    'C-34': { count: 0, hours: 0, income: 0 }
+  };
+
+  incomes.forEach(item => {
+    totalHours += (item.hours || 0);
+    totalIncome += (item.totalAmount || 0);
+
+    if (unitBreakdown[item.unitId]) {
+      unitBreakdown[item.unitId].count += 1;
+      unitBreakdown[item.unitId].hours += (item.hours || 0);
+      unitBreakdown[item.unitId].income += (item.totalAmount || 0);
+    }
+  });
+
+  let totalExpense = 0;
+  expenses.forEach(item => {
+    totalExpense += (item.amount || 0);
+  });
+
+  const netProfit = totalIncome - totalExpense;
+
+  // Tampilkan ke Elemen DOM dengan Animasi Halus
+  const periodLabelEl = document.getElementById('recapPeriodTitle');
+  if (periodLabelEl) periodLabelEl.innerText = periodLabel;
+
+  animateCounter('statTotalCustomers', totalCustomers, val => `${val} Orang`, 400);
+  animateCounter('statTotalHours', totalHours, val => `${val} Jam`, 400);
+  animateCounter('statTotalIncome', totalIncome, formatRupiah, 450);
+  animateCounter('statTotalExpense', totalExpense, formatRupiah, 450);
+  animateCounter('statNetProfit', netProfit, formatRupiah, 450);
+
+  const profitEl = document.getElementById('statNetProfit');
+  const profitBadge = document.getElementById('statNetProfitBadge');
+  if (profitEl) {
+    if (netProfit >= 0) {
+      profitEl.className = 'kpi-value text-xl sm:text-2xl md:text-3xl font-black text-emerald-400 mt-1.5 sm:mt-2 tracking-tight';
+      if (profitBadge) {
+        profitBadge.className = 'inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20 shrink-0';
+        profitBadge.innerHTML = `<svg class="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 17L17 7m0 0H7m10 0v10"></path></svg><span>Surplus</span>`;
+      }
+    } else {
+      profitEl.className = 'kpi-value text-xl sm:text-2xl md:text-3xl font-black text-rose-400 mt-1.5 sm:mt-2 tracking-tight';
+      if (profitBadge) {
+        profitBadge.className = 'inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-md border border-rose-500/20 shrink-0';
+        profitBadge.innerHTML = `<svg class="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 7L7 17m0 0h10M7 17V7"></path></svg><span>Defisit</span>`;
+      }
+    }
+  }
+
+  // Unit Breakdown Cards
+  const b24El = document.getElementById('breakdownB24');
+  const b32El = document.getElementById('breakdownB32');
+  const c34El = document.getElementById('breakdownC34');
+
+  if (b24El) b24El.innerText = `${unitBreakdown['B-24'].count} Cust (${unitBreakdown['B-24'].hours} Jam) • ${formatRupiah(unitBreakdown['B-24'].income)}`;
+  if (b32El) b32El.innerText = `${unitBreakdown['B-32'].count} Cust (${unitBreakdown['B-32'].hours} Jam) • ${formatRupiah(unitBreakdown['B-32'].income)}`;
+  if (c34El) c34El.innerText = `${unitBreakdown['C-34'].count} Cust (${unitBreakdown['C-34'].hours} Jam) • ${formatRupiah(unitBreakdown['C-34'].income)}`;
+
+  // Render Tabel Customer Masuk & Pemasukan
+  renderIncomesTable(incomes);
+
+  // Render Tabel Pengeluaran
+  renderExpensesTable(expenses);
+}
+
+// Render Tabel Pemasukan
+function renderIncomesTable(incomes) {
+  const tbody = document.getElementById('tableIncomesBody');
+  const emptyState = document.getElementById('emptyIncomesState');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+
+  if (incomes.length === 0) {
+    if (emptyState) emptyState.classList.remove('hidden');
+    return;
+  }
+  if (emptyState) emptyState.classList.add('hidden');
+
+  incomes.forEach((item, index) => {
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-[#382A28]/50 transition border-b border-[#60433D]/30 text-xs sm:text-sm';
+
+    const unitBadgeClass = item.unitType === 'VIP' 
+      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' 
+      : 'bg-sky-500/20 text-sky-300 border-sky-500/40';
+
+    const dayBadgeText = (item.dayType === 'weekend') ? 'Weekend' : 'Weekday';
+    const dayBadgeClass = (item.dayType === 'weekend') ? 'text-[#E8D8CE] font-bold' : 'text-[#C1A094]';
+
+    tr.innerHTML = `
+      <td class="py-3 px-4 font-semibold text-[#8D7269]">#${incomes.length - index}</td>
+      <td class="py-3 px-4 whitespace-nowrap text-[#E8D8CE]">${formatDateTimeIndo(item.dateTime)}</td>
+      <td class="py-3 px-4">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${unitBadgeClass}">
+          ${item.unitId} (${item.unitType})
+        </span>
+      </td>
+      <td class="py-3 px-4 font-bold text-[#E8D8CE]">
+        <div>${item.durationLabel || item.hours + ' Jam'}</div>
+        <div class="text-[10px] ${dayBadgeClass}">${dayBadgeText}</div>
+      </td>
+      <td class="py-3 px-4 font-black text-emerald-400 whitespace-nowrap text-sm">${formatRupiah(item.totalAmount)}</td>
+      <td class="py-3 px-4 font-medium text-[#C1A094]">${item.paymentMethod || 'Cash'}</td>
+      <td class="py-3 px-4 text-xs text-[#8D7269]">${item.notes || '-'}</td>
+      <td class="py-3 px-4 text-right">
+        <button onclick="removeIncomeItem('${item.id}')" class="text-rose-400 hover:text-rose-300 p-1.5 rounded-lg hover:bg-rose-500/10 transition" title="Hapus">
+          <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Render Tabel Pengeluaran
+function renderExpensesTable(expenses) {
+  const tbody = document.getElementById('tableExpensesBody');
+  const emptyState = document.getElementById('emptyExpensesState');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+
+  if (expenses.length === 0) {
+    if (emptyState) emptyState.classList.remove('hidden');
+    return;
+  }
+  if (emptyState) emptyState.classList.add('hidden');
+
+  expenses.forEach((item, index) => {
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-[#382A28]/50 transition border-b border-[#60433D]/30 text-xs sm:text-sm';
+
+    tr.innerHTML = `
+      <td class="py-3 px-4 font-semibold text-[#8D7269]">#${expenses.length - index}</td>
+      <td class="py-3 px-4 whitespace-nowrap text-[#E8D8CE]">${formatDateIndo(item.date)}</td>
+      <td class="py-3 px-4 font-bold text-[#E8D8CE]">${item.category}</td>
+      <td class="py-3 px-4 text-xs text-[#C1A094]">${item.unitId || 'Semua Unit'}</td>
+      <td class="py-3 px-4 font-black text-rose-400 whitespace-nowrap text-sm">${formatRupiah(item.amount)}</td>
+      <td class="py-3 px-4 text-xs text-[#8D7269]">${item.notes || '-'}</td>
+      <td class="py-3 px-4 text-right">
+        <button onclick="removeExpenseItem('${item.id}')" class="text-rose-400 hover:text-rose-300 p-1.5 rounded-lg hover:bg-rose-500/10 transition" title="Hapus">
+          <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Render Nilai Pengaturan ke Form
+function renderSettingsValues() {
+  const savedConfig = getSavedFirebaseConfig ? getSavedFirebaseConfig() : null;
+  const firebaseJsonInput = document.getElementById('firebaseConfigJson');
+  if (firebaseJsonInput && savedConfig) {
+    firebaseJsonInput.value = JSON.stringify(savedConfig, null, 2);
+  }
+}
+
+// Helper Parser Firebase Config
+function parseFirebaseConfigInput(rawInput) {
+  let clean = rawInput.trim();
+  if (clean.includes('=')) {
+    clean = clean.substring(clean.indexOf('=') + 1).trim();
+  }
+  if (clean.endsWith(';')) {
+    clean = clean.slice(0, -1).trim();
+  }
+  try {
+    return JSON.parse(clean);
+  } catch (e) {
+    try {
+      const parseFn = new Function(`return (${clean});`);
+      const obj = parseFn();
+      if (obj && typeof obj === 'object' && obj.apiKey && obj.projectId) {
+        return obj;
+      }
+    } catch (err2) {}
+    throw new Error("Format tidak valid");
+  }
+}
+
+// Simpan Firebase Config
+function handleSaveFirebaseConfig() {
+  const jsonInput = document.getElementById('firebaseConfigJson');
+  if (!jsonInput) return;
+
+  try {
+    const raw = jsonInput.value.trim();
+    if (!raw) {
+      localStorage.removeItem('sewa_apartemen_firebase_config');
+      showToast("Koneksi cloud dinonaktifkan (Mode Lokal).");
+      setTimeout(() => location.reload(), 800);
+      return;
+    }
+    const config = parseFirebaseConfigInput(raw);
+    saveFirebaseConfig(config);
+    showToast("✅ Konfigurasi Firebase disimpan! Menyambungkan...");
+    setTimeout(() => location.reload(), 1000);
+  } catch (e) {
+    alert("Format konfigurasi tidak valid! Pastikan Anda menyalin seluruh objek konfigurasi Firebase (berisi apiKey, projectId, dll).");
+  }
+}
+
+// Ekspor ke CSV / Excel
+function exportToExcelCSV() {
+  const { incomes, expenses, periodLabel } = getFilteredData();
+
+  let csvContent = `REKAPITULASI KEUANGAN & CUSTOMER TEKS HOUSE\n`;
+  csvContent += `Periode: ${periodLabel}\n`;
+  csvContent += `Dicetak pada: ${new Date().toLocaleString('id-ID')}\n\n`;
+
+  csvContent += `1. DATA CUSTOMER & PEMASUKAN\n`;
+  csvContent += `No,Tanggal & Waktu,Unit,Tipe,Hari,Paket Durasi,Total Pemasukan,Metode Bayar,Catatan\n`;
+  
+  incomes.forEach((item, index) => {
+    csvContent += `"${index + 1}","${item.dateTime}","${item.unitId}","${item.unitType}","${item.dayType}","${item.durationLabel}","${item.totalAmount}","${item.paymentMethod || 'Cash'}","${(item.notes || '').replace(/"/g, '""')}"\n`;
+  });
+
+  csvContent += `\n2. DATA PENGELUARAN\n`;
+  csvContent += `No,Tanggal,Kategori,Unit Terkait,Nominal,Catatan\n`;
+
+  expenses.forEach((item, index) => {
+    csvContent += `"${index + 1}","${item.date}","${item.category}","${item.unitId}","${item.amount}","${(item.notes || '').replace(/"/g, '""')}"\n`;
+  });
+
+  const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Rekap_TEKS_HOUSE_${currentFilter.type}_${Date.now()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast("📥 File Excel (CSV) berhasil diunduh!");
+}
+
+// Cetak Laporan
+function printReport() {
+  window.print();
+}
+
+// Toast Notifikasi
+function showToast(message) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = 'liquid-card bg-[#211B1A]/95 text-[#E8D8CE] border border-[#60433D] text-xs sm:text-sm px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-2 transition-all duration-300 transform translate-y-2 opacity-0 backdrop-blur-xl';
+  toast.innerHTML = `<span>${message}</span>`;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.remove('translate-y-2', 'opacity-0');
+  }, 10);
+
+  setTimeout(() => {
+    toast.classList.add('opacity-0');
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+  </script>
+</body>
+</html>

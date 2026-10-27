@@ -1,19 +1,21 @@
 {
-  "name": "StudyManage - Portal Tugas & Materi Kuliah",
-  "short_name": "StudyManage",
-  "description": "Portal manajemen tugas, materi, dan jadwal perkuliahan mahasiswa.",
+  "name": "Apartemen Rent Tracker - Sewa Per Jam",
+  "short_name": "SewaApartemen",
+  "description": "Aplikasi manajemen sewa apartemen per jam, customer check-in, pemasukan, pengeluaran & rekapitulasi",
   "start_url": "./index.html",
-  "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#0f172a",
-  "theme_color": "#4f46e5",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
   "icons": [
     {
-      "src": "icon.svg",
-      "sizes": "192x192 512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ]
 }

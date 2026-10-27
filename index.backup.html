@@ -1,0 +1,2051 @@
+﻿<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TEKS HOUSE Netflix &amp; Chill - Buku Kas Sewa Apartemen</title>
+  <!-- Firebase Compat SDK (Compatible with file://, HTTP, & HTTPS) -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+  <!-- Tailwind CSS CDN with forms and container queries -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              500: '#e11d48',
+              600: '#be123c',
+              700: '#9f1239',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Google Font Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+/* Custom Styles for SewaApartemen.ID with Dark Mode Support */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --vip-gold: #f59e0b;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth theme transitions */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+.dark ::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Glassmorphism effect */
+.glass-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+.dark .glass-card {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(51, 65, 85, 0.8);
+}
+
+/* Mobile Bottom Navigation */
+@media (max-width: 768px) {
+  .mobile-nav-item {
+    font-size: 0.72rem;
+  }
+  .pb-mobile-nav {
+    padding-bottom: 5.5rem;
+  }
+}
+
+/* Print Stylesheet for Reports */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .no-print, header, nav, #bottomNav, .btn-action, button, #toast-container, .modal-backdrop {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .glass-card {
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    break-inside: avoid;
+  }
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+  th, td {
+    border: 1px solid #94a3b8 !important;
+    padding: 6px 8px !important;
+    font-size: 11pt !important;
+    color: black !important;
+  }
+}
+
+</style>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#e11d48">
+</head>
+<body class="bg-slate-50 dark:bg-[#0b0f19] text-slate-800 dark:text-slate-100 antialiased min-h-screen flex flex-col pb-20 md:pb-12 transition-colors">
+
+  <!-- TOP HEADER -->
+  <header class="bg-white dark:bg-slate-900/90 dark:backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-600 to-rose-700 text-white flex items-center justify-center font-bold text-xl shadow-md shadow-rose-500/20">
+          ðŸŽ¬
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white leading-tight tracking-tight">
+              TEKS HOUSE <span class="text-rose-600 dark:text-rose-400 font-serif italic text-sm sm:text-base font-normal">Netflix &amp; Chill</span>
+            </h1>
+            <span class="text-[10px] bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 font-bold px-2 py-0.5 rounded-full border border-rose-200 dark:border-rose-800">Serang Kota</span>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Buku Kas &amp; Keuangan Sewa Apartemen Per Jam</p>
+        </div>
+      </div>
+
+      <!-- Cloud Sync & Status Info + Dark Mode Toggle -->
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <!-- Cloud Sync Badge -->
+        <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700 shadow-2xs">
+          <span id="cloudSyncStatusBadge" class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+          <span id="cloudSyncStatusText" class="hidden sm:inline">Penyimpanan Lokal (Offline)</span>
+        </div>
+
+        <!-- Dark Mode Toggle Button -->
+        <button id="themeToggleBtn" onclick="toggleTheme()" type="button" title="Ganti Mode Terang / Gelap" class="inline-flex items-center space-x-2 px-3 py-1.5 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-amber-300 border border-slate-200 dark:border-slate-700 transition shadow-2xs">
+          <span id="themeIcon" class="text-sm">â˜€ï¸</span>
+          <span id="themeText" class="hidden sm:inline">Light Mode</span>
+        </button>
+
+        <button onclick="switchTab('tab-pengaturan')" class="hidden md:inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-transparent dark:border-slate-700 transition">
+          <span>âš™ï¸</span>
+          <span>Pengaturan</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- DESKTOP NAVIGATION TABS -->
+    <div class="border-t border-slate-100 dark:border-slate-800/80 hidden md:block">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 flex space-x-2 py-1.5 overflow-x-auto">
+        <button data-tab="tab-rekap" class="nav-tab-btn px-4 py-2 text-xs font-bold rounded-xl bg-blue-600 text-white transition flex items-center space-x-2 shadow-sm shadow-blue-600/30">
+          <span>ðŸ“Š</span>
+          <span>Rekap Keuangan</span>
+        </button>
+        <button data-tab="tab-pemasukan" class="nav-tab-btn px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition flex items-center space-x-2">
+          <span>âž•</span>
+          <span>Catat Customer &amp; Pemasukan</span>
+        </button>
+        <button data-tab="tab-pengeluaran" class="nav-tab-btn px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition flex items-center space-x-2">
+          <span>ðŸ’¸</span>
+          <span>Catat Pengeluaran</span>
+        </button>
+        <button data-tab="tab-pengaturan" class="nav-tab-btn px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition flex items-center space-x-2">
+          <span>ðŸ“‹</span>
+          <span>Pricelist &amp; Cloud</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full space-y-6">
+
+    <!-- ==================== TAB 1: REKAP KEUNGAN & CUSTOMER ==================== -->
+    <section id="tab-rekap" class="space-y-6">
+      <!-- FILTER PERIODE BAR -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-xs border border-slate-200/90 dark:border-slate-800">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Periode Rekapitulasi</div>
+            <h2 id="recapPeriodTitle" class="text-xl font-extrabold text-slate-900 dark:text-white mt-0.5">Memuat Data...</h2>
+          </div>
+
+          <!-- Pilihan Filter -->
+          <div class="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+            <button data-filter="daily" class="filter-type-btn px-3.5 py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white shadow-xs transition">
+              ðŸ“… Harian
+            </button>
+            <button data-filter="weekly" class="filter-type-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition">
+              ðŸ“… 7 Hari
+            </button>
+            <button data-filter="monthly" class="filter-type-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition">
+              ðŸ“… Bulanan
+            </button>
+            <button data-filter="custom" class="filter-type-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition">
+              ðŸ“… Kustom
+            </button>
+          </div>
+        </div>
+
+        <!-- Controls & Export Actions -->
+        <div class="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <!-- Control Harian -->
+          <div id="filterControlDaily" class="flex items-center space-x-2">
+            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Pilih Tanggal:</span>
+            <input type="date" id="filterDailyDate" class="px-3 py-1.5 text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+              â— Live Data Terkini
+            </span>
+          </div>
+
+          <!-- Control Mingguan -->
+          <div id="filterControlWeekly" class="hidden text-xs text-slate-500 dark:text-slate-400 font-medium">
+            â„¹ï¸ Menampilkan rekap transaksi 7 hari terakhir hingga hari ini.
+          </div>
+
+          <!-- Control Bulanan -->
+          <div id="filterControlMonthly" class="hidden flex items-center space-x-2">
+            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Pilih Bulan:</span>
+            <input type="month" id="filterMonth" class="px-3 py-1.5 text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+          </div>
+
+          <!-- Control Custom -->
+          <div id="filterControlCustom" class="hidden flex flex-wrap items-center gap-2">
+            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Dari:</span>
+            <input type="date" id="filterCustomStart" class="px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-blue-500">
+            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Sampai:</span>
+            <input type="date" id="filterCustomEnd" class="px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-blue-500">
+          </div>
+
+          <!-- Tombol Ekspor & Cetak -->
+          <div class="flex items-center space-x-2 ml-auto">
+            <button onclick="exportToExcelCSV()" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/80 transition flex items-center space-x-1.5">
+              <span>ðŸ“¥</span>
+              <span>Export Excel (CSV)</span>
+            </button>
+            <button onclick="printReport()" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1.5">
+              <span>ðŸ–¨ï¸</span>
+              <span>Cetak / PDF</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 KARTU STATISTIK UTAMA (KPI) -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- 1. Customer Masuk -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-xs relative overflow-hidden">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Customer Masuk</span>
+            <span class="text-lg p-2 rounded-xl bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 font-bold">ðŸ‘¥</span>
+          </div>
+          <div id="statTotalCustomers" class="text-3xl font-extrabold text-slate-900 dark:text-white mt-2">0 Orang</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center space-x-1">
+            <span>â±ï¸ Total Waktu:</span>
+            <span id="statTotalHours" class="font-bold text-slate-700 dark:text-slate-200">0 Jam</span>
+          </div>
+        </div>
+
+        <!-- 2. Total Pemasukan -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-emerald-200 dark:border-emerald-800/80 shadow-xs relative overflow-hidden bg-gradient-to-br from-white dark:from-slate-900 to-emerald-50 dark:to-emerald-950/40">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Total Pemasukan</span>
+            <span class="text-lg p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-bold">ðŸ’°</span>
+          </div>
+          <div id="statTotalIncome" class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2">Rp 0</div>
+          <div class="text-[11px] text-emerald-700 dark:text-emerald-400 mt-1 truncate font-medium">
+            Sesuai tarif pricelist resmi
+          </div>
+        </div>
+
+        <!-- 3. Total Pengeluaran -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-rose-200 dark:border-rose-900/70 shadow-xs relative overflow-hidden bg-gradient-to-br from-white dark:from-slate-900 to-rose-50/50 dark:to-rose-950/30">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400">Total Pengeluaran</span>
+            <span class="text-lg p-2 rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-400 font-bold">ðŸ“‰</span>
+          </div>
+          <div id="statTotalExpense" class="text-3xl font-extrabold text-rose-600 dark:text-rose-400 mt-2">Rp 0</div>
+          <div class="text-[11px] text-rose-700 dark:text-rose-400 mt-1 truncate">
+            Biaya operasional &amp; unit
+          </div>
+        </div>
+
+        <!-- 4. Laba Bersih (Net Profit) -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-blue-200 dark:border-blue-900/60 shadow-xs relative overflow-hidden bg-gradient-to-br from-white dark:from-slate-900 to-blue-50 dark:to-blue-950/60">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">Laba Bersih</span>
+            <span class="text-lg p-2 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-bold">ðŸ“ˆ</span>
+          </div>
+          <div id="statNetProfit" class="text-3xl font-extrabold text-blue-600 dark:text-blue-400 mt-2">Rp 0</div>
+          <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+            Pemasukan dikurangi Pengeluaran
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 KARTU BREAKDOWN PER UNIT -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Unit B-24 (VIP) -->
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-amber-200 dark:border-amber-900/60 shadow-xs flex items-center justify-between">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-bold text-slate-900 dark:text-white text-sm">Unit B-24</span>
+              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">VIP</span>
+            </div>
+            <p id="breakdownB24" class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">0 Cust (0 Jam) â€¢ Rp 0</p>
+          </div>
+        </div>
+
+        <!-- Unit B-32 (REGULER) -->
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-sky-200 dark:border-sky-900/60 shadow-xs flex items-center justify-between">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-bold text-slate-900 dark:text-white text-sm">Unit B-32</span>
+              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800">REGULER</span>
+            </div>
+            <p id="breakdownB32" class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">0 Cust (0 Jam) â€¢ Rp 0</p>
+          </div>
+        </div>
+
+        <!-- Unit C-34 (REGULER) -->
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-indigo-200 dark:border-indigo-900/60 shadow-xs flex items-center justify-between">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-bold text-slate-900 dark:text-white text-sm">Unit C-34</span>
+              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800">REGULER</span>
+            </div>
+            <p id="breakdownC34" class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">0 Cust (0 Jam) â€¢ Rp 0</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABEL 1: DATA CUSTOMER & PEMASUKAN -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xs border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Data Customer Masuk &amp; Pemasukan</h3>
+            <span class="text-[10px] bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-full font-bold border border-emerald-200 dark:border-emerald-800">Uang Masuk</span>
+          </div>
+          <button onclick="switchTab('tab-pemasukan')" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center space-x-1">
+            <span>+ Catat Baru</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                <th class="py-3 px-4">No</th>
+                <th class="py-3 px-4">Waktu Masuk</th>
+                <th class="py-3 px-4">Unit</th>
+                <th class="py-3 px-4">Paket / Durasi</th>
+                <th class="py-3 px-4">Total Pemasukan</th>
+                <th class="py-3 px-4">Metode Bayar</th>
+                <th class="py-3 px-4">Catatan</th>
+                <th class="py-3 px-4 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tableIncomesBody" class="divide-y divide-slate-100 dark:divide-slate-800">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="emptyIncomesState" class="hidden py-10 text-center text-slate-400 dark:text-slate-500">
+          <div class="text-3xl mb-2">ðŸ“­</div>
+          <p class="text-sm font-medium">Belum ada transaksi customer pada periode ini</p>
+        </div>
+      </div>
+
+      <!-- TABEL 2: DATA PENGELUARAN -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xs border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Data Pengeluaran Operasional</h3>
+            <span class="text-[10px] bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 px-2 py-0.5 rounded-full font-bold border border-rose-200 dark:border-rose-900">Uang Keluar</span>
+          </div>
+          <button onclick="switchTab('tab-pengeluaran')" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center space-x-1">
+            <span>+ Catat Pengeluaran</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                <th class="py-3 px-4">No</th>
+                <th class="py-3 px-4">Tanggal</th>
+                <th class="py-3 px-4">Kategori</th>
+                <th class="py-3 px-4">Unit</th>
+                <th class="py-3 px-4">Nominal</th>
+                <th class="py-3 px-4">Catatan</th>
+                <th class="py-3 px-4 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tableExpensesBody" class="divide-y divide-slate-100 dark:divide-slate-800">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="emptyExpensesState" class="hidden py-10 text-center text-slate-400 dark:text-slate-500">
+          <div class="text-3xl mb-2">ðŸƒ</div>
+          <p class="text-sm font-medium">Belum ada catatan pengeluaran pada periode ini</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: CATAT CUSTOMER & PEMASUKAN ==================== -->
+    <section id="tab-pemasukan" class="hidden max-w-2xl mx-auto">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-7 shadow-xs border border-rose-200 dark:border-rose-900/60">
+        <div class="flex items-center space-x-3 mb-5 pb-4 border-b border-slate-100 dark:border-slate-800">
+          <div class="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xl font-bold">
+            âž•
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-slate-900 dark:text-white">Catat Customer Masuk &amp; Pemasukan</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Pilih unit dan paket sewa resmi TEKS HOUSE (tanpa perlu nama tamu)</p>
+          </div>
+        </div>
+
+        <form id="formIncome" class="space-y-4">
+          <!-- Tanggal & Jam Masuk -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label for="incomeDateTime" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">Tanggal &amp; Waktu Masuk</label>
+              <span id="incomeDayBadge" class="text-[11px] px-2 py-0.5 rounded font-bold bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800">
+                WEEKDAY (Senin - Kamis)
+              </span>
+            </div>
+            <input type="datetime-local" id="incomeDateTime" required class="w-full px-3 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-rose-500 focus:outline-none font-medium text-slate-800 dark:text-slate-100">
+          </div>
+
+          <!-- Kategori Hari (Auto-detected + Manual Override) -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Kategori Hari Sewa</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" id="btnDayWeekday" onclick="setManualDayType('weekday')" class="px-3 py-2 text-xs font-bold rounded-xl bg-blue-600 text-white shadow-xs transition text-center">
+                ðŸ—“ï¸ Weekday (Senin - Kamis)
+              </button>
+              <button type="button" id="btnDayWeekend" onclick="setManualDayType('weekend')" class="px-3 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 transition text-center">
+                ðŸŽ‰ Weekend (Jumat - Minggu)
+              </button>
+            </div>
+          </div>
+
+          <!-- Pilihan Unit Apartemen -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label for="incomeUnit" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">Pilih Unit Apartemen</label>
+              <span id="incomeUnitTypeBadge" class="text-xs px-2 py-0.5 rounded font-semibold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">VIP</span>
+            </div>
+            <select id="incomeUnit" class="w-full px-3 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-rose-500 focus:outline-none font-semibold text-slate-900 dark:text-white">
+              <option value="B-24" class="dark:bg-slate-800">Unit B-24 (VIP) - Netflix &amp; Smart TV 4K</option>
+              <option value="B-32" class="dark:bg-slate-800">Unit B-32 (REGULER)</option>
+              <option value="C-34" class="dark:bg-slate-800">Unit C-34 (REGULER)</option>
+            </select>
+          </div>
+
+          <!-- Pilihan Paket Durasi Sewa TEKS HOUSE -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Pilih Paket Durasi Sewa</label>
+            
+            <div class="grid grid-cols-4 gap-1.5 mb-2">
+              <button type="button" data-pkg="1" onclick="setPackageSelection('1')" class="pkg-btn py-2 px-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition">1 Jam</button>
+              <button type="button" data-pkg="2" onclick="setPackageSelection('2')" class="pkg-btn py-2 px-2 text-xs font-extrabold rounded-xl bg-blue-600 text-white shadow-sm border border-blue-600 transition">2 Jam</button>
+              <button type="button" data-pkg="3" onclick="setPackageSelection('3')" class="pkg-btn py-2 px-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition">3 Jam</button>
+              <button type="button" data-pkg="4" onclick="setPackageSelection('4')" class="pkg-btn py-2 px-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition">4 Jam</button>
+              <button type="button" data-pkg="5" onclick="setPackageSelection('5')" class="pkg-btn py-2 px-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition">5 Jam</button>
+              <button type="button" data-pkg="6" onclick="setPackageSelection('6')" class="pkg-btn py-2 px-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition">6 Jam</button>
+              <button type="button" data-pkg="12" onclick="setPackageSelection('12')" class="pkg-btn py-2 px-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition">12 Jam</button>
+              <button type="button" data-pkg="malam" onclick="setPackageSelection('malam')" class="pkg-btn py-2 px-2 text-xs font-extrabold rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 hover:bg-amber-100 border border-amber-300 dark:border-amber-800 transition">ðŸŒ™ Malam</button>
+            </div>
+
+            <div class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
+              <span>Atau jam custom:</span>
+              <input type="number" id="incomeCustomHours" min="1" step="0.5" value="2" class="w-20 px-2 py-1 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg font-bold text-slate-800 dark:text-slate-100">
+              <span>Jam</span>
+            </div>
+          </div>
+
+          <!-- Tarif Pemasukan (Otomatis dari Pricelist) -->
+          <div class="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+            <div class="flex items-center justify-between">
+              <div>
+                <label for="incomeRent" class="text-xs font-bold text-slate-700 dark:text-slate-300">Nominal Tarif Sewa (Rp)</label>
+                <div id="incomePackageNotes" class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Tarif resmi TEKS HOUSE</div>
+              </div>
+              <input type="number" id="incomeRent" min="0" required class="w-36 px-3 py-1.5 text-sm font-extrabold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-emerald-600 dark:text-emerald-400 text-right focus:ring-2 focus:ring-emerald-500">
+            </div>
+
+            <!-- Total Banner -->
+            <div class="pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <span class="text-sm font-bold text-slate-800 dark:text-white">Total Pemasukan Diterima:</span>
+              <span id="incomeTotalDisplay" class="text-2xl font-black text-emerald-600 dark:text-emerald-400">Rp 0</span>
+            </div>
+          </div>
+
+          <!-- Metode Pembayaran -->
+          <div>
+            <label for="incomePaymentMethod" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Metode Pembayaran</label>
+            <select id="incomePaymentMethod" class="w-full px-3 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-rose-500 focus:outline-none font-medium text-slate-800 dark:text-slate-100">
+              <option value="Tunai (Cash)" class="dark:bg-slate-800">Tunai (Cash)</option>
+              <option value="Transfer BCA" class="dark:bg-slate-800">Transfer BCA</option>
+              <option value="Transfer Mandiri" class="dark:bg-slate-800">Transfer Mandiri</option>
+              <option value="Transfer BRI" class="dark:bg-slate-800">Transfer BRI</option>
+              <option value="QRIS" class="dark:bg-slate-800">QRIS</option>
+              <option value="E-Wallet (GoPay/OVO/Dana)" class="dark:bg-slate-800">E-Wallet (GoPay/OVO/Dana)</option>
+            </select>
+          </div>
+
+          <!-- Catatan Tambahan -->
+          <div>
+            <label for="incomeNotes" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Catatan Tambahan (Opsional)</label>
+            <input type="text" id="incomeNotes" placeholder="Catatan singkat jika ada..." class="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-rose-500 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500">
+          </div>
+
+          <!-- Tombol Simpan -->
+          <div class="pt-2">
+            <button type="submit" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white font-extrabold text-sm sm:text-base shadow-md shadow-rose-500/20 transition flex items-center justify-center space-x-2">
+              <span>ðŸ’¾</span>
+              <span>Simpan Pemasukan Customer</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: CATAT PENGELUARAN ==================== -->
+    <section id="tab-pengeluaran" class="hidden max-w-2xl mx-auto">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-7 shadow-xs border border-rose-200 dark:border-rose-900/60">
+        <div class="flex items-center space-x-3 mb-5 pb-4 border-b border-slate-100 dark:border-slate-800">
+          <div class="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xl font-bold">
+            ðŸ’¸
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-slate-900 dark:text-white">Catat Pengeluaran Operasional</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Biaya listrik, laundry, perlengkapan, dan kebersihan</p>
+          </div>
+        </div>
+
+        <form id="formExpense" class="space-y-4">
+          <!-- Tanggal Pengeluaran -->
+          <div>
+            <label for="expenseDate" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Tanggal Pengeluaran</label>
+            <input type="date" id="expenseDate" required class="w-full px-3 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-rose-500 focus:outline-none font-medium text-slate-800 dark:text-slate-100">
+          </div>
+
+          <!-- Kategori Pengeluaran -->
+          <div>
+            <label for="expenseCategory" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Kategori Pengeluaran</label>
+            <select id="expenseCategory" class="w-full px-3 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-rose-500 focus:outline-none font-medium text-slate-800 dark:text-slate-100">
+              <option value="Token Listrik PLN" class="dark:bg-slate-800">âš¡ Token Listrik PLN</option>
+              <option value="Laundry Sprei/Handuk" class="dark:bg-slate-800">ðŸ§º Laundry Sprei &amp; Handuk</option>
+              <option value="Perlengkapan/Amenities" class="dark:bg-slate-800">ðŸ§¼ Perlengkapan (Sabun, Sampo, Tisu)</option>
+              <option value="Kebersihan/Cleaning" class="dark:bg-slate-800">ðŸ§¹ Kebersihan &amp; Desinfektan</option>
+              <option value="Langganan Netflix &amp; WiFi" class="dark:bg-slate-800">ðŸ“¶ Langganan Netflix &amp; Tagihan WiFi</option>
+              <option value="IPL &amp; Service Charge" class="dark:bg-slate-800">ðŸ¢ IPL &amp; Service Charge Gedung</option>
+              <option value="Maintenance/Perbaikan" class="dark:bg-slate-800">ðŸ”§ Maintenance &amp; Perbaikan Unit</option>
+              <option value="Lain-lain" class="dark:bg-slate-800">ðŸ“¦ Lain-lain</option>
+            </select>
+          </div>
+
+          <!-- Unit Terkait -->
+          <div>
+            <label for="expenseUnit" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Unit Terkait</label>
+            <select id="expenseUnit" class="w-full px-3 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-rose-500 focus:outline-none font-medium text-slate-800 dark:text-slate-100">
+              <option value="Umum" class="dark:bg-slate-800">Umum / Semua Unit</option>
+              <option value="B-24" class="dark:bg-slate-800">Unit B-24 (VIP)</option>
+              <option value="B-32" class="dark:bg-slate-800">Unit B-32 (REGULER)</option>
+              <option value="C-34" class="dark:bg-slate-800">Unit C-34 (REGULER)</option>
+            </select>
+          </div>
+
+          <!-- Nominal Pengeluaran -->
+          <div>
+            <label for="expenseAmount" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Nominal Biaya (Rp)</label>
+            <div class="relative">
+              <span class="absolute left-3 top-2.5 text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-bold">Rp</span>
+              <input type="number" id="expenseAmount" min="1000" step="500" required placeholder="Contoh: 100000" class="w-full pl-10 pr-3 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-rose-500 focus:outline-none font-bold text-rose-600 dark:text-rose-400">
+            </div>
+          </div>
+
+          <!-- Catatan Pengeluaran -->
+          <div>
+            <label for="expenseNotes" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Keterangan / Catatan</label>
+            <input type="text" id="expenseNotes" placeholder="Contoh: Beli token PLN 100rb di Tokopedia" class="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-rose-500 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500">
+          </div>
+
+          <!-- Tombol Simpan -->
+          <div class="pt-2">
+            <button type="submit" class="w-full py-3.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-sm sm:text-base shadow-md shadow-rose-500/20 transition flex items-center justify-center space-x-2">
+              <span>ðŸ’¾</span>
+              <span>Simpan Pengeluaran</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: PRICELIST RESMI & CLOUD SYNC ==================== -->
+    <section id="tab-pengaturan" class="hidden max-w-2xl mx-auto space-y-6">
+      <!-- Tabel Pricelist Resmi TEKS HOUSE -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-7 shadow-xs border border-slate-200 dark:border-slate-800">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 dark:text-white">ðŸ“‹ Pricelist Resmi TEKS HOUSE</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Daftar paket sewa reguler &amp; VIP per jam (Serang Kota)</p>
+          </div>
+          <a href="screenshots/pricelist_teks_house.jpg" target="_blank" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 transition">
+            Lihat Brosur â†—
+          </a>
+        </div>
+
+        <!-- Tabel Perbandingan Pricelist -->
+        <div class="overflow-x-auto mt-3">
+          <table class="w-full text-xs text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 uppercase font-bold border-b border-slate-200 dark:border-slate-700">
+                <th class="py-2.5 px-3">Durasi</th>
+                <th class="py-2.5 px-3 text-sky-700 dark:text-sky-400">Reguler (Weekday)</th>
+                <th class="py-2.5 px-3 text-sky-700 dark:text-sky-400">Reguler (Weekend)</th>
+                <th class="py-2.5 px-3 text-amber-700 dark:text-amber-400">VIP (Weekday)</th>
+                <th class="py-2.5 px-3 text-amber-700 dark:text-amber-400">VIP (Weekend)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+              <tr>
+                <td class="py-2 px-3 font-bold text-slate-800 dark:text-slate-200">1 Jam</td>
+                <td class="py-2 px-3">Rp 50.000</td>
+                <td class="py-2 px-3">Rp 60.000</td>
+                <td class="py-2 px-3">Rp 60.000</td>
+                <td class="py-2 px-3">Rp 70.000</td>
+              </tr>
+              <tr>
+                <td class="py-2 px-3 font-bold text-slate-800 dark:text-slate-200">2 Jam</td>
+                <td class="py-2 px-3">Rp 70.000</td>
+                <td class="py-2 px-3">Rp 80.000</td>
+                <td class="py-2 px-3">Rp 80.000</td>
+                <td class="py-2 px-3">Rp 100.000</td>
+              </tr>
+              <tr>
+                <td class="py-2 px-3 font-bold text-slate-800 dark:text-slate-200">3 Jam</td>
+                <td class="py-2 px-3">Rp 90.000</td>
+                <td class="py-2 px-3">Rp 100.000</td>
+                <td class="py-2 px-3">Rp 100.000</td>
+                <td class="py-2 px-3">Rp 130.000</td>
+              </tr>
+              <tr>
+                <td class="py-2 px-3 font-bold text-slate-800 dark:text-slate-200">4 Jam</td>
+                <td class="py-2 px-3">Rp 110.000</td>
+                <td class="py-2 px-3">Rp 120.000</td>
+                <td class="py-2 px-3">Rp 120.000</td>
+                <td class="py-2 px-3">Rp 150.000</td>
+              </tr>
+              <tr>
+                <td class="py-2 px-3 font-bold text-slate-800 dark:text-slate-200">5 Jam</td>
+                <td class="py-2 px-3">Rp 130.000</td>
+                <td class="py-2 px-3">Rp 150.000</td>
+                <td class="py-2 px-3">Rp 150.000</td>
+                <td class="py-2 px-3">Rp 180.000</td>
+              </tr>
+              <tr>
+                <td class="py-2 px-3 font-bold text-slate-800 dark:text-slate-200">6 Jam</td>
+                <td class="py-2 px-3">Rp 150.000</td>
+                <td class="py-2 px-3">Rp 170.000</td>
+                <td class="py-2 px-3">Rp 180.000</td>
+                <td class="py-2 px-3">Rp 210.000</td>
+              </tr>
+              <tr>
+                <td class="py-2 px-3 font-bold text-slate-800 dark:text-slate-200">12 Jam</td>
+                <td class="py-2 px-3">Rp 200.000</td>
+                <td class="py-2 px-3">Rp 220.000</td>
+                <td class="py-2 px-3">Rp 300.000</td>
+                <td class="py-2 px-3">Rp 330.000</td>
+              </tr>
+              <tr class="bg-amber-50/50 dark:bg-amber-950/20 font-bold">
+                <td class="py-2 px-3 text-amber-800 dark:text-amber-300">ðŸŒ™ Paket Malam</td>
+                <td class="py-2 px-3 text-amber-800 dark:text-amber-300">Rp 150.000</td>
+                <td class="py-2 px-3 text-amber-800 dark:text-amber-300">Rp 150.000</td>
+                <td class="py-2 px-3 text-amber-800 dark:text-amber-300">Rp 180.000</td>
+                <td class="py-2 px-3 text-amber-800 dark:text-amber-300">Rp 180.000</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sinkronisasi Cloud (Firebase) -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-7 shadow-xs border border-slate-200 dark:border-slate-800">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-base font-bold text-slate-900 dark:text-white">â˜ï¸ Sinkronisasi Cloud (Multi-HP)</h2>
+          <span class="text-xs px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-800">Tersambung</span>
+        </div>
+
+        <!-- Banner Status Terhubung Otomatis -->
+        <div class="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-2.5">
+            <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+            <div>
+              <div class="text-xs font-bold text-emerald-800 dark:text-emerald-300">Firebase Sudah Terhubung Otomatis!</div>
+              <div class="text-[11px] text-emerald-700 dark:text-emerald-400">Project: <b class="font-bold">teks-house</b> â€¢ Realtime Sync Aktif</div>
+            </div>
+          </div>
+          <span class="text-[11px] px-2 py-0.5 rounded-full font-bold bg-emerald-200/80 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-200">Online</span>
+        </div>
+
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
+          Kredensial Firebase project <b>teks-house</b> sudah tertanam di sistem. Anda tidak perlu mengubah apapun lagi di bawah ini kecuali ingin mengganti ke project lain.
+        </p>
+
+        <div class="space-y-3">
+          <div>
+            <label for="firebaseConfigJson" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Firebase Config JSON / JS Snippet (Aktif)</label>
+            <textarea id="firebaseConfigJson" rows="6" class="w-full p-2.5 text-xs font-mono bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100">{
+  "apiKey": "AIzaSyAW1PNK1Vs_4w02xYNVFfTuDBJN_rbCHa4",
+  "authDomain": "teks-house.firebaseapp.com",
+  "projectId": "teks-house",
+  "storageBucket": "teks-house.firebasestorage.app",
+  "messagingSenderId": "416910541898",
+  "appId": "1:416910541898:web:a70407dccfddeae14212b3",
+  "measurementId": "G-MFQFFKCSR0"
+}</textarea>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <button onclick="handleSaveFirebaseConfig()" class="flex-1 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-sm">
+              Perbarui Konfigurasi Cloud
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backup & Reset Data -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-7 shadow-xs border border-slate-200 dark:border-slate-800">
+        <h2 class="text-base font-bold text-slate-900 dark:text-white mb-1">ðŸ“¦ Cadangan &amp; Riwayat Data</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Unduh salinan data keuangan atau muat data demo</p>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="exportToExcelCSV()" class="px-3 py-2 text-xs font-bold rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/80 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition">
+            ðŸ“¥ Unduh Rekap Excel (CSV)
+          </button>
+          <button onclick="loadInitialDemoData(); renderAll(); showToast('Data demo berhasil dimuat ulang!');" class="px-3 py-2 text-xs font-bold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+            ðŸ”„ Muat Contoh Data Demo
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MOBILE BOTTOM NAVIGATION (Khusus HP / Layar Kecil) -->
+  <nav id="bottomNav" class="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-1.5 px-2 z-40 flex items-center justify-around shadow-lg">
+    <button data-tab="tab-rekap" class="mobile-nav-btn flex flex-col items-center p-1 text-blue-600 dark:text-blue-400 transition">
+      <span class="text-lg">ðŸ“Š</span>
+      <span class="text-[10px] font-bold mt-0.5">Rekap</span>
+    </button>
+    <button data-tab="tab-pemasukan" class="mobile-nav-btn flex flex-col items-center p-1 text-slate-400 dark:text-slate-500 transition">
+      <span class="text-lg">âž•</span>
+      <span class="text-[10px] font-bold mt-0.5">Pemasukan</span>
+    </button>
+    <button data-tab="tab-pengeluaran" class="mobile-nav-btn flex flex-col items-center p-1 text-slate-400 dark:text-slate-500 transition">
+      <span class="text-lg">ðŸ’¸</span>
+      <span class="text-[10px] font-bold mt-0.5">Pengeluaran</span>
+    </button>
+    <button type="button" onclick="toggleTheme()" class="flex flex-col items-center p-1 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition">
+      <span id="mobileThemeIcon" class="text-lg">â˜€ï¸</span>
+      <span class="text-[10px] font-bold mt-0.5">Tema</span>
+    </button>
+    <button data-tab="tab-pengaturan" class="mobile-nav-btn flex flex-col items-center p-1 text-slate-400 dark:text-slate-500 transition">
+      <span class="text-lg">ðŸ“‹</span>
+      <span class="text-[10px] font-bold mt-0.5">Pricelist</span>
+    </button>
+  </nav>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="fixed bottom-16 md:bottom-6 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- SCRIPT UTAMA -->
+  <script>
+// ==================== FIREBASE SYNC MODULE ====================
+/**
+ * Firebase Firestore Synchronization Module
+ * TEKS HOUSE Netflix & Chill - Sewa Apartemen Per Jam
+ * Menggunakan Firebase Compat SDK yang 100% kompatibel dengan file://, HTTP, dan HTTPS
+ */
+
+// Konfigurasi Resmi Firebase Project "teks-house"
+const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAW1PNK1Vs_4w02xYNVFfTuDBJN_rbCHa4",
+  authDomain: "teks-house.firebaseapp.com",
+  projectId: "teks-house",
+  storageBucket: "teks-house.firebasestorage.app",
+  messagingSenderId: "416910541898",
+  appId: "1:416910541898:web:a70407dccfddeae14212b3",
+  measurementId: "G-MFQFFKCSR0"
+};
+
+let firestoreDb = null;
+let isCloudSyncActive = false;
+let unsubscribers = [];
+
+const FIREBASE_CONFIG_KEY = 'sewa_apartemen_firebase_config';
+
+// Mengambil konfigurasi tersimpan atau default
+function getSavedFirebaseConfig() {
+  try {
+    const raw = localStorage.getItem(FIREBASE_CONFIG_KEY);
+    return raw ? JSON.parse(raw) : DEFAULT_FIREBASE_CONFIG;
+  } catch (e) {
+    console.error("Gagal membaca firebase config:", e);
+    return DEFAULT_FIREBASE_CONFIG;
+  }
+}
+
+// Menyimpan konfigurasi Firebase baru
+function saveFirebaseConfig(configObj) {
+  try {
+    localStorage.setItem(FIREBASE_CONFIG_KEY, JSON.stringify(configObj));
+    return true;
+  } catch (e) {
+    console.error("Gagal menyimpan firebase config:", e);
+    return false;
+  }
+}
+
+// Inisialisasi Firebase
+function initFirebaseSync(onDataChangedCallback) {
+  const config = getSavedFirebaseConfig();
+  const statusBadge = document.getElementById('cloudSyncStatusBadge');
+  const statusText = document.getElementById('cloudSyncStatusText');
+
+  if (!config || !config.apiKey || !config.projectId) {
+    updateCloudStatusUI('local', 'Penyimpanan Lokal (Offline)');
+    return false;
+  }
+
+  try {
+    if (!window.firebase) {
+      console.warn("Pustaka Firebase SDK belum dimuat di browser.");
+      updateCloudStatusUI('local', 'Penyimpanan Lokal (Offline)');
+      return false;
+    }
+
+    // Inisialisasi Firebase app
+    if (!firebase.apps.length) {
+      firebase.initializeApp(config);
+    }
+
+    firestoreDb = firebase.firestore();
+    isCloudSyncActive = true;
+
+    updateCloudStatusUI('cloud', 'Tersambung Cloud (teks-house)');
+    console.log("Firebase Firestore berhasil terhubung ke project:", config.projectId);
+
+    // Listen real-time ke koleksi incomes
+    listenToCloudCollection('incomes', (items) => {
+      console.log(`Cloud update: ${items.length} transaksi pemasukan diterima.`);
+      if (onDataChangedCallback) {
+        onDataChangedCallback('incomes', items);
+      }
+    });
+
+    // Listen real-time ke koleksi expenses
+    listenToCloudCollection('expenses', (items) => {
+      console.log(`Cloud update: ${items.length} data pengeluaran diterima.`);
+      if (onDataChangedCallback) {
+        onDataChangedCallback('expenses', items);
+      }
+    });
+
+    return true;
+  } catch (err) {
+    console.error("Gagal inisialisasi Firebase:", err);
+    updateCloudStatusUI('local', 'Penyimpanan Lokal (Offline)');
+    isCloudSyncActive = false;
+    return false;
+  }
+}
+
+function updateCloudStatusUI(type, text) {
+  const badge = document.getElementById('cloudSyncStatusBadge');
+  const label = document.getElementById('cloudSyncStatusText');
+  if (!badge || !label) return;
+
+  label.innerText = text;
+  badge.className = 'w-2.5 h-2.5 rounded-full';
+  
+  if (type === 'cloud') {
+    badge.classList.add('bg-emerald-500', 'animate-pulse');
+  } else if (type === 'connecting') {
+    badge.classList.add('bg-sky-400', 'animate-ping');
+  } else if (type === 'local') {
+    badge.classList.add('bg-amber-400');
+  } else {
+    badge.classList.add('bg-rose-500');
+  }
+}
+
+// Subscribe real-time
+function listenToCloudCollection(collectionName, callback) {
+  if (!isCloudSyncActive || !firestoreDb) return;
+
+  try {
+    const unsub = firestoreDb.collection(collectionName).onSnapshot((snapshot) => {
+      const items = [];
+      snapshot.forEach(docSnap => {
+        items.push({ id: docSnap.id, ...docSnap.data() });
+      });
+
+      // Sort tanggal terbaru di atas
+      items.sort((a, b) => {
+        const dateA = a.dateTime || a.date || '';
+        const dateB = b.dateTime || b.date || '';
+        return dateB.localeCompare(dateA);
+      });
+
+      callback(items);
+    }, (error) => {
+      console.warn(`Firestore listener error pada ${collectionName}:`, error.message);
+    });
+
+    unsubscribers.push(unsub);
+  } catch (e) {
+    console.error(`Error setting listener pada ${collectionName}:`, e);
+  }
+}
+
+// Simpan dokumen ke Cloud
+async function syncSaveDocument(collectionName, id, data) {
+  if (isCloudSyncActive && firestoreDb) {
+    try {
+      await firestoreDb.collection(collectionName).doc(String(id)).set(data, { merge: true });
+      console.log(`Berhasil sync ke cloud [${collectionName}]:`, id);
+    } catch (e) {
+      console.error(`Gagal sync ke cloud [${collectionName}]:`, e);
+    }
+  }
+}
+
+// Hapus dokumen di Cloud
+async function syncDeleteDocument(collectionName, id) {
+  if (isCloudSyncActive && firestoreDb) {
+    try {
+      await firestoreDb.collection(collectionName).doc(String(id)).delete();
+      console.log(`Berhasil hapus di cloud [${collectionName}]:`, id);
+    } catch (e) {
+      console.error(`Gagal hapus di cloud [${collectionName}]:`, e);
+    }
+  }
+}
+
+
+// ==================== MAIN APP LOGIC ====================
+/**
+ * TEKS HOUSE Netflix & Chill - Apartemen Sewa Per Jam
+ * Aplikasi Buku Kas & Keuangan Apartemen
+ * Sesuai Pricelist Resmi TEKS HOUSE (Serang Kota)
+ */
+
+// Pricelist Resmi TEKS HOUSE
+const TEKS_HOUSE_PRICELIST = {
+  REGULER: {
+    weekday: { '1': 50000, '2': 70000, '3': 90000, '4': 110000, '5': 130000, '6': 150000, '12': 200000, 'malam': 150000 },
+    weekend: { '1': 60000, '2': 80000, '3': 100000, '4': 120000, '5': 150000, '6': 170000, '12': 220000, 'malam': 150000 }
+  },
+  VIP: {
+    weekday: { '1': 60000, '2': 80000, '3': 100000, '4': 120000, '5': 150000, '6': 180000, '12': 300000, 'malam': 180000 },
+    weekend: { '1': 70000, '2': 100000, '3': 130000, '4': 150000, '5': 180000, '6': 210000, '12': 330000, 'malam': 180000 }
+  }
+};
+
+const UNITS_DATA = [
+  { id: 'B-24', name: 'Unit B-24', type: 'VIP', color: 'amber' },
+  { id: 'B-32', name: 'Unit B-32', type: 'REGULER', color: 'sky' },
+  { id: 'C-34', name: 'Unit C-34', type: 'REGULER', color: 'indigo' }
+];
+
+// State Aplikasi
+let appData = {
+  incomes: [],    // Transaksi sewa & pemasukan customer
+  expenses: [],   // Transaksi pengeluaran
+  pricelist: { ...TEKS_HOUSE_PRICELIST }
+};
+
+let currentFilter = {
+  type: 'daily', // 'daily', 'weekly', 'monthly', 'custom'
+  startDate: getTodayDateString(),
+  endDate: getTodayDateString(),
+  month: getCurrentMonthString() // 'YYYY-MM'
+};
+
+// State Form Pemasukan
+let selectedPackage = '2'; // default 2 Jam
+let selectedDayType = 'auto'; // 'auto', 'weekday', 'weekend'
+
+// Helper Format Uang Rupiah
+function formatRupiah(number) {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0
+  }).format(number || 0);
+}
+
+// Helper Format Tanggal & Jam Indonesia
+function formatDateIndo(dateStr) {
+  if (!dateStr) return '-';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+}
+
+function formatDateTimeIndo(dateTimeStr) {
+  if (!dateTimeStr) return '-';
+  const d = new Date(dateTimeStr);
+  return d.toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function getTodayDateString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getCurrentMonthString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+function getNowDateTimeLocalString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const mins = String(now.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${mins}`;
+}
+
+// Cek apakah tanggal adalah Weekend (Jumat, Sabtu, Minggu)
+function isWeekend(dateTimeStr) {
+  if (!dateTimeStr) return false;
+  const d = new Date(dateTimeStr);
+  const day = d.getDay(); // 0: Minggu, 5: Jumat, 6: Sabtu
+  return day === 0 || day === 5 || day === 6;
+}
+
+// Inisialisasi Aplikasi saat Dokumen Dimuat
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  loadLocalData();
+  setupEventListeners();
+  initDateInputs();
+  renderAll();
+
+  // Inisialisasi Firebase Cloud Sync
+  if (typeof initFirebaseSync === 'function') {
+    initFirebaseSync((collectionName, items) => {
+      if (collectionName === 'incomes') {
+        appData.incomes = items;
+        saveLocalOnly();
+        renderAll();
+      } else if (collectionName === 'expenses') {
+        appData.expenses = items;
+        saveLocalOnly();
+        renderAll();
+      }
+    });
+  }
+});
+
+// Theme Management (Light / Dark Mode from Stitch)
+function updateThemeUI(isDark) {
+  const htmlEl = document.documentElement;
+  const themeIcon = document.getElementById('themeIcon');
+  const themeText = document.getElementById('themeText');
+  const mobileThemeIcon = document.getElementById('mobileThemeIcon');
+
+  if (isDark) {
+    htmlEl.classList.add('dark');
+    if (themeIcon) themeIcon.textContent = 'â˜€ï¸';
+    if (themeText) themeText.textContent = 'Light Mode';
+    if (mobileThemeIcon) mobileThemeIcon.textContent = 'â˜€ï¸';
+  } else {
+    htmlEl.classList.remove('dark');
+    if (themeIcon) themeIcon.textContent = 'ðŸŒ™';
+    if (themeText) themeText.textContent = 'Dark Mode';
+    if (mobileThemeIcon) mobileThemeIcon.textContent = 'ðŸŒ™';
+  }
+}
+
+function toggleTheme() {
+  const isDark = document.documentElement.classList.contains('dark');
+  const newTheme = !isDark;
+  updateThemeUI(newTheme);
+  try {
+    localStorage.setItem('theme', newTheme ? 'dark' : 'light');
+  } catch (e) {}
+}
+
+function initTheme() {
+  let savedTheme = 'dark';
+  try {
+    const stored = localStorage.getItem('theme');
+    if (stored) {
+      savedTheme = stored;
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      savedTheme = 'light';
+    }
+  } catch (e) {}
+  updateThemeUI(savedTheme === 'dark');
+}
+
+// Setup Form Defaults
+function initDateInputs() {
+  const incomeDateInput = document.getElementById('incomeDateTime');
+  const expenseDateInput = document.getElementById('expenseDate');
+  const filterDailyDateInput = document.getElementById('filterDailyDate');
+  const filterMonthInput = document.getElementById('filterMonth');
+
+  if (incomeDateInput) {
+    incomeDateInput.value = getNowDateTimeLocalString();
+    updateDayTypeFromDate();
+  }
+  if (expenseDateInput) expenseDateInput.value = getTodayDateString();
+  if (filterDailyDateInput) filterDailyDateInput.value = getTodayDateString();
+  if (filterMonthInput) filterMonthInput.value = getCurrentMonthString();
+  
+  updateCalculatedRent();
+}
+
+// Load & Simpan Data Lokal
+function loadLocalData() {
+  try {
+    const savedIncomes = localStorage.getItem('sewa_apartemen_incomes');
+    const savedExpenses = localStorage.getItem('sewa_apartemen_expenses');
+
+    if (savedIncomes) appData.incomes = JSON.parse(savedIncomes);
+    if (savedExpenses) appData.expenses = JSON.parse(savedExpenses);
+
+    // Jika data masih kosong, buatkan data demo sesuai pricelist TEKS HOUSE
+    if (appData.incomes.length === 0 && appData.expenses.length === 0) {
+      loadInitialDemoData();
+    }
+  } catch (e) {
+    console.error("Gagal membaca local storage:", e);
+  }
+}
+
+function saveLocalOnly() {
+  try {
+    localStorage.setItem('sewa_apartemen_incomes', JSON.stringify(appData.incomes));
+    localStorage.setItem('sewa_apartemen_expenses', JSON.stringify(appData.expenses));
+  } catch (e) {
+    console.error("Gagal simpan local storage:", e);
+  }
+}
+
+function saveData(type, item) {
+  saveLocalOnly();
+  if (typeof syncSaveDocument === 'function') {
+    syncSaveDocument(type, item.id, item);
+  }
+}
+
+function deleteData(type, id) {
+  saveLocalOnly();
+  if (typeof syncDeleteDocument === 'function') {
+    syncDeleteDocument(type, id);
+  }
+}
+
+// Data Contoh Awal (Demo sesuai Pricelist TEKS HOUSE)
+function loadInitialDemoData() {
+  const today = getTodayDateString();
+  appData.incomes = [
+    {
+      id: 'inc-1',
+      dateTime: `${today}T10:00`,
+      unitId: 'B-24',
+      unitType: 'VIP',
+      dayType: 'weekday',
+      packageType: '3',
+      durationLabel: '3 Jam',
+      hours: 3,
+      totalAmount: 100000,
+      paymentMethod: 'Transfer BCA',
+      notes: ''
+    },
+    {
+      id: 'inc-2',
+      dateTime: `${today}T14:30`,
+      unitId: 'B-32',
+      unitType: 'REGULER',
+      dayType: 'weekday',
+      packageType: '2',
+      durationLabel: '2 Jam',
+      hours: 2,
+      totalAmount: 70000,
+      paymentMethod: 'QRIS',
+      notes: ''
+    },
+    {
+      id: 'inc-3',
+      dateTime: `${today}T21:00`,
+      unitId: 'C-34',
+      unitType: 'REGULER',
+      dayType: 'weekday',
+      packageType: 'malam',
+      durationLabel: 'Paket Malam',
+      hours: 10,
+      totalAmount: 150000,
+      paymentMethod: 'Cash',
+      notes: 'Check-in malam'
+    }
+  ];
+
+  appData.expenses = [
+    {
+      id: 'exp-1',
+      date: today,
+      category: 'Token Listrik PLN',
+      unitId: 'B-24',
+      amount: 100000,
+      notes: 'Beli token PLN 100rb di Tokopedia'
+    },
+    {
+      id: 'exp-2',
+      date: today,
+      category: 'Laundry Sprei/Handuk',
+      unitId: 'Umum',
+      amount: 45000,
+      notes: 'Laundry 3 set sprei dan handuk'
+    }
+  ];
+
+  saveLocalOnly();
+}
+
+// Navigasi Tab
+function switchTab(tabId) {
+  const tabs = ['tab-rekap', 'tab-pemasukan', 'tab-pengeluaran', 'tab-pengaturan'];
+  tabs.forEach(t => {
+    const el = document.getElementById(t);
+    if (el) el.classList.add('hidden');
+  });
+
+  const activeTabEl = document.getElementById(tabId);
+  if (activeTabEl) activeTabEl.classList.remove('hidden');
+
+  // Update styling tombol tab desktop & mobile
+  document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+    if (btn.dataset.tab === tabId) {
+      btn.className = 'nav-tab-btn px-4 py-2 text-xs font-bold rounded-xl bg-blue-600 text-white transition flex items-center space-x-2 shadow-sm shadow-blue-600/30';
+    } else {
+      btn.className = 'nav-tab-btn px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition flex items-center space-x-2';
+    }
+  });
+
+  document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+    if (btn.dataset.tab === tabId) {
+      btn.classList.add('text-blue-600', 'dark:text-blue-400');
+      btn.classList.remove('text-slate-400', 'dark:text-slate-500');
+    } else {
+      btn.classList.remove('text-blue-600', 'dark:text-blue-400');
+      if (btn.dataset.tab) {
+        btn.classList.add('text-slate-400', 'dark:text-slate-500');
+      }
+    }
+  });
+
+  if (tabId === 'tab-rekap') {
+    renderRecap();
+  } else if (tabId === 'tab-pengaturan') {
+    renderSettingsValues();
+  }
+}
+
+// Update Deteksi Hari Weekday / Weekend berdasarkan tanggal transaksi
+function updateDayTypeFromDate() {
+  const dateInput = document.getElementById('incomeDateTime');
+  const dayBadge = document.getElementById('incomeDayBadge');
+  const btnWeekday = document.getElementById('btnDayWeekday');
+  const btnWeekend = document.getElementById('btnDayWeekend');
+
+  if (!dateInput) return;
+
+  const currentVal = dateInput.value;
+  const weekend = isWeekend(currentVal);
+
+  if (selectedDayType === 'auto') {
+    const activeType = weekend ? 'weekend' : 'weekday';
+    updateDayTypeUI(activeType);
+  }
+}
+
+function setManualDayType(type) {
+  selectedDayType = type;
+  updateDayTypeUI(type);
+  updateCalculatedRent();
+}
+
+function updateDayTypeUI(type) {
+  const btnWeekday = document.getElementById('btnDayWeekday');
+  const btnWeekend = document.getElementById('btnDayWeekend');
+  const dayBadge = document.getElementById('incomeDayBadge');
+
+  if (type === 'weekend') {
+    if (btnWeekend) {
+      btnWeekend.className = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow-xs transition';
+    }
+    if (btnWeekday) {
+      btnWeekday.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 transition';
+    }
+    if (dayBadge) {
+      dayBadge.innerText = 'WEEKEND (Jumat - Minggu)';
+      dayBadge.className = 'text-[11px] px-2 py-0.5 rounded font-bold bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800';
+    }
+  } else {
+    if (btnWeekday) {
+      btnWeekday.className = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white shadow-xs transition';
+    }
+    if (btnWeekend) {
+      btnWeekend.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 transition';
+    }
+    if (dayBadge) {
+      dayBadge.innerText = 'WEEKDAY (Senin - Kamis)';
+      dayBadge.className = 'text-[11px] px-2 py-0.5 rounded font-bold bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800';
+    }
+  }
+}
+
+function getActiveDayType() {
+  if (selectedDayType === 'weekday' || selectedDayType === 'weekend') {
+    return selectedDayType;
+  }
+  const dateInput = document.getElementById('incomeDateTime');
+  return isWeekend(dateInput?.value) ? 'weekend' : 'weekday';
+}
+
+// Set Tombol Paket Durasi
+function setPackageSelection(pkg) {
+  selectedPackage = String(pkg);
+
+  // Update styling tombol paket
+  document.querySelectorAll('.pkg-btn').forEach(btn => {
+    if (btn.dataset.pkg === String(pkg)) {
+      btn.className = 'pkg-btn py-2 px-2.5 text-xs font-extrabold rounded-xl bg-blue-600 text-white shadow-sm shadow-blue-500/20 border border-blue-600 transition';
+    } else {
+      btn.className = 'pkg-btn py-2 px-2.5 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition';
+    }
+  });
+
+  const customHoursInput = document.getElementById('incomeCustomHours');
+  if (pkg !== 'custom' && customHoursInput) {
+    customHoursInput.value = pkg === 'malam' ? 10 : pkg;
+  }
+
+  updateCalculatedRent();
+}
+
+// Kalkulasi Tarif Sewa Berdasarkan Pricelist Resmi TEKS HOUSE
+function updateCalculatedRent() {
+  const unitSelect = document.getElementById('incomeUnit');
+  const rentInput = document.getElementById('incomeRent');
+  const totalDisplay = document.getElementById('incomeTotalDisplay');
+  const unitTypeBadge = document.getElementById('incomeUnitTypeBadge');
+  const pkgNotes = document.getElementById('incomePackageNotes');
+
+  if (!unitSelect || !rentInput) return;
+
+  const unitId = unitSelect.value;
+  const unitInfo = UNITS_DATA.find(u => u.id === unitId) || UNITS_DATA[0];
+  const unitType = unitInfo.type; // 'VIP' or 'REGULER'
+
+  if (unitTypeBadge) {
+    unitTypeBadge.innerText = unitType;
+    unitTypeBadge.className = `text-xs px-2 py-0.5 rounded font-semibold border ${
+      unitType === 'VIP' 
+        ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800' 
+        : 'bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border-sky-300 dark:border-sky-800'
+    }`;
+  }
+
+  const dayType = getActiveDayType(); // 'weekday' or 'weekend'
+  const ratesTable = TEKS_HOUSE_PRICELIST[unitType][dayType];
+
+  let price = 0;
+  let label = '';
+
+  if (selectedPackage === 'malam') {
+    price = ratesTable['malam'] || (unitType === 'VIP' ? 180000 : 150000);
+    label = `Paket Malam (${unitType} - ${dayType.toUpperCase()})`;
+  } else if (ratesTable[selectedPackage]) {
+    price = ratesTable[selectedPackage];
+    label = `Paket ${selectedPackage} Jam (${unitType} - ${dayType.toUpperCase()})`;
+  } else {
+    // Custom jam
+    const customHoursInput = document.getElementById('incomeCustomHours');
+    const customH = parseFloat(customHoursInput?.value) || 1;
+    // Ambil rate per jam terdekat
+    price = Math.round(customH * (unitType === 'VIP' ? 50000 : 35000));
+    label = `${customH} Jam (Custom)`;
+  }
+
+  rentInput.value = price;
+  if (totalDisplay) {
+    totalDisplay.innerText = formatRupiah(price);
+  }
+  if (pkgNotes) {
+    pkgNotes.innerText = `Tarif resmi: ${label}`;
+  }
+}
+
+// Event Listeners
+function setupEventListeners() {
+  // Tab Navigasi Desktop
+  document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  // Tab Navigasi Mobile
+  document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  // Perubahan Unit & Tanggal
+  const unitSelect = document.getElementById('incomeUnit');
+  const dateInput = document.getElementById('incomeDateTime');
+  const rentInput = document.getElementById('incomeRent');
+  const customHoursInput = document.getElementById('incomeCustomHours');
+
+  if (unitSelect) unitSelect.addEventListener('change', updateCalculatedRent);
+  if (dateInput) {
+    dateInput.addEventListener('change', () => {
+      updateDayTypeFromDate();
+      updateCalculatedRent();
+    });
+  }
+  if (rentInput) {
+    rentInput.addEventListener('input', () => {
+      const totalDisplay = document.getElementById('incomeTotalDisplay');
+      const val = parseFloat(rentInput.value) || 0;
+      if (totalDisplay) totalDisplay.innerText = formatRupiah(val);
+    });
+  }
+  if (customHoursInput) {
+    customHoursInput.addEventListener('input', () => {
+      selectedPackage = 'custom';
+      updateCalculatedRent();
+    });
+  }
+
+  // Form Submit Pemasukan (Customer Masuk)
+  const incomeForm = document.getElementById('formIncome');
+  if (incomeForm) {
+    incomeForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      handleSaveIncome();
+    });
+  }
+
+  // Form Submit Pengeluaran
+  const expenseForm = document.getElementById('formExpense');
+  if (expenseForm) {
+    expenseForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      handleSaveExpense();
+    });
+  }
+
+  // Filter Rekapitulasi
+  setupFilterListeners();
+}
+
+function setupFilterListeners() {
+  const filterTypeBtns = document.querySelectorAll('.filter-type-btn');
+  filterTypeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterTypeBtns.forEach(b => {
+        b.className = 'filter-type-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition';
+      });
+      btn.className = 'filter-type-btn px-3.5 py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white shadow-xs transition';
+
+      currentFilter.type = btn.dataset.filter;
+      updateFilterControlsUI();
+      renderRecap();
+    });
+  });
+
+  // Input Perubahan Tanggal Harian
+  const dailyInput = document.getElementById('filterDailyDate');
+  if (dailyInput) {
+    dailyInput.addEventListener('change', () => {
+      currentFilter.startDate = dailyInput.value;
+      currentFilter.endDate = dailyInput.value;
+      renderRecap();
+    });
+  }
+
+  // Input Perubahan Bulan
+  const monthInput = document.getElementById('filterMonth');
+  if (monthInput) {
+    monthInput.addEventListener('change', () => {
+      currentFilter.month = monthInput.value;
+      renderRecap();
+    });
+  }
+
+  // Input Perubahan Custom Range
+  const customStart = document.getElementById('filterCustomStart');
+  const customEnd = document.getElementById('filterCustomEnd');
+  if (customStart && customEnd) {
+    const handleCustomChange = () => {
+      if (customStart.value && customEnd.value) {
+        currentFilter.startDate = customStart.value;
+        currentFilter.endDate = customEnd.value;
+        renderRecap();
+      }
+    };
+    customStart.addEventListener('change', handleCustomChange);
+    customEnd.addEventListener('change', handleCustomChange);
+  }
+}
+
+function updateFilterControlsUI() {
+  const dailyBox = document.getElementById('filterControlDaily');
+  const weeklyBox = document.getElementById('filterControlWeekly');
+  const monthlyBox = document.getElementById('filterControlMonthly');
+  const customBox = document.getElementById('filterControlCustom');
+
+  if (dailyBox) dailyBox.classList.add('hidden');
+  if (weeklyBox) weeklyBox.classList.add('hidden');
+  if (monthlyBox) monthlyBox.classList.add('hidden');
+  if (customBox) customBox.classList.add('hidden');
+
+  if (currentFilter.type === 'daily' && dailyBox) dailyBox.classList.remove('hidden');
+  if (currentFilter.type === 'weekly' && weeklyBox) weeklyBox.classList.remove('hidden');
+  if (currentFilter.type === 'monthly' && monthlyBox) monthlyBox.classList.remove('hidden');
+  if (currentFilter.type === 'custom' && customBox) customBox.classList.remove('hidden');
+}
+
+// Handler Simpan Transaksi Pemasukan (Customer Masuk)
+function handleSaveIncome() {
+  const dateTimeInput = document.getElementById('incomeDateTime');
+  const unitSelect = document.getElementById('incomeUnit');
+  const rentInput = document.getElementById('incomeRent');
+  const paymentMethodSelect = document.getElementById('incomePaymentMethod');
+  const notesInput = document.getElementById('incomeNotes');
+  const customHoursInput = document.getElementById('incomeCustomHours');
+
+  const unitId = unitSelect.value;
+  const unitInfo = UNITS_DATA.find(u => u.id === unitId);
+  const dayType = getActiveDayType();
+  const rentAmount = parseFloat(rentInput.value) || 0;
+
+  let durationLabel = '';
+  let hoursCount = 2;
+
+  if (selectedPackage === 'malam') {
+    durationLabel = 'ðŸŒ™ Paket Malam';
+    hoursCount = 10;
+  } else if (selectedPackage === 'custom') {
+    hoursCount = parseFloat(customHoursInput?.value) || 1;
+    durationLabel = `${hoursCount} Jam`;
+  } else {
+    hoursCount = parseFloat(selectedPackage) || 2;
+    durationLabel = `${selectedPackage} Jam`;
+  }
+
+  const newIncome = {
+    id: 'inc-' + Date.now(),
+    dateTime: dateTimeInput.value || getNowDateTimeLocalString(),
+    unitId: unitId,
+    unitType: unitInfo ? unitInfo.type : 'REGULER',
+    dayType: dayType,
+    packageType: selectedPackage,
+    durationLabel: durationLabel,
+    hours: hoursCount,
+    totalAmount: rentAmount,
+    paymentMethod: paymentMethodSelect.value,
+    notes: notesInput.value.trim(),
+    createdAt: new Date().toISOString()
+  };
+
+  appData.incomes.unshift(newIncome);
+  saveData('incomes', newIncome);
+
+  showToast(`âœ… Customer masuk tercatat! Pemasukan ${formatRupiah(rentAmount)} tersimpan.`);
+  
+  // Reset Form
+  document.getElementById('formIncome').reset();
+  initDateInputs();
+  setPackageSelection('2');
+
+  // Beralih ke tab rekap untuk melihat hasilnya
+  switchTab('tab-rekap');
+  renderAll();
+}
+
+// Handler Simpan Transaksi Pengeluaran
+function handleSaveExpense() {
+  const dateInput = document.getElementById('expenseDate');
+  const categorySelect = document.getElementById('expenseCategory');
+  const unitSelect = document.getElementById('expenseUnit');
+  const amountInput = document.getElementById('expenseAmount');
+  const notesInput = document.getElementById('expenseNotes');
+
+  const amount = parseFloat(amountInput.value) || 0;
+  if (amount <= 0) {
+    alert("Silakan masukkan nominal pengeluaran yang valid.");
+    return;
+  }
+
+  const newExpense = {
+    id: 'exp-' + Date.now(),
+    date: dateInput.value || getTodayDateString(),
+    category: categorySelect.value,
+    unitId: unitSelect.value,
+    amount: amount,
+    notes: notesInput.value.trim(),
+    createdAt: new Date().toISOString()
+  };
+
+  appData.expenses.unshift(newExpense);
+  saveData('expenses', newExpense);
+
+  showToast(`âœ… Pengeluaran ${formatRupiah(amount)} (${newExpense.category}) tersimpan.`);
+
+  // Reset form
+  document.getElementById('formExpense').reset();
+  if (dateInput) dateInput.value = getTodayDateString();
+
+  switchTab('tab-rekap');
+  renderAll();
+}
+
+// Hapus Data
+function removeIncomeItem(id) {
+  if (confirm("Apakah Anda yakin ingin menghapus catatan transaksi customer ini?")) {
+    appData.incomes = appData.incomes.filter(i => i.id !== id);
+    deleteData('incomes', id);
+    renderAll();
+    showToast("Transaksi customer telah dihapus.");
+  }
+}
+
+function removeExpenseItem(id) {
+  if (confirm("Apakah Anda yakin ingin menghapus catatan pengeluaran ini?")) {
+    appData.expenses = appData.expenses.filter(e => e.id !== id);
+    deleteData('expenses', id);
+    renderAll();
+    showToast("Catatan pengeluaran telah dihapus.");
+  }
+}
+
+// Render Keseluruhan
+function renderAll() {
+  renderRecap();
+  renderSettingsValues();
+}
+
+// FILTER DATA HELPER
+function getFilteredData() {
+  let filteredIncomes = [];
+  let filteredExpenses = [];
+  let periodLabel = '';
+
+  if (currentFilter.type === 'daily') {
+    const targetDate = currentFilter.startDate || getTodayDateString();
+    periodLabel = `Hari: ${formatDateIndo(targetDate)}`;
+
+    filteredIncomes = appData.incomes.filter(item => {
+      const itemDate = (item.dateTime || '').split('T')[0];
+      return itemDate === targetDate;
+    });
+
+    filteredExpenses = appData.expenses.filter(item => {
+      return item.date === targetDate;
+    });
+
+  } else if (currentFilter.type === 'weekly') {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - 6);
+    start.setHours(0,0,0,0);
+    end.setHours(23,59,59,999);
+
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = end.toISOString().split('T')[0];
+    periodLabel = `Minggu Ini (${formatDateIndo(startStr)} s/d ${formatDateIndo(endStr)})`;
+
+    filteredIncomes = appData.incomes.filter(item => {
+      const d = (item.dateTime || '').split('T')[0];
+      return d >= startStr && d <= endStr;
+    });
+
+    filteredExpenses = appData.expenses.filter(item => {
+      return item.date >= startStr && item.date <= endStr;
+    });
+
+  } else if (currentFilter.type === 'monthly') {
+    const targetMonth = currentFilter.month || getCurrentMonthString();
+    const [y, m] = targetMonth.split('-');
+    const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    const monthIndex = parseInt(m, 10) - 1;
+    periodLabel = `Bulan: ${monthNames[monthIndex] || m} ${y}`;
+
+    filteredIncomes = appData.incomes.filter(item => {
+      const d = (item.dateTime || '').substring(0, 7);
+      return d === targetMonth;
+    });
+
+    filteredExpenses = appData.expenses.filter(item => {
+      const d = (item.date || '').substring(0, 7);
+      return d === targetMonth;
+    });
+
+  } else if (currentFilter.type === 'custom') {
+    const startStr = currentFilter.startDate;
+    const endStr = currentFilter.endDate;
+    periodLabel = `${formatDateIndo(startStr)} s/d ${formatDateIndo(endStr)}`;
+
+    filteredIncomes = appData.incomes.filter(item => {
+      const d = (item.dateTime || '').split('T')[0];
+      return d >= startStr && d <= endStr;
+    });
+
+    filteredExpenses = appData.expenses.filter(item => {
+      return item.date >= startStr && item.date <= endStr;
+    });
+  }
+
+  return {
+    incomes: filteredIncomes,
+    expenses: filteredExpenses,
+    periodLabel: periodLabel
+  };
+}
+
+// Render Dashboard & Rekapitulasi
+function renderRecap() {
+  const { incomes, expenses, periodLabel } = getFilteredData();
+
+  const totalCustomers = incomes.length;
+  let totalHours = 0;
+  let totalIncome = 0;
+
+  const unitBreakdown = {
+    'B-24': { count: 0, hours: 0, income: 0 },
+    'B-32': { count: 0, hours: 0, income: 0 },
+    'C-34': { count: 0, hours: 0, income: 0 }
+  };
+
+  incomes.forEach(item => {
+    totalHours += (item.hours || 0);
+    totalIncome += (item.totalAmount || 0);
+
+    if (unitBreakdown[item.unitId]) {
+      unitBreakdown[item.unitId].count += 1;
+      unitBreakdown[item.unitId].hours += (item.hours || 0);
+      unitBreakdown[item.unitId].income += (item.totalAmount || 0);
+    }
+  });
+
+  let totalExpense = 0;
+  expenses.forEach(item => {
+    totalExpense += (item.amount || 0);
+  });
+
+  const netProfit = totalIncome - totalExpense;
+
+  // Tampilkan ke Elemen DOM
+  const periodLabelEl = document.getElementById('recapPeriodTitle');
+  if (periodLabelEl) periodLabelEl.innerText = periodLabel;
+
+  document.getElementById('statTotalCustomers').innerText = `${totalCustomers} Orang`;
+  document.getElementById('statTotalHours').innerText = `${totalHours} Jam`;
+  document.getElementById('statTotalIncome').innerText = formatRupiah(totalIncome);
+  document.getElementById('statTotalExpense').innerText = formatRupiah(totalExpense);
+
+  const profitEl = document.getElementById('statNetProfit');
+  if (profitEl) {
+    profitEl.innerText = formatRupiah(netProfit);
+    if (netProfit >= 0) {
+      profitEl.className = 'text-3xl font-extrabold text-blue-600 dark:text-blue-400 mt-2';
+    } else {
+      profitEl.className = 'text-3xl font-extrabold text-rose-600 dark:text-rose-400 mt-2';
+    }
+  }
+
+  // Unit Breakdown Cards
+  const b24El = document.getElementById('breakdownB24');
+  const b32El = document.getElementById('breakdownB32');
+  const c34El = document.getElementById('breakdownC34');
+
+  if (b24El) b24El.innerText = `${unitBreakdown['B-24'].count} Cust (${unitBreakdown['B-24'].hours} Jam) â€¢ ${formatRupiah(unitBreakdown['B-24'].income)}`;
+  if (b32El) b32El.innerText = `${unitBreakdown['B-32'].count} Cust (${unitBreakdown['B-32'].hours} Jam) â€¢ ${formatRupiah(unitBreakdown['B-32'].income)}`;
+  if (c34El) c34El.innerText = `${unitBreakdown['C-34'].count} Cust (${unitBreakdown['C-34'].hours} Jam) â€¢ ${formatRupiah(unitBreakdown['C-34'].income)}`;
+
+  // Render Tabel Customer Masuk & Pemasukan
+  renderIncomesTable(incomes);
+
+  // Render Tabel Pengeluaran
+  renderExpensesTable(expenses);
+}
+
+// Render Tabel Pemasukan (Tanpa overstay dan extra charges)
+function renderIncomesTable(incomes) {
+  const tbody = document.getElementById('tableIncomesBody');
+  const emptyState = document.getElementById('emptyIncomesState');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+
+  if (incomes.length === 0) {
+    if (emptyState) emptyState.classList.remove('hidden');
+    return;
+  }
+  if (emptyState) emptyState.classList.add('hidden');
+
+  incomes.forEach((item, index) => {
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-100 dark:border-slate-800 text-xs sm:text-sm';
+
+    const unitBadgeClass = item.unitType === 'VIP' 
+      ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800' 
+      : 'bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border-sky-300 dark:border-sky-800';
+
+    const dayBadgeText = (item.dayType === 'weekend') ? 'Weekend' : 'Weekday';
+    const dayBadgeClass = (item.dayType === 'weekend') ? 'text-indigo-600 dark:text-indigo-400' : 'text-blue-600 dark:text-blue-400';
+
+    tr.innerHTML = `
+      <td class="py-3 px-4 font-semibold text-slate-400 dark:text-slate-500">#${incomes.length - index}</td>
+      <td class="py-3 px-4 whitespace-nowrap text-slate-700 dark:text-slate-300">${formatDateTimeIndo(item.dateTime)}</td>
+      <td class="py-3 px-4">
+        <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border ${unitBadgeClass}">
+          ${item.unitId} (${item.unitType})
+        </span>
+      </td>
+      <td class="py-3 px-4 font-bold text-slate-800 dark:text-slate-200">
+        <div>${item.durationLabel || item.hours + ' Jam'}</div>
+        <div class="text-[10px] font-semibold ${dayBadgeClass}">${dayBadgeText}</div>
+      </td>
+      <td class="py-3 px-4 font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap text-sm">${formatRupiah(item.totalAmount)}</td>
+      <td class="py-3 px-4 font-medium text-slate-600 dark:text-slate-300">${item.paymentMethod || 'Cash'}</td>
+      <td class="py-3 px-4 text-xs text-slate-500 dark:text-slate-400">${item.notes || '-'}</td>
+      <td class="py-3 px-4 text-right">
+        <button onclick="removeIncomeItem('${item.id}')" class="text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 p-1.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 transition" title="Hapus">
+          <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Render Tabel Pengeluaran
+function renderExpensesTable(expenses) {
+  const tbody = document.getElementById('tableExpensesBody');
+  const emptyState = document.getElementById('emptyExpensesState');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+
+  if (expenses.length === 0) {
+    if (emptyState) emptyState.classList.remove('hidden');
+    return;
+  }
+  if (emptyState) emptyState.classList.add('hidden');
+
+  expenses.forEach((item, index) => {
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-100 dark:border-slate-800 text-xs sm:text-sm';
+
+    tr.innerHTML = `
+      <td class="py-3 px-4 font-semibold text-slate-400 dark:text-slate-500">#${expenses.length - index}</td>
+      <td class="py-3 px-4 whitespace-nowrap text-slate-700 dark:text-slate-300">${formatDateIndo(item.date)}</td>
+      <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">${item.category}</td>
+      <td class="py-3 px-4 text-xs text-slate-600 dark:text-slate-300">${item.unitId || 'Semua Unit'}</td>
+      <td class="py-3 px-4 font-extrabold text-rose-600 dark:text-rose-400 whitespace-nowrap text-sm">${formatRupiah(item.amount)}</td>
+      <td class="py-3 px-4 text-xs text-slate-500 dark:text-slate-400">${item.notes || '-'}</td>
+      <td class="py-3 px-4 text-right">
+        <button onclick="removeExpenseItem('${item.id}')" class="text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 p-1.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 transition" title="Hapus">
+          <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Render Nilai Pengaturan ke Form
+function renderSettingsValues() {
+  const savedConfig = getSavedFirebaseConfig ? getSavedFirebaseConfig() : null;
+  const firebaseJsonInput = document.getElementById('firebaseConfigJson');
+  if (firebaseJsonInput && savedConfig) {
+    firebaseJsonInput.value = JSON.stringify(savedConfig, null, 2);
+  }
+}
+
+// Helper Parser Firebase Config
+function parseFirebaseConfigInput(rawInput) {
+  let clean = rawInput.trim();
+  if (clean.includes('=')) {
+    clean = clean.substring(clean.indexOf('=') + 1).trim();
+  }
+  if (clean.endsWith(';')) {
+    clean = clean.slice(0, -1).trim();
+  }
+  try {
+    return JSON.parse(clean);
+  } catch (e) {
+    try {
+      const parseFn = new Function(`return (${clean});`);
+      const obj = parseFn();
+      if (obj && typeof obj === 'object' && obj.apiKey && obj.projectId) {
+        return obj;
+      }
+    } catch (err2) {}
+    throw new Error("Format tidak valid");
+  }
+}
+
+// Simpan Firebase Config
+function handleSaveFirebaseConfig() {
+  const jsonInput = document.getElementById('firebaseConfigJson');
+  if (!jsonInput) return;
+
+  try {
+    const raw = jsonInput.value.trim();
+    if (!raw) {
+      localStorage.removeItem('sewa_apartemen_firebase_config');
+      showToast("Koneksi cloud dinonaktifkan (Mode Lokal).");
+      setTimeout(() => location.reload(), 800);
+      return;
+    }
+    const config = parseFirebaseConfigInput(raw);
+    saveFirebaseConfig(config);
+    showToast("âœ… Konfigurasi Firebase disimpan! Menyambungkan...");
+    setTimeout(() => location.reload(), 1000);
+  } catch (e) {
+    alert("Format konfigurasi tidak valid! Pastikan Anda menyalin seluruh objek konfigurasi Firebase (berisi apiKey, projectId, dll).");
+  }
+}
+
+// Ekspor ke CSV / Excel
+function exportToExcelCSV() {
+  const { incomes, expenses, periodLabel } = getFilteredData();
+
+  let csvContent = `REKAPITULASI KEUANGAN & CUSTOMER TEKS HOUSE\n`;
+  csvContent += `Periode: ${periodLabel}\n`;
+  csvContent += `Dicetak pada: ${new Date().toLocaleString('id-ID')}\n\n`;
+
+  csvContent += `1. DATA CUSTOMER & PEMASUKAN\n`;
+  csvContent += `No,Tanggal & Waktu,Unit,Tipe,Hari,Paket Durasi,Total Pemasukan,Metode Bayar,Catatan\n`;
+  
+  incomes.forEach((item, index) => {
+    csvContent += `"${index + 1}","${item.dateTime}","${item.unitId}","${item.unitType}","${item.dayType}","${item.durationLabel}","${item.totalAmount}","${item.paymentMethod || 'Cash'}","${(item.notes || '').replace(/"/g, '""')}"\n`;
+  });
+
+  csvContent += `\n2. DATA PENGELUARAN\n`;
+  csvContent += `No,Tanggal,Kategori,Unit Terkait,Nominal,Catatan\n`;
+
+  expenses.forEach((item, index) => {
+    csvContent += `"${index + 1}","${item.date}","${item.category}","${item.unitId}","${item.amount}","${(item.notes || '').replace(/"/g, '""')}"\n`;
+  });
+
+  const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Rekap_TEKS_HOUSE_${currentFilter.type}_${Date.now()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast("ðŸ“¥ File Excel (CSV) berhasil diunduh!");
+}
+
+// Cetak Laporan
+function printReport() {
+  window.print();
+}
+
+// Toast Notifikasi
+function showToast(message) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = 'bg-slate-900 text-white text-sm px-4 py-3 rounded-xl shadow-xl flex items-center space-x-2 transition-all duration-300 transform translate-y-2 opacity-0';
+  toast.innerHTML = `<span>${message}</span>`;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.remove('translate-y-2', 'opacity-0');
+  }, 10);
+
+  setTimeout(() => {
+    toast.classList.add('opacity-0');
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+
+  </script>
+</body>
+</html>
+

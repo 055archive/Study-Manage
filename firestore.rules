@@ -1,0 +1,20 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Aturan untuk aplikasi manajemen sewa apartemen
+    // Mengizinkan baca dan tulis untuk koleksi keuangan dan transaksi
+    match /incomes/{document=**} {
+      allow read, write: if true;
+    }
+    match /expenses/{document=**} {
+      allow read, write: if true;
+    }
+    match /units/{document=**} {
+      allow read, write: if true;
+    }
+    match /settings/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
