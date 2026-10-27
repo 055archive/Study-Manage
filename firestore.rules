@@ -1,20 +1,89 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Aturan untuk aplikasi manajemen sewa apartemen
-    // Mengizinkan baca dan tulis untuk koleksi keuangan dan transaksi
-    match /incomes/{document=**} {
-      allow read, write: if true;
+    
+    // Helper function: cek apakah user sudah login
+    function isAuthenticated() {
+      return request.auth != null;
     }
-    match /expenses/{document=**} {
-      allow read, write: if true;
+    
+    // Helper function: cek apakah user adalah pemilik dokumen ini
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
     }
-    match /units/{document=**} {
-      allow read, write: if true;
+    
+    // Helper function: cek apakah user memiliki wewenang Pengurus / Admin (13 Akun Pengurus)
+    function isAdmin() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.profile.role != 'Mahasiswa' ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.profile.isAdmin == true
+        );
     }
-    match /settings/{document=**} {
-      allow read, write: if true;
+
+    // Helper function: cek apakah user adalah Ketua Kelas (Kosma) atau Designer Web (Hak Akses Data Mahasiswa)
+    function isKosmaOrDesigner() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.profile.role == 'Ketua Kelas' ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.profile.role == 'Designer Web' ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.profile.adminUsername == 'kosma' ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.profile.adminUsername == 'designerweb'
+        );
+    }
+
+    // 1. DATA PRIBADI MAHASISWA (users/{userId} & subkoleksi)
+    match /users/{userId} {
+      // Pemilik akun selalu berhak penuh. Hanya Kosma & Designer Web yang berhak membaca rekap seluruh mahasiswa.
+      allow read: if isOwner(userId) || isKosmaOrDesigner();
+      allow write: if isOwner(userId) || isKosmaOrDesigner();
+
+      // Subkoleksi: tugas, materi, matkul, tugas_status
+      match /{subcollection=**} {
+        allow read, write: if isOwner(userId) || isKosmaOrDesigner();
+      }
+    }
+
+    // 2. INDEKS NIM (nim_index/{nim})
+    match /nim_index/{nim} {
+      // Boleh lookup 1 dokumen NIM untuk keperluan verifikasi login/reset
+      allow get: if true;
+      // Dilarang melakukan listing massal kecuali oleh Kosma atau Designer Web
+      allow list: if isKosmaOrDesigner();
+      // Pendaftaran NIM baru diizinkan jika belum ada
+      allow create: if true;
+      // Modifikasi/penghapusan hanya diizinkan oleh pemilik akun atau Kosma/Designer Web
+      allow update, delete: if isAuthenticated() && (
+        resource.data.uid == request.auth.uid || isKosmaOrDesigner()
+      );
+    }
+
+    // 3. TUGAS RESMI KELAS (kelas_tugas/{taskId})
+    match /kelas_tugas/{taskId} {
+      allow read: if isAuthenticated();
+      // Hanya pengurus kelas yang berwenang membuat, mengubah, atau menghapus tugas resmi kelas
+      allow create, update, delete: if isAdmin() || (
+        isAuthenticated() && 
+        (resource == null || resource.data.authorUid == request.auth.uid)
+      );
+    }
+
+    // 4. MATERI RESMI KELAS (kelas_materi/{materiId})
+    match /kelas_materi/{materiId} {
+      allow read: if isAuthenticated();
+      // Hanya pengurus kelas yang berwenang membuat, mengubah, atau menghapus materi resmi kelas
+      allow create, update, delete: if isAdmin() || (
+        isAuthenticated() && 
+        (resource == null || resource.data.authorUid == request.auth.uid)
+      );
+    }
+
+    // 5. INFORMASI & PENGUMUMAN KELAS (kelas_info/{infoId})
+    match /kelas_info/{infoId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
     }
   }
 }

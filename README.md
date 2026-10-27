@@ -1,64 +1,132 @@
-# 🎬 TEKS HOUSE Netflix & Chill - Buku Kas Sewa Apartemen Per Jam (Serang Kota)
+# StudySync - Portal Tugas & Materi Kuliah Mahasiswa 🎓
 
-Aplikasi web pencatatan keuangan dan customer khusus apartemen sewa per jam (transit), dirancang praktis, cepat, dan mobile-friendly untuk bisnis **TEKS HOUSE**.
-
----
-
-## 📋 Pricelist Resmi TEKS HOUSE
-
-### 1. REGULER (Unit B-32 & Unit C-34)
-| Durasi Sewa | Weekday (Senin - Kamis) | Weekend (Jumat - Minggu) |
-| :--- | :---: | :---: |
-| 1 Jam | Rp 50.000 | Rp 60.000 |
-| 2 Jam | Rp 70.000 | Rp 80.000 |
-| 3 Jam | Rp 90.000 | Rp 100.000 |
-| 4 Jam | Rp 110.000 | Rp 120.000 |
-| 5 Jam | Rp 130.000 | Rp 150.000 |
-| 6 Jam | Rp 150.000 | Rp 170.000 |
-| 12 Jam | Rp 200.000 | Rp 220.000 |
-| 🌙 **Paket Malam** | **Rp 150.000** | **Rp 150.000** |
-
-### 2. VIP (Unit B-24 - Smart TV 4K & Netflix)
-| Durasi Sewa | Weekday (Senin - Kamis) | Weekend (Jumat - Minggu) |
-| :--- | :---: | :---: |
-| 1 Jam | Rp 60.000 | Rp 70.000 |
-| 2 Jam | Rp 80.000 | Rp 100.000 |
-| 3 Jam | Rp 100.000 | Rp 130.000 |
-| 4 Jam | Rp 120.000 | Rp 150.000 |
-| 5 Jam | Rp 150.000 | Rp 180.000 |
-| 6 Jam | Rp 180.000 | Rp 210.000 |
-| 12 Jam | Rp 300.000 | Rp 330.000 |
-| 🌙 **Paket Malam** | **Rp 180.000** | **Rp 180.000** |
+Website interaktif untuk menyimpan, melacak, dan mengorganisir seluruh **Tugas Kuliah** dan **Materi / Catatan Perkuliahan** secara terpusat, rapi, dan otomatis tersimpan di peramban Anda.
 
 ---
 
-## 🌟 Fitur Utama
+## 📂 Struktur File
 
-1. **Pencatatan Super Cepat (Tanpa Nama Tamu & Tanpa Overstay):**
-   - Cukup pilih unit dan klik pilihan paket durasi sewa (1, 2, 3, 4, 5, 6, 12 Jam atau Paket Malam).
-   - Sistem **otomatis mendeteksi hari Weekday atau Weekend** berdasarkan tanggal transaksi.
-   - Tarif sewa otomatis terisi presisi sesuai tabel pricelist resmi TEKS HOUSE.
-   - Pilihan metode bayar: Tunai (Cash), Transfer Bank (BCA, Mandiri, BRI), QRIS, E-Wallet.
-
-2. **Pencatatan Pengeluaran Operasional:**
-   - Catat token listrik PLN, laundry sprei/handuk, sabun/amenities, kebersihan, langganan Netflix/WiFi, dan IPL.
-
-3. **Rekapitulasi Keuangan Lengkap:**
-   - Filter Harian (Daily), 7 Hari Terakhir (Weekly), Bulanan (Monthly), dan Rentang Kustom.
-   - Indikator: Total Customer Masuk, Total Jam Tersewa, Total Pemasukan, Total Pengeluaran, dan **Laba Bersih**.
-   - Breakdown performa per unit (**Unit B-24 VIP**, **Unit B-32 REGULER**, **Unit C-34 REGULER**).
-   - Ekspor data ke file **Excel (CSV)** dan **Cetak PDF**.
-
-4. **Desain Modern Google Stitch:**
-   - Dukungan **Dark Mode & Light Mode** dengan tombol ganti tema.
-   - Tampilan ramah pengguna smartphone (mobile-first).
-
-5. **Cloud Sync (Firebase) & Offline Mode:**
-   - Berjalan langsung di perangkat tanpa server.
-   - Bisa dihubungkan ke Firebase Firestore agar data tersinkron antar HP abang dan staf pengelola secara real-time.
+```text
+portal-kuliah/
+├── index.html   # Struktur tata letak halaman (Ringkasan, Tab Tugas, Tab Materi, Modal)
+├── style.css    # Styling modern bernuansa akademik, kartu tugas, deadline badge, Dark Mode
+├── app.js       # Logika CRUD tugas & materi, hitung deadline otomatis, filter matkul, LocalStorage
+└── README.md    # Panduan penggunaan
+```
 
 ---
 
-## 🚀 Cara Menjalankan
+## 🎯 Fitur Sesuai Kebutuhan Anda
 
-Buka file [**`index.html`**](index.html) langsung di browser Google Chrome atau Microsoft Edge.
+### 1. Manajemen Tugas Kuliah (Assignment Tracker)
+* **Informasi Lengkap**: Judul tugas, **Mata Kuliah**, **Deadline** (tanggal & jam), tingkat prioritas (Tinggi/Sedang/Rendah), dan catatan/deskripsi.
+* **Unggah Berkas Tugas Langsung**: Lampirkan lembar soal (PDF), instruksi Word, spreadsheet, gambar, atau draf pengerjaan tugas langsung dari HP atau laptop tanpa perlu salin link Google Drive!
+* **Penghitung Deadline Pintar**:
+  * 🔴 *Mendesak*: Jika deadline hari ini, besok, atau sudah terlewat.
+  * 🟡 *Segera*: Jika deadline kurang dari 3 hari lagi.
+  * ⚪ *Aman*: Jika deadline masih lama.
+* **Centang Selesai**: Tugas dapat ditandai selesai (dicoret rapi dan statusnya diperbarui).
+* **Filter Cepat**: Filter berdasarkan mata kuliah, status (belum selesai / selesai), dan pencarian judul tugas.
+
+### 2. Arsip Materi Kuliah (Course Materials & Notes)
+* **Informasi Lengkap**: Topik bahasan, **Mata Kuliah**, **Pertemuan Ke-** (pertemuan 1, 2, 3, dst.), dan **Tanggal perkuliahan**.
+* **Unggah Berkas / Slide Langsung**: Unggah slide presentasi (PowerPoint PPT/PPTX), PDF e-book/jurnal, dokumen Word, ZIP, atau gambar materi langsung dari perangkat Anda.
+* **Pratinjau & Unduh Instan**: Klik tombol berkas pada kartu materi untuk langsung membuka PDF/gambar di tab baru atau mengunduh slide presentasi secara otomatis.
+* **Dukungan Tautan Eksternal Fleksibel**: Tetap menyediakan opsi memasukkan tautan Google Drive / Web jika berkas berukuran sangat besar atau berupa video.
+* **Catatan Rangkuman**: Kotak catatan untuk menuliskan poin-poin penting dari dosen.
+* **Pencarian Topik**: Mudah mencari catatan perkuliahan berdasarkan kata kunci atau pertemuan.
+
+### 3. Kelola Mata Kuliah (Course Management)
+* **Pendaftaran Mandiri**: Daftarkan mata kuliah semester ini secara manual tanpa perlu koding.
+* **Informasi Mata Kuliah**: Nama Mata Kuliah, Kode MK (misal: IF2101), Bobot SKS, Nama Dosen Pengampu, Jadwal/Hari & Jam, Ruang Perkuliahan, serta Pilihan Warna Aksen.
+* **Hubungan Data Otomatis**: Setiap kartu mata kuliah menampilkan jumlah tugas aktif dan materi yang tersimpan, serta tombol pintas untuk langsung memfilter tugas & materi terkait.
+
+### 4. Ringkasan & Dashboard Utama (Overview)
+* Metrik jumlah tugas aktif, tugas selesai, dan total materi tersimpan.
+* Daftar **Prioritas & Deadline Terdekat** lengkap dengan berkas soal tugas yang terlampir.
+* Daftar materi perkuliahan terbaru yang siap dibuka kapan saja.
+
+### 5. Penyimpanan Berkas & Cadangan (IndexedDB & Backup/Restore)
+* **Penyimpanan Berkas IndexedDB**: Seluruh berkas PDF, slide PPT, dan dokumen disimpan secara aman di database internal browser (`IndexedDB`) yang mendukung kapasitas ratusan Megabyte (bebas dari batasan 5MB `localStorage`).
+* **Cadangkan Lengkap (Full Backup)**: Mengunduh data tugas, materi, mata kuliah, **beserta seluruh berkas lampiran fisiknya** ke dalam 1 file `.json`.
+* **Pulihkan Lengkap (Restore)**: Memulihkan kembali seluruh data dan file lampiran ke browser / komputer manapun hanya dengan 1 kali klik.
+
+### 6. Sistem Autentikasi Mahasiswa (NIM & Google Sign-In)
+* **Pendaftaran Mandiri Mahasiswa**: Mahasiswa mendaftar menggunakan Nama Lengkap, NIM, Email, dan membuat kata sandi pribadi (atau Sign-in with Google).
+* **Login Harian Tanpa Ribet**: Login sehari-hari cukup menggunakan **NIM + Kata Sandi** atau 1-klik akun Google.
+* **Fitur Ingat Saya**: Sesi disimpan secara aman di perangkat lokal sehingga tidak perlu login berulang kali setiap membuka website.
+* **Lupa Kata Sandi**: Mahasiswa dapat mereset sandi menggunakan NIM; tautan verifikasi akan otomatis dikirim ke email terdaftar via Firebase Auth.
+* **Isolasi Data**: Data tugas dan materi tersimpan privat per akun mahasiswa di cloud Firebase Firestore.
+
+---
+
+## 🔥 Panduan Menghubungkan Firebase (Real-time Cloud Sync & Storage)
+
+Dengan Firebase, Anda bisa membuka website ini di **Laptop** dan **HP** sekaligus, dan datanya akan tersinkronisasi secara otomatis dalam hitungan detik!
+
+### Langkah 1: Buat Proyek Firebase Gratis
+1. Buka [console.firebase.google.com](https://console.firebase.google.com/) dan login dengan akun Google Anda.
+2. Klik tombol **"Add project"** (Tambahkan proyek).
+3. Beri nama proyek Anda (misal: `studysync-kuliah`).
+4. Matikan centang *Google Analytics* (opsional, agar cepat), lalu klik **Create project**.
+
+### Langkah 2: Daftarkan Web App & Dapatkan Config
+1. Pada halaman utama proyek di Firebase Console, klik ikon Web (`</>`).
+2. Masukkan nama aplikasi (misal: `StudySync Web`), abaikan centang Firebase Hosting, lalu klik **Register app**.
+3. Anda akan melihat kode `const firebaseConfig = { ... };`.
+4. Salin (copy) kode konfigurasi tersebut.
+
+### Langkah 3: Aktifkan Cloud Firestore & Cloud Storage
+1. **Cloud Firestore (Database Tugas & Materi)**:
+   * Di menu sebelah kiri, klik **Build** > **Firestore Database**.
+   * Klik **Create database**, pilih lokasi (misal: `asia-southeast2` Jakarta).
+   * Buka tab **Rules**, lalu ganti aturan default dengan isi berkas `firestore.rules`.
+   * Klik **Publish** (agar database aman dan tidak bisa dihapus sembarangan).
+2. **Cloud Storage (Penyimpanan Berkas Lampiran)**:
+   * Di menu sebelah kiri, klik **Build** > **Storage**.
+   * Buka tab **Rules**, lalu ganti aturan default dengan isi berkas `storage.rules`.
+   * Klik **Publish**.
+
+### Langkah 4: Hubungkan ke StudySync
+Anda bisa memilih salah satu cara berikut:
+* **Cara Termudah (Lewat Web)**:
+  1. Buka website StudySync di browser Anda.
+  2. Klik tombol **"Cloud Sync"** di bar atas (atau di sidebar).
+  3. Tempelkan (paste) kode config Firebase Anda ke kotak yang disediakan.
+  4. Klik tombol **"Simpan & Hubungkan"**.
+  5. Lampu status akan berubah menjadi **🟢 Cloud Aktif**!
+* **Atau Langsung di Kode**:
+  1. Buka file `firebase-config.js`.
+  2. Isi objek `DEFAULT_FIREBASE_CONFIG` dengan apiKey, projectId, dll milik Anda.
+  3. Simpan file, lalu commit & push ke GitHub Anda!
+
+---
+
+## 🚀 Cara Membuka & Menjalankan di VS Code
+
+### Opsi A: Lewat Menu VS Code
+1. Buka aplikasi **VS Code**.
+2. Klik menu **File** > **Open Folder...** (shortcut `Ctrl + K, Ctrl + O`).
+3. Pilih folder:
+   ```
+   C:\Users\ACER\.gemini\antigravity\scratch\portal-kuliah
+   ```
+4. Klik **Select Folder**.
+
+### Opsi B: Buka via Terminal / PowerShell
+Jalankan perintah ini di PowerShell:
+```powershell
+code "C:\Users\ACER\.gemini\antigravity\scratch\portal-kuliah"
+```
+
+---
+
+## 🌐 Cara Menjalankan Website
+
+1. **Menggunakan Live Server di VS Code**:
+   * Instal ekstensi **Live Server** di VS Code (`Ctrl + Shift + X` lalu cari *Live Server*).
+   * Buka file `index.html`.
+   * Klik kanan pada kode `index.html` dan pilih **"Open with Live Server"** (atau klik tombol **"Go Live"** di pojok kanan bawah).
+2. **Atau Buka Langsung**:
+   * Buka Windows File Explorer di `C:\Users\ACER\.gemini\antigravity\scratch\portal-kuliah`.
+   * Klik ganda pada `index.html` untuk membukanya di browser (Chrome / Edge / Firefox).
